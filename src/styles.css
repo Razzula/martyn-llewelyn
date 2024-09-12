@@ -85,6 +85,10 @@ body {
 table {
     border-spacing: 0px;
     border-collapse: collapse;
+
+    table-layout: auto;
+    border-collapse: collapse;
+    width: 100%;
 }
 
 th, td{
@@ -96,9 +100,13 @@ th, td{
     transition: transform 0.3s ease, width 0.3s ease;
 }
 
-.column-border {
+.dotted-sides {
     border-right: 2px dotted #000000;
     border-left: 2px dotted #000000;
+}
+
+.dotted-top {
+    border-top: 2px dotted #bbbbbb;
 }
 
 th {
