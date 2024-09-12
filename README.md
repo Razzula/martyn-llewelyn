@@ -1,1 +1,8 @@
-# martyn-llewelyn
+# martyn-llewellyn
+
+```
+bun install
+```
+```
+bun run dev
+```
