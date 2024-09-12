@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, RefObject, ChangeEvent } from "react";
+import { useRef, useState, useEffect, RefObject } from "react";
 import "./styles.css";
 
 interface Segment {

@@ -1,4 +1,4 @@
-import React, { useRef, useState, RefObject } from 'react';
+import { useRef, useState, RefObject } from 'react';
 import BankAccountTable from './BankAccountTable';
 import SegmentedControl from './SegmentedControl';
 
