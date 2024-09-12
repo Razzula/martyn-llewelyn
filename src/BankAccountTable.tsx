@@ -168,7 +168,7 @@ const BankAccountTable: React.FC<BankAccountTableProps> = ({ accounts, mode, set
                                 </td>
                                 <td>{account.annualInterestRate}%</td>
                                 <td className='dotted-sides'>£{account.initialDeposit.toFixed(2)}</td>
-                                {dataRow.slice(1).map((balance, month) => {
+                                {dataRow.slice(1).map((balance, _month) => {
                                     const [interestPositive, transferPositive] = [balance.interest >= 0, balance.transfer > 0];
                                     const interestStr = balance.interest >= 0.01 ? `+ ${balance.interest.toFixed(2)}` : undefined;
                                     const transferStr = balance.transfer !== 0 ? (`${transferPositive ? '+' : '-'} ${Math.abs(balance.transfer).toFixed(2)}`) : undefined;
