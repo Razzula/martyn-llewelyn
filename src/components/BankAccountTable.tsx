@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
-import { Account } from './App';
+import { Account } from '../App';
+import { Tooltip, TooltipContent, TooltipTrigger } from './Tooltip';
 
-import './App.css';
+import '../styles/App.css';
 
 interface BankAccountTableProps {
     accounts: Account[];
@@ -140,13 +141,34 @@ const BankAccountTable: React.FC<BankAccountTableProps> = ({ accounts, mode, set
                     <tr>
                         <th></th>
                         <th>Account</th>
-                        <th>Gross p.a.</th>
+                        <th className='dotted-sides'>
+                            <Tooltip>
+                                <TooltipTrigger>gross p.a.</TooltipTrigger>
+                                <TooltipContent>
+                                    <div>Gross per annum is the amount of interest the account will yield over the course of a year.<br/><br/> In reality, most banks use a daily rate (1/365th of this), which they will use to calculate your interest each day, and slowly accumulate it, before then adding it to your account at the compound rate (monthly, quarterly, etc.). This rate does not take into account compound interest, like AER does.<br/><br/>This application uses a monthly rate, which takes compound interest into account.</div>
+                                </TooltipContent>
+                            </Tooltip>
+                        </th>
                         <th className='dotted-sides'>START</th>
                         {Array.from({ length: 12 }, (_, i) => (
                             <th key={i}>{months[i]}</th>
                         ))}
-                        <th className='dotted-sides'>Δ</th>
-                        <th className='dotted-sides'>Σ Δ&gt;0</th>
+                        <th className='dotted-sides'>
+                            <Tooltip>
+                                <TooltipTrigger>Δ</TooltipTrigger>
+                                <TooltipContent>
+                                    <div>Difference in balance, at end of the year</div>
+                                </TooltipContent>
+                            </Tooltip>
+                        </th>
+                        <th className='dotted-sides'>
+                            <Tooltip>
+                                <TooltipTrigger>Σᵢ {"{"}Δᵢ | Δᵢ &gt; 0{"}"}</TooltipTrigger>
+                                <TooltipContent>
+                                    <div>Total interest generated</div>
+                                </TooltipContent>
+                            </Tooltip>
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
@@ -171,7 +193,7 @@ const BankAccountTable: React.FC<BankAccountTableProps> = ({ accounts, mode, set
                                 {dataRow.slice(1).map((balance, _month) => {
                                     const [interestPositive, transferPositive] = [balance.interest >= 0, balance.transfer > 0];
                                     const interestStr = balance.interest >= 0.01 ? `+ ${balance.interest.toFixed(2)}` : undefined;
-                                    const transferStr = balance.transfer !== 0 ? (`${transferPositive ? '+' : '-'} ${Math.abs(balance.transfer).toFixed(2)}`) : undefined;
+                                    const transferStr = Math.abs(balance.transfer) >= 0.01 ? (`${transferPositive ? '+' : '-'} ${Math.abs(balance.transfer).toFixed(2)}`) : undefined;
                                     return (
                                         <td>
                                             <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}>

@@ -20,14 +20,14 @@ body {
     --highlight-x-pos: 0;
 
     display: flex;
-    margin: 0px 0 25px;
+    margin: 0px 0 8px;
 }
 
 .controls {
     display: inline-flex;
     justify-content: space-between;
     background: white;
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     border-radius: 10px;
     max-width: 800px;
     padding: 12px;

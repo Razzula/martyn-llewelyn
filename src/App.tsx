@@ -1,9 +1,10 @@
 import { useRef, useState, RefObject } from 'react';
 import { accounts } from './Accounts';
-import BankAccountTable from './BankAccountTable';
-import SegmentedControl from './SegmentedControl';
+import BankAccountTable from './components/BankAccountTable';
+import SegmentedControl from './components/SegmentedControl';
 
-import './App.css';
+import './styles/App.css';
+import { Tooltip, TooltipContent, TooltipTrigger } from './components/Tooltip';
 
 // Define the type for account objects
 export interface Account {
@@ -21,7 +22,7 @@ export interface Account {
 
 function App() {
   // State for selected value
-  const [selectedValue, setSelectedValue] = useState<string>('idle');
+  const [mode, setMode] = useState<string>('idle');
   const [totalDelta, setTotalDelta] = useState<number>(0);
 
   // Refs for SegmentedControl segments
@@ -34,12 +35,24 @@ function App() {
   // Ref for the SegmentedControl container
   const controlRef = useRef<HTMLDivElement>(null);
 
+  let modeLong;
+  switch (mode) {
+    case 'idle':
+      modeLong = 'only keep your money in your savings account';
+      break;
+    case 'crs':
+      modeLong = 'utilise your current regular saver, as well as your savings';
+      break;
+    default:
+      modeLong = 'utilise other available regular savers, as well as your existing accounts';
+  }
+
   return (
     <>
       <div className="container">
         <SegmentedControl
           name="group-1"
-          callback={(val: string) => setSelectedValue(val)}
+          callback={(val: string) => setMode(val)}
           controlRef={controlRef}
           segments={[
             {
@@ -62,8 +75,16 @@ function App() {
       </div>
 
       <div className="App">
-        <h1>You will gain <span style={{color: '#1ed760'}}>£{totalDelta.toFixed(2)}</span>!</h1>
-        <BankAccountTable accounts={accounts} mode={selectedValue} setTotalDelta={setTotalDelta} />
+        <h4 style={{ color: 'grey' }}>Let's see what happens if you {modeLong}.</h4>
+        <h1>
+          You will gain <span style={{color: '#1ed760'}}>£{totalDelta.toFixed(2)}</span>
+          <Tooltip>
+            <TooltipTrigger>*</TooltipTrigger>
+            <TooltipContent>One or more of your accounts is a variable-rate account, meaning the interest rate could decrease, causing the estimated yield to diminish. This value also does not account for inflation, and assumes that you do not remove money from these accounts.</TooltipContent>
+          </Tooltip>
+          !
+        </h1>
+        <BankAccountTable accounts={accounts} mode={mode} setTotalDelta={setTotalDelta} />
       </div>
     </>
   );

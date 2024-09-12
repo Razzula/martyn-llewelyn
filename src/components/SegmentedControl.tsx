@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, RefObject } from "react";
-import "./styles.css";
+import "../styles/styles.css";
 
 interface Segment {
     value: string;
