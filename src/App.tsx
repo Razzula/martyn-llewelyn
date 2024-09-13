@@ -30,6 +30,7 @@ function App() {
     useRef<HTMLDivElement>(null),
     useRef<HTMLDivElement>(null),
     useRef<HTMLDivElement>(null),
+    useRef<HTMLDivElement>(null),
   ];
 
   // Ref for the SegmentedControl container
@@ -38,13 +39,18 @@ function App() {
   let modeLong;
   switch (mode) {
     case 'idle':
-      modeLong = 'only keep your money in your savings account';
+      modeLong = 'if you only kept your money in your savings account';
       break;
     case 'crs':
-      modeLong = 'utilise your current regular saver, as well as your savings';
+      modeLong = 'if you utilsed your current regular saver, as well as your savings';
+      break;
+    case 'nrs':
+      modeLong = 'if you utilised other available regular savers, as well as your existing accounts';
+      break;
+    case 'yield':
+      modeLong = 'from adding £1, in any given month';
       break;
     default:
-      modeLong = 'utilise other available regular savers, as well as your existing accounts';
   }
 
   return (
@@ -69,14 +75,19 @@ function App() {
               label: "New Regular Savers",
               value: "nrs",
               ref: segmentRefs[2]
-            }
+            },
+            {
+              label: "Yield",
+              value: "yield",
+              ref: segmentRefs[3]
+            },
           ]}
         />
       </div>
 
       <div className="App">
-        <h4 style={{ color: 'grey' }}>Let's see what happens if you {modeLong}.</h4>
-        <h1>
+        <h4 style={{ color: 'grey' }}>Let's see how much you would get {modeLong}.</h4>
+        <h1 hidden={mode === 'yield'}>
           You will gain <span style={{color: '#1ed760'}}>£{totalDelta.toFixed(2)}</span>
           <Tooltip>
             <TooltipTrigger>*</TooltipTrigger>
