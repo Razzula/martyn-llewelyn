@@ -5,7 +5,7 @@ import SegmentedControl from './components/SegmentedControl';
 import { Tooltip, TooltipContent, TooltipTrigger } from './components/Tooltip';
 
 import './styles/App.css';
-import { Popover, PopoverClose, PopoverContent, PopoverDescription, PopoverHeading, PopoverTrigger } from './components/Popover';
+import { Popover, PopoverContent, PopoverTrigger } from './components/Popover';
 
 function App() {
     // State for selected value

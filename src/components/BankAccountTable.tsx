@@ -365,7 +365,7 @@ const BankAccountTable: React.FC<BankAccountTableProps> = ({ accounts, mode, set
                             <tr key={index} className={mode !== 'yield' && state === -1 ? 'locked' : ''} hidden={hideExclusiveAccounts && state === -1}>
                                 { mode !== 'yield' &&
                                     <td>
-                                        { (state === 1) ?
+                                        { (state !== -1) ?
                                             <input type="checkbox" checked={state === 1} disabled={ownedAccount}/>
                                             : <Tooltip><TooltipTrigger><span className='glyph'style={{ opacity: 1 }}>🔒</span></TooltipTrigger><TooltipContent>This account is only available to existing {account.bank} customers.<br/><br/><span className='mini'>You can hide these in the settings!</span></TooltipContent></Tooltip>
                                         }
@@ -402,7 +402,7 @@ const BankAccountTable: React.FC<BankAccountTableProps> = ({ accounts, mode, set
                                             <td>
                                                 <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}>
                                                     <div style={{ flex: '1 0 auto', minHeight: 26, color: interestPositive ? '#1ed760' : 'red' }}>{interestStr}</div>
-                                                    <div style={{ flex: '1 0 auto', minHeight: 26, color: transferPositive ? '#1ed760' : 'red' }}>{transferStr}</div>
+                                                    <div style={{ flex: '1 0 auto', minHeight: 26, color: transferPositive ? '#b7b7b7' : 'red' }}>{transferStr}</div>
                                                     <div style={{ flex: '1 0 auto', minHeight: 26 }} className='dotted-top'>£{balance.value.toFixed(2)}</div>
                                                 </div>
                                             </td>

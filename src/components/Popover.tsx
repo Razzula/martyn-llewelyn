@@ -13,7 +13,6 @@ import {
     Placement,
     FloatingPortal,
     FloatingFocusManager,
-    useId
 } from "@floating-ui/react";
 
 import "../styles/popover.css";
