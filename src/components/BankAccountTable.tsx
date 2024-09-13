@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
-import { Account } from '../App';
+import { Account } from '../Accounts';
 import { Tooltip, TooltipContent, TooltipTrigger } from './Tooltip';
 import Colour from '../utils/Colour';
+import banks from '../Banks';
 
 import '../styles/App.css';
 
@@ -9,6 +10,11 @@ interface BankAccountTableProps {
     accounts: Account[];
     mode: string;
     setTotalDelta: (totalDelta: number) => void;
+}
+
+export interface AccountInstance extends Account {
+    id: string,
+    initialDeposit: number;
 }
 
 class Cell {
@@ -42,8 +48,8 @@ const months: string[] = ["SEP", "OCT", "NOV", "DEC", "JAN", "FEB", "MAR", "APR"
 //     return balanceArray;
 // };
 
-function createDataTable(accounts: Account[]): [Account, Cell[]][] {
-    const data: [Account, Cell[]][] = [];
+function createDataTable(accounts: AccountInstance[]): [AccountInstance, Cell[]][] {
+    const data: [AccountInstance, Cell[]][] = [];
     accounts.forEach((account) => {
         const row: Cell[] = Array.from({ length: 13 }, () => new Cell());
         row[0].value = account.initialDeposit;
@@ -52,11 +58,11 @@ function createDataTable(accounts: Account[]): [Account, Cell[]][] {
     return data;
 }
 
-function createYieldTable(accounts: Account[]): [Account, number[], number[]][] {
+function createYieldTable(accounts: AccountInstance[]): [AccountInstance, number[], number[]][] {
     // generate table of yields
-    const data: [Account, number[], number[]][] = [];
+    const data: [AccountInstance, number[], number[]][] = [];
     accounts.forEach((account) => {
-        const row: number[] = Array.from({ length: 13 }, () => NaN);
+        const row: number[] = Array.from({ length: 13 }, () => 0);
         row[0] = NaN; // we keep the x*13 shape, so that values align with the data table, but, the first value is useless.
 
         // generate yields using reverse-traversal
@@ -65,7 +71,7 @@ function createYieldTable(accounts: Account[]): [Account, number[], number[]][] 
         for (let month = 12; month >= 1; month--) {
             // TODO: I don't think is is done correctly?
             accumulation += monthlyInterestRate;
-            const interest = accumulation + monthlyInterestRate;
+            const interest = accumulation;
             row[month] = interest;
         }
 
@@ -100,10 +106,10 @@ function createYieldTable(accounts: Account[]): [Account, number[], number[]][] 
     return data;
 }
 
-function enactDataTable(dataTable: [Account, Cell[]][], yieldTable: [Account, number[], number[]][]): [Account, Cell[]][] {
-    const data: [Account, Cell[]][] = dataTable.map(([account, dataRow]) => [account, dataRow]); // shallow copy, with buffer
+function enactDataTable(dataTable: [AccountInstance, Cell[]][], yieldTable: [AccountInstance, number[], number[]][]): [AccountInstance, Cell[], number][] {
+    console.log(dataTable);
+    const data: [AccountInstance, Cell[], number][] = dataTable.map(([account, dataRow]) => [account, dataRow, (account.state === 'owned' ? 1 : account.exclusive ? -1 : 0)]); // shallow copy, with buffer
     const interestBuffer: number[] = new Array(data.length).fill(0);
-    const activeRowsList: boolean[] = new Array(data.length).fill(false);
 
     // GREEDY HEURISTIC
     // 0. create linear ranking of cells, using the yield table
@@ -130,12 +136,16 @@ function enactDataTable(dataTable: [Account, Cell[]][], yieldTable: [Account, nu
     let workingSum = data[0][1][0].value;
     for (let i = 0; i < yieldList.length; i++) {
         const [accountIndex, month, _yieldValue] = yieldList[i];
-        const [account, row] = data[accountIndex];
+        const [account, row, state] = data[accountIndex];
+
+        if (!(account.state === 'owned') && account.exclusive) { // exclusive accounts must be owned
+            continue;
+        }
 
         if ((account.maxInflow || 0) > 0) { // we must be able to transfer
 
             // in order to utilise this cell, we must first ensure that the minimum inflow is met, for all cells in this row
-            if (activeRowsList[accountIndex] === false) {
+            if (state === 0) {
                 // the assumption is that, as this row is inactive, then the transfer will be 0 for all cells in this row
                 if ((account.minInflow || 0) * 12 <= workingSum) {
                     for (let j = 0; j < 12; j++) {
@@ -143,7 +153,7 @@ function enactDataTable(dataTable: [Account, Cell[]][], yieldTable: [Account, nu
                         data[accountIndex][1][j].transfer += (account.minInflow || 0);
                         data[0][1][j].transfer -= (account.minInflow || 0);
                     }
-                    activeRowsList[accountIndex] = true;
+                    data[accountIndex][2] = 1;
                 }
                 else {
                     continue; // skip this cell, as we cannot meet the minimum inflow
@@ -167,7 +177,6 @@ function enactDataTable(dataTable: [Account, Cell[]][], yieldTable: [Account, nu
     // CHRONOLOGICAL TRAVERSAL
     // traverse by column, to calculate interest and balance
     for (let month = 1; month <= 12; month++) {
-        let balance = data[0][1][month - 1].value;
 
         // TODO: interest in savings last???
 
@@ -198,6 +207,10 @@ function enactDataTable(dataTable: [Account, Cell[]][], yieldTable: [Account, nu
                         if (idealAccountIndex === i || idealMonth < month) {
                             continue;
                         }
+                        // account must not be exclusive, unless it is owned
+                        if (data[idealAccountIndex][2] !== 1) { // only utilise already activated cells (not neccesarily best, but, good enough)
+                            continue;
+                        }
 
                         // enforce maxInflow
                         // TODO: enforce minInflow
@@ -215,7 +228,6 @@ function enactDataTable(dataTable: [Account, Cell[]][], yieldTable: [Account, nu
             // OPTIMISTIC HEURISTIC
             // alter balance; according to heuristic
             if (row[month].transfer !== 0) {
-                balance += row[month].transfer;
                 row[month].value += row[month].transfer;
                 data[0][1][month].value -= row[month].transfer;
             }
@@ -227,31 +239,58 @@ function enactDataTable(dataTable: [Account, Cell[]][], yieldTable: [Account, nu
 
 const BankAccountTable: React.FC<BankAccountTableProps> = ({ accounts, mode, setTotalDelta }) => {
 
-    const [dataTable, setDataTable] = React.useState<[Account, Cell[]][]>([]);
-    const [yieldTable, setYieldTable] = React.useState<[Account, number[], number[]][]>([]);
+    const [accountInstances, setAccountInstances] = React.useState<AccountInstance[]>([]);
+    const [lumpSum, setLumpSum] = React.useState<number>(0);
+
+    const [dataTable, setDataTable] = React.useState<[AccountInstance, Cell[], number][]>([]);
+    const [yieldTable, setYieldTable] = React.useState<[AccountInstance, number[], number[]][]>([]);
 
     // HANDLE STATE CHANGE
     useEffect(() => {
-        // filter accounts
-        const visibleAccounts = accounts.filter(account =>
-            account.type.toLowerCase() === 'savings'
-            || (account.type.toLowerCase() === 'regular saver' && (mode === 'crs' && account.state?.toLowerCase() === 'owned') || mode === 'nrs')
-            || mode === 'yield'
-        );
+        setLumpSum(1000); //temp
+    }, []);
 
-        // generate data table
-        const tempDataTable = createDataTable(visibleAccounts);
+    useEffect(() => {
+        const tempAccounts: AccountInstance[] = accounts.map((account) => {
+            return {
+                id: `${account.bank}#${account.name}`.replace(/ /g, '-').toLowerCase(),
+                ...account,
+                initialDeposit: 0,
+            };
+        });
+        setAccountInstances(tempAccounts);
+    }, [accounts]);
 
-        // generate yield table
-        const tempYieldTable = createYieldTable(visibleAccounts);
+    useEffect(() => {
+        if (accountInstances.length > 0) {
+            const tempAccountInstances = accountInstances.slice();
+            tempAccountInstances[0].initialDeposit = lumpSum;
+            setAccountInstances(tempAccountInstances);
+        }
+    }, [lumpSum]);
 
-        // calculate data table
-        const newDataTable = enactDataTable(tempDataTable, tempYieldTable);
+    useEffect(() => {
+        if (accountInstances.length > 0) {
+            // filter accounts
+            const visibleAccounts = accountInstances.filter(account =>
+                account.type.toLowerCase() === 'savings'
+                || (account.type.toLowerCase() === 'regular saver' && (mode === 'crs' && account.state?.toLowerCase() === 'owned') || mode === 'nrs')
+                || mode === 'yield'
+            );
 
-        setDataTable(newDataTable);
-        setYieldTable(tempYieldTable);
+            // generate data table
+            const tempDataTable = createDataTable(visibleAccounts);
 
-    }, [accounts, mode]);
+            // generate yield table
+            const tempYieldTable = createYieldTable(visibleAccounts);
+
+            // calculate data table
+            const newDataTable = enactDataTable(tempDataTable, tempYieldTable);
+
+            setDataTable(newDataTable);
+            setYieldTable(tempYieldTable);
+        }
+    }, [accountInstances, mode]);
 
     useEffect(() => {
         // handle total delta
@@ -260,16 +299,22 @@ const BankAccountTable: React.FC<BankAccountTableProps> = ({ accounts, mode, set
         }, 0);
         setTotalDelta(totalDelta);
 
-    }, [dataTable]);
+    }, [dataTable, setTotalDelta]);
+
+    function updateInitialValue(index: number, value: number) {
+        const tempAccounts = accountInstances.slice();
+        tempAccounts[index].initialDeposit = value;
+        setAccountInstances(tempAccounts);
+    }
 
     return (
         <div>
             <table>
                 <thead>
                     <tr>
-                        <th></th>
+                        { mode !== 'yield' && <th></th> }
                         <th>Account</th>
-                        <th className='dotted-sides'>
+                        <th>
                             <Tooltip>
                                 <TooltipTrigger>gross p.a.</TooltipTrigger>
                                 <TooltipContent>
@@ -303,7 +348,7 @@ const BankAccountTable: React.FC<BankAccountTableProps> = ({ accounts, mode, set
                     </tr>
                 </thead>
                 <tbody>
-                    {dataTable.map(([account, dataRow], index) => {
+                    {dataTable.map(([account, dataRow, state], index) => {
 
                         const ownedAccount = account.state?.toLowerCase() === 'owned';
                         // const monthlyBalances = calculateMonthlyBalance(account.initialDeposit, account.annualInterestRate, account.compoundRate, account.compoundOffset);
@@ -313,17 +358,40 @@ const BankAccountTable: React.FC<BankAccountTableProps> = ({ accounts, mode, set
                         const [peakGreen, peakRed] = [new Colour(133, 224, 133) /*#85e085*/, new Colour(255, 105, 97) /*ff6961*/];
                         const heatDelta = peakRed.delta(peakGreen);
 
+                        const bank = banks.find(bank => bank.name === account.bank);
+
                         return (
-                            <tr key={index}>
-                                <td><input type="checkbox" defaultChecked={ownedAccount} disabled={ownedAccount} /></td>
+                            <tr key={index} className={mode !== 'yield' && state === -1 ? 'locked' : ''}>
+                                { mode !== 'yield' &&
+                                    <td>
+                                        { (state === 1) ?
+                                            <input type="checkbox" checked={state === 1} disabled={ownedAccount}/>
+                                            : <Tooltip><TooltipTrigger><span className='glyph'style={{ opacity: 1 }}>🔒</span></TooltipTrigger><TooltipContent>This account is only available to existing {account.bank} customers.</TooltipContent></Tooltip>
+                                        }
+                                    </td>
+                                }
                                 <td>
                                     <div style={{ display: 'flex', alignItems: 'center', verticalAlign: 'middle', justifyContent: 'flex-start', height: '100%' }}>
-                                        <img style={{ marginRight: 8, marginLeft: 10 }} src="https://www.shropshire-chamber.co.uk/wp-content/uploads/2021/06/Natwest-Logo.png" alt="Icon" width={26} height={32} />
-                                        <span style={{ flex: 1, textAlign: 'center' }}>{account.name}</span>
+                                        <Tooltip>
+                                            <TooltipTrigger>
+                                                <img style={{ marginRight: 8, marginLeft: 10, borderRadius: '20%' }} src={bank?.logoUrl} alt="Icon" width={32} height={32} />
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                {account.bank}
+                                            </TooltipContent>
+                                        </Tooltip>
+                                        <span style={{ flex: 1, textAlign: 'center' }}>{bank?.name} <a href={account?.url}>{account.name}</a></span>
                                     </div>
                                 </td>
                                 <td>{account.annualInterestRate}%</td>
-                                { mode !== 'yield' ? <td className='dotted-sides'>£{account.initialDeposit.toFixed(2)}</td> : undefined }
+                                { mode === 'yield' ? undefined :
+                                    <td className='dotted-sides'>
+                                        £ <input type='number'
+                                            value={account.initialDeposit} onChange={(e) => updateInitialValue(index, Number(e.target.value))}
+                                            disabled={ownedAccount === false}
+                                        />
+                                    </td>
+                                }
                                 {dataRow.slice(1).map((balance, month) => {
                                     if (mode !== 'yield') {
                                         const [interestPositive, transferPositive] = [balance.interest >= 0, balance.transfer > 0];
@@ -341,7 +409,7 @@ const BankAccountTable: React.FC<BankAccountTableProps> = ({ accounts, mode, set
                                     }
                                     else {
                                         const rank = yieldTable[index][2][month+1];
-                                        const strength = rank / yieldTable.length / 5;
+                                        const strength = rank / yieldTable.length / 8;
                                         return (
                                             <td style={{ background: peakGreen.add(heatDelta.multiply(strength)).toCss() }}>
                                                 <Tooltip>

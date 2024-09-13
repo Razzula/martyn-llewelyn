@@ -113,6 +113,10 @@ th {
     border-bottom: 2px solid #000000;
 }
 
-/* td {
-    padding: 2px;
-} */
+tr.locked {
+    background: #f8f8f8;
+}
+
+tr.locked > * {
+    opacity: 0.3;
+}
