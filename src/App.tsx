@@ -6,6 +6,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './components/Tooltip';
 
 import './styles/App.css';
 import { Popover, PopoverContent, PopoverTrigger } from './components/Popover';
+import { Dialogue, DialogueClose, DialogueContent, DialogueTrigger } from './components/Dialogue';
 
 function App() {
     // State for selected value
@@ -46,30 +47,98 @@ function App() {
     return (
         <>
             <Popover open={open} onOpenChange={setOpen}>
-                <PopoverTrigger onClick={() => setOpen((v) => !v)}>
-                    <span>⚙</span>
-                </PopoverTrigger>
+                <PopoverTrigger onClick={() => setOpen((v) => !v)}><span className='glyph'>🔬</span></PopoverTrigger>
                 <PopoverContent className="Popover">
-                <h2>Settings</h2>
-                <div className="setting">
-                    <input
-                        type="checkbox"
-                        id="hideUnavailableContent"
-                        checked={hideExclusiveAccounts}
-                        onChange={(e) => setHideExclusiveAccounts(e.target.checked)}
-                    />
-                    <label htmlFor="hideUnavailableContent">
-                        Hide unavailable
-                        <Tooltip>
-                            <TooltipTrigger><span className=''>ℹ</span></TooltipTrigger>
-                            <TooltipContent>Accounts that are only available to existing customers of banks where you are not currently a customer.</TooltipContent>
-                        </Tooltip>
-                        accounts
-                    </label>
-                </div>
+                    <h2>Settings</h2>
+                    <div className="setting">
+                        <input
+                            type="checkbox"
+                            id="hideUnavailableContent"
+                            checked={hideExclusiveAccounts}
+                            onChange={(e) => setHideExclusiveAccounts(e.target.checked)}
+                        />
+                        <label htmlFor="hideUnavailableContent">
+                            Hide unavailable
+                            <Tooltip>
+                                <TooltipTrigger><span className=''>ℹ</span></TooltipTrigger>
+                                <TooltipContent>Accounts that are only available to existing customers of banks where you are not currently a customer.</TooltipContent>
+                            </Tooltip>
+                            accounts
+                        </label>
+                    </div>
                     {/* <PopoverClose>Close</PopoverClose> */}
                 </PopoverContent>
             </Popover>
+
+            <Dialogue>
+                <DialogueTrigger><span className='glyph'>👤</span></DialogueTrigger>
+                <DialogueContent className="Dialogue">
+                    <h2>Configuration</h2>
+
+                    <h3>Your Banks</h3>
+                    <div className='setting'>
+                        <input type="checkbox" id="natwest" checked={true} />
+                        <label htmlFor="natwest">Natwest</label>
+                    </div>
+
+                    <h3>Your Savings Account</h3>
+                    <table>
+                        <tr>
+                            <th>Bank</th>
+                            <th>Account</th>
+                            <th>Type</th>
+                            <th>Interest Type</th>
+                            <th>gross p.a.</th>
+                            <th>compound rate</th>
+                            <th>compound offset</th>
+                            <th>min inflow</th>
+                            <th>max inflow</th>
+                        </tr>
+                        <tr>
+                            <td>Natwest</td>
+                            <td>First Saver</td>
+                            <td>savings</td>
+                            <td>variable</td>
+                            <td>2.67%</td>
+                            <td>3</td>
+                            <td>-1</td>
+                            <td>0</td>
+                            <td>∞</td>
+                        </tr>
+                    </table>
+
+                    <h3>Your Other Accounts</h3>
+                    <table>
+                        <tr>
+                            <th>Bank</th>
+                            <th>Account</th>
+                            <th>Type</th>
+                            <th>Interest Type</th>
+                            <th>gross p.a.</th>
+                            <th>compound rate</th>
+                            <th>compound offset</th>
+                            <th>min inflow</th>
+                            <th>max inflow</th>
+                        </tr>
+                    </table>
+
+                    <h3>Your Tax Rate</h3>
+                    <div className='setting'>
+                        <label htmlFor="pa">Personal Allowance</label>
+                        <input type="number" id="pa" checked={true} />
+                    </div>
+                    <div className='setting'>
+                        <label htmlFor="srfs">Starting rate for savings</label>
+                        <input type="number" id="srfs" checked={true} />
+                    </div>
+                    <div className='setting'>
+                        <label htmlFor="psa">Personal Savings Allowance</label>
+                        <input type="number" id="psa" checked={true} />
+                    </div>
+
+                    <DialogueClose>Close</DialogueClose>
+                </DialogueContent>
+            </Dialogue>
 
             <div className="container">
                 <SegmentedControl
@@ -83,12 +152,12 @@ function App() {
                             ref: segmentRefs[0]
                         },
                         {
-                            label: "Current Regular Saver",
+                            label: "Active",
                             value: "crs",
                             ref: segmentRefs[1]
                         },
                         {
-                            label: "New Regular Savers",
+                            label: "Proactive",
                             value: "nrs",
                             ref: segmentRefs[2]
                         },

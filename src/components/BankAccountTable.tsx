@@ -108,7 +108,17 @@ function createYieldTable(accounts: AccountInstance[]): [AccountInstance, number
 }
 
 function enactDataTable(dataTable: [AccountInstance, Cell[]][], yieldTable: [AccountInstance, number[], number[]][]): [AccountInstance, Cell[], number][] {
-    console.log(dataTable);
+
+    /*  ======================================
+    *   CURRENT LIMITATIONS OF THE SYSTEM
+    *   =======================================
+    *   - interest distribution does not consider minimum inflow of destination
+    *   - savings account does not support transfer income
+    *   - savers do not support withdrawals (is this ever worthwhile?)
+    *   - the consequence of an account's minimum inflow is not considered when activating an account (though, it is validated if it is viable)
+    *   - tax (and the benefit of ISA exemptions) is not considered
+    */
+
     const data: [AccountInstance, Cell[], number][] = dataTable.map(([account, dataRow]) => [account, dataRow, (account.state === 'owned' ? 1 : account.exclusive ? -1 : 0)]); // shallow copy, with buffer
     const interestBuffer: number[] = new Array(data.length).fill(0);
 

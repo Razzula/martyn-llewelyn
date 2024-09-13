@@ -27,6 +27,10 @@ export const banks: Bank[] = [
         logoUrl: 'https://play-lh.googleusercontent.com/fB0pmbrZ-cn4XKc6D173bAt0Ft2UiZ8_bza15sjY5S-2u2OXshSFarjXoflSSzuPow=w240-h480',
     },
     {
+        name: 'Kingdom Bank',
+        logoUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSG8wBz02HkTR4-1nlzx45_yI0YItjOylxXFw&s',
+    },
+    {
         name: 'Lloyds',
         nameFull: 'Lloyds Bank',
         logoUrl: 'https://play-lh.googleusercontent.com/Vx5qgVYRW8Q_dF1pA7cW5cW3qEioDuVFZyRm0mcn8PPMLnWATcV7Q5FzkwJlere6bh9H=s48',

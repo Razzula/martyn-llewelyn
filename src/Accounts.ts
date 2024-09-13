@@ -28,7 +28,7 @@ export const accounts: Account[] = [
 
         exclusive: false,
         state: 'owned',
-        url: 'https://www.natwest.com/savings/first-saver.html',
+        // url: 'https://www.natwest.com/savings/first-saver.html',
     },
     {
         bank: 'First Direct',
