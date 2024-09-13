@@ -135,6 +135,7 @@ export const TooltipContent = React.forwardRef<
                 style={{
                     ...context.floatingStyles,
                     ...style,
+                    flexDirection: 'column',
                 }}
                 {...context.getFloatingProps(props)}
             />

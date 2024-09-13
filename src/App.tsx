@@ -5,11 +5,15 @@ import SegmentedControl from './components/SegmentedControl';
 import { Tooltip, TooltipContent, TooltipTrigger } from './components/Tooltip';
 
 import './styles/App.css';
+import { Popover, PopoverClose, PopoverContent, PopoverDescription, PopoverHeading, PopoverTrigger } from './components/Popover';
 
 function App() {
     // State for selected value
     const [mode, setMode] = useState<string>('idle');
     const [totalDelta, setTotalDelta] = useState<number>(0);
+    const [open, setOpen] = useState(false);
+
+    const [hideExclusiveAccounts, setHideExclusiveAccounts] = useState(false);
 
     // Refs for SegmentedControl segments
     const segmentRefs: RefObject<HTMLDivElement>[] = [
@@ -41,6 +45,32 @@ function App() {
 
     return (
         <>
+            <Popover open={open} onOpenChange={setOpen}>
+                <PopoverTrigger onClick={() => setOpen((v) => !v)}>
+                    <span>⚙</span>
+                </PopoverTrigger>
+                <PopoverContent className="Popover">
+                <h2>Settings</h2>
+                <div className="setting">
+                    <input
+                        type="checkbox"
+                        id="hideUnavailableContent"
+                        checked={hideExclusiveAccounts}
+                        onChange={(e) => setHideExclusiveAccounts(e.target.checked)}
+                    />
+                    <label htmlFor="hideUnavailableContent">
+                        Hide unavailable
+                        <Tooltip>
+                            <TooltipTrigger><span className=''>ℹ</span></TooltipTrigger>
+                            <TooltipContent>Accounts that are only available to existing customers of banks where you are not currently a customer.</TooltipContent>
+                        </Tooltip>
+                        accounts
+                    </label>
+                </div>
+                    {/* <PopoverClose>Close</PopoverClose> */}
+                </PopoverContent>
+            </Popover>
+
             <div className="container">
                 <SegmentedControl
                     name="group-1"
@@ -85,7 +115,7 @@ function App() {
                     </Tooltip>
                     !<span className='glyph' hidden={totalDelta < 0.01}> 🎉</span>
                 </h1>
-                <BankAccountTable accounts={accounts} mode={mode} setTotalDelta={setTotalDelta} />
+                <BankAccountTable accounts={accounts} mode={mode} setTotalDelta={setTotalDelta} hideExclusiveAccounts={hideExclusiveAccounts} />
             </div>
         </>
     );

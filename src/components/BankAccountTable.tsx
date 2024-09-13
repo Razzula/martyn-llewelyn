@@ -10,6 +10,7 @@ interface BankAccountTableProps {
     accounts: Account[];
     mode: string;
     setTotalDelta: (totalDelta: number) => void;
+    hideExclusiveAccounts: boolean;
 }
 
 export interface AccountInstance extends Account {
@@ -237,7 +238,7 @@ function enactDataTable(dataTable: [AccountInstance, Cell[]][], yieldTable: [Acc
     return data;
 }
 
-const BankAccountTable: React.FC<BankAccountTableProps> = ({ accounts, mode, setTotalDelta }) => {
+const BankAccountTable: React.FC<BankAccountTableProps> = ({ accounts, mode, setTotalDelta, hideExclusiveAccounts }) => {
 
     const [accountInstances, setAccountInstances] = React.useState<AccountInstance[]>([]);
     const [lumpSum, setLumpSum] = React.useState<number>(0);
@@ -361,12 +362,12 @@ const BankAccountTable: React.FC<BankAccountTableProps> = ({ accounts, mode, set
                         const bank = banks.find(bank => bank.name === account.bank);
 
                         return (
-                            <tr key={index} className={mode !== 'yield' && state === -1 ? 'locked' : ''}>
+                            <tr key={index} className={mode !== 'yield' && state === -1 ? 'locked' : ''} hidden={hideExclusiveAccounts && state === -1}>
                                 { mode !== 'yield' &&
                                     <td>
                                         { (state === 1) ?
                                             <input type="checkbox" checked={state === 1} disabled={ownedAccount}/>
-                                            : <Tooltip><TooltipTrigger><span className='glyph'style={{ opacity: 1 }}>🔒</span></TooltipTrigger><TooltipContent>This account is only available to existing {account.bank} customers.</TooltipContent></Tooltip>
+                                            : <Tooltip><TooltipTrigger><span className='glyph'style={{ opacity: 1 }}>🔒</span></TooltipTrigger><TooltipContent>This account is only available to existing {account.bank} customers.<br/><br/><span className='mini'>You can hide these in the settings!</span></TooltipContent></Tooltip>
                                         }
                                     </td>
                                 }
@@ -377,7 +378,7 @@ const BankAccountTable: React.FC<BankAccountTableProps> = ({ accounts, mode, set
                                                 <img style={{ marginRight: 8, marginLeft: 10, borderRadius: '20%' }} src={bank?.logoUrl} alt="Icon" width={32} height={32} />
                                             </TooltipTrigger>
                                             <TooltipContent>
-                                                {account.bank}
+                                                {bank?.nameFull || bank?.name}
                                             </TooltipContent>
                                         </Tooltip>
                                         <span style={{ flex: 1, textAlign: 'center' }}>{bank?.name} <a href={account?.url}>{account.name}</a></span>
