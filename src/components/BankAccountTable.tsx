@@ -6,7 +6,6 @@ import banks from '../Banks';
 
 import '../styles/App.css';
 import { Config } from './ConfigControl';
-import { config } from 'process';
 
 interface BankAccountTableProps {
     accounts: Account[];
@@ -370,7 +369,16 @@ const BankAccountTable: React.FC<BankAccountTableProps> = ({ accounts, mode, set
                         </th>
                         { mode !== 'yield' ? <th className='dotted-sides'>START</th> : undefined}
                         {Array.from({ length: 12 }, (_, i) => (
-                            <th key={i}>{months[i]}</th>
+                            <th key={i}>
+                                { i == 0 ?
+                                    <select>
+                                        {months.map((month, index) => (
+                                            <option key={index}>{month}</option>
+                                        ))}
+                                    </select>
+                                    : months[i]
+                                }
+                            </th>
                         ))}
                         { mode !== 'yield' ? <>
                             <th className='dotted-sides'>
