@@ -7,12 +7,33 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './components/Tooltip';
 import './styles/App.css';
 import { Popover, PopoverContent, PopoverTrigger } from './components/Popover';
 import { Dialogue, DialogueClose, DialogueContent, DialogueTrigger } from './components/Dialogue';
+import ConfigControl, { Config } from './components/ConfigControl';
 
 function App() {
     // State for selected value
     const [mode, setMode] = useState<string>('idle');
     const [totalDelta, setTotalDelta] = useState<number>(0);
     const [open, setOpen] = useState(false);
+
+    const [config, setConfig] = useState<Config>({
+        banks: [],
+        customAccounts: [{
+            bank: 'Your',
+            name: 'Example Savings',
+            type: 'savings',
+            interestType: 'variable',
+            annualInterestRate: 2.67,
+            compoundRate: 3,
+            compoundOffset: -1,
+            minInflow: 0,
+            maxInflow: Infinity,
+            exclusive: false,
+            state: 'owned',
+        }],
+        personalAllowance: 12570,
+        startingRateForSavings: 5000,
+        personalSavingsAllowance: 1000,
+    });
 
     const [hideExclusiveAccounts, setHideExclusiveAccounts] = useState(false);
 
@@ -73,69 +94,7 @@ function App() {
             <Dialogue>
                 <DialogueTrigger><span className='glyph'>👤</span></DialogueTrigger>
                 <DialogueContent className="Dialogue">
-                    <h2>Configuration</h2>
-
-                    <h3>Your Banks</h3>
-                    <div className='setting'>
-                        <input type="checkbox" id="natwest" checked={true} />
-                        <label htmlFor="natwest">Natwest</label>
-                    </div>
-
-                    <h3>Your Savings Account</h3>
-                    <table>
-                        <tr>
-                            <th>Bank</th>
-                            <th>Account</th>
-                            <th>Type</th>
-                            <th>Interest Type</th>
-                            <th>gross p.a.</th>
-                            <th>compound rate</th>
-                            <th>compound offset</th>
-                            <th>min inflow</th>
-                            <th>max inflow</th>
-                        </tr>
-                        <tr>
-                            <td>Natwest</td>
-                            <td>First Saver</td>
-                            <td>savings</td>
-                            <td>variable</td>
-                            <td>2.67%</td>
-                            <td>3</td>
-                            <td>-1</td>
-                            <td>0</td>
-                            <td>∞</td>
-                        </tr>
-                    </table>
-
-                    <h3>Your Other Accounts</h3>
-                    <table>
-                        <tr>
-                            <th>Bank</th>
-                            <th>Account</th>
-                            <th>Type</th>
-                            <th>Interest Type</th>
-                            <th>gross p.a.</th>
-                            <th>compound rate</th>
-                            <th>compound offset</th>
-                            <th>min inflow</th>
-                            <th>max inflow</th>
-                        </tr>
-                    </table>
-
-                    <h3>Your Tax Rate</h3>
-                    <div className='setting'>
-                        <label htmlFor="pa">Personal Allowance</label>
-                        <input type="number" id="pa" checked={true} />
-                    </div>
-                    <div className='setting'>
-                        <label htmlFor="srfs">Starting rate for savings</label>
-                        <input type="number" id="srfs" checked={true} />
-                    </div>
-                    <div className='setting'>
-                        <label htmlFor="psa">Personal Savings Allowance</label>
-                        <input type="number" id="psa" checked={true} />
-                    </div>
-
+                    <ConfigControl config={config} setConfig={setConfig} />
                     <DialogueClose>Close</DialogueClose>
                 </DialogueContent>
             </Dialogue>
@@ -172,9 +131,6 @@ function App() {
 
             <div className="App">
             <h4 style={{ color: 'grey' }}>Let's see how much you would get {modeLong}. {mode === 'yield' && <Tooltip><TooltipTrigger><span className='glyph'>🤖</span></TooltipTrigger><TooltipContent>This data is primarily used for optimisation of the application's calculations; however, as a heatmap, it can provide some useful insights even to you humans.</TooltipContent></Tooltip>}</h4>
-            { mode === 'yield' &&
-                <h4 style={{ color: '#ffbf00' }}><span className='glyph'>⚠️</span> These values do not currently account for interest at the correct compound rate. <span className='glyph'>⚠️</span></h4>
-            }
                 <h1 hidden={mode === 'yield'}>
                     <span className='glyph' hidden={totalDelta < 0.01}>🎉 </span>
                     You will gain <span style={{ color: '#1ed760' }}>£{totalDelta.toFixed(2)}</span>
@@ -184,7 +140,7 @@ function App() {
                     </Tooltip>
                     !<span className='glyph' hidden={totalDelta < 0.01}> 🎉</span>
                 </h1>
-                <BankAccountTable accounts={accounts} mode={mode} setTotalDelta={setTotalDelta} hideExclusiveAccounts={hideExclusiveAccounts} />
+                <BankAccountTable accounts={accounts} mode={mode} setTotalDelta={setTotalDelta} config={config} hideExclusiveAccounts={hideExclusiveAccounts} />
             </div>
         </>
     );

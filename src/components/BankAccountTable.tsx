@@ -5,11 +5,14 @@ import Colour from '../utils/Colour';
 import banks from '../Banks';
 
 import '../styles/App.css';
+import { Config } from './ConfigControl';
+import { config } from 'process';
 
 interface BankAccountTableProps {
     accounts: Account[];
     mode: string;
     setTotalDelta: (totalDelta: number) => void;
+    config: Config;
     hideExclusiveAccounts: boolean;
 }
 
@@ -68,12 +71,18 @@ function createYieldTable(accounts: AccountInstance[]): [AccountInstance, number
 
         // generate yields using reverse-traversal
         const monthlyInterestRate = account.annualInterestRate / 100 / 12;
-        let accumulation = 0;
+        let balance = 1;
+        let buffer = 0;
         for (let month = 12; month >= 1; month--) {
-            // TODO: I don't think is is done correctly?
-            accumulation += monthlyInterestRate;
-            const interest = accumulation;
-            row[month] = interest;
+            const interest = balance * monthlyInterestRate;
+            buffer += interest;
+
+            if ((month - account.compoundOffset) % account.compoundRate === 0) {
+                balance += buffer;
+                buffer = 0;
+            }
+
+            row[month] = balance - 1; // generated interest
         }
 
         data.push([account, row, Array.from({ length: 13 }, () => NaN)]);
@@ -107,7 +116,7 @@ function createYieldTable(accounts: AccountInstance[]): [AccountInstance, number
     return data;
 }
 
-function enactDataTable(dataTable: [AccountInstance, Cell[]][], yieldTable: [AccountInstance, number[], number[]][]): [AccountInstance, Cell[], number][] {
+function enactDataTable(dataTable: [AccountInstance, Cell[]][], yieldTable: [AccountInstance, number[], number[]][], config: Config, allowTransfers = true): [AccountInstance, Cell[], number][] {
 
     /*  ======================================
     *   CURRENT LIMITATIONS OF THE SYSTEM
@@ -119,67 +128,77 @@ function enactDataTable(dataTable: [AccountInstance, Cell[]][], yieldTable: [Acc
     *   - tax (and the benefit of ISA exemptions) is not considered
     */
 
-    const data: [AccountInstance, Cell[], number][] = dataTable.map(([account, dataRow]) => [account, dataRow, (account.state === 'owned' ? 1 : account.exclusive ? -1 : 0)]); // shallow copy, with buffer
+    const data: [AccountInstance, Cell[], number][] = dataTable.map(([account, dataRow]) => {
+        const state = account.state === 'owned'
+            ? 1
+            : (account.exclusive && !config.banks.includes(account.bank))
+                ? -1
+                : 0;
+        return [account, dataRow, state];
+    });
+    console.log(data);
     const interestBuffer: number[] = new Array(data.length).fill(0);
 
-    // GREEDY HEURISTIC
-    // 0. create linear ranking of cells, using the yield table
     const yieldList: [number, number, number][] = []; // [accountIndex, month, yield]
-    // insertion sort
-    for (let i = 0; i < data.length; i++) {
-        for (let month = 1; month <= 12; month++) {
-            const yieldValue = yieldTable[i][1][month];
-            let dirty = false;
-            for (let j = 0; j < yieldList.length; j++) {
-                if (yieldList[j][2] < yieldValue) {
-                    yieldList.splice(j, 0, [i, month, yieldValue]);
-                    dirty = true;
-                    break;
-                }
-            }
-            if (!dirty) {
-                yieldList.push([i, month, yieldValue]);
-            }
-        }
-    }
-
-    // 1. maximise input into highest yield options
-    let workingSum = data[0][1][0].value;
-    for (let i = 0; i < yieldList.length; i++) {
-        const [accountIndex, month, _yieldValue] = yieldList[i];
-        const [account, row, state] = data[accountIndex];
-
-        if (!(account.state === 'owned') && account.exclusive) { // exclusive accounts must be owned
-            continue;
-        }
-
-        if ((account.maxInflow || 0) > 0) { // we must be able to transfer
-
-            // in order to utilise this cell, we must first ensure that the minimum inflow is met, for all cells in this row
-            if (state === 0) {
-                // the assumption is that, as this row is inactive, then the transfer will be 0 for all cells in this row
-                if ((account.minInflow || 0) * 12 <= workingSum) {
-                    for (let j = 0; j < 12; j++) {
-                        workingSum -= (account.minInflow || 0);
-                        data[accountIndex][1][j].transfer += (account.minInflow || 0);
-                        data[0][1][j].transfer -= (account.minInflow || 0);
+    if (allowTransfers) {
+        // GREEDY HEURISTIC
+        // 0. create linear ranking of cells, using the yield table
+        // insertion sort
+        for (let i = 0; i < data.length; i++) {
+            for (let month = 1; month <= 12; month++) {
+                const yieldValue = yieldTable[i][1][month];
+                let dirty = false;
+                for (let j = 0; j < yieldList.length; j++) {
+                    if (yieldList[j][2] < yieldValue) {
+                        yieldList.splice(j, 0, [i, month, yieldValue]);
+                        dirty = true;
+                        break;
                     }
-                    data[accountIndex][2] = 1;
                 }
-                else {
-                    continue; // skip this cell, as we cannot meet the minimum inflow
+                if (!dirty) {
+                    yieldList.push([i, month, yieldValue]);
                 }
             }
+        }
 
-            const existingInflow = row[month].transfer;
-            const maxExpenditure = Math.max(Math.min(((account.maxInflow || 0) - existingInflow), workingSum), 0);
-            if (maxExpenditure > 0) {
-                workingSum -= maxExpenditure;
-                row[month].transfer += maxExpenditure;
-                data[0][1][month].transfer -= maxExpenditure;
+        // 1. maximise input into highest yield options
+        let workingSum = data[0][1][0].value;
+        for (let i = 0; i < yieldList.length; i++) {
+            const [accountIndex, month, _yieldValue] = yieldList[i];
+            const [account, row, state] = data[accountIndex];
 
-                if (workingSum <= 0) {
-                    break;
+            if (state === -1) { // exclusive accounts must be owned
+                continue;
+            }
+
+            if ((account.maxInflow || 0) > 0) { // we must be able to transfer
+
+                // in order to utilise this cell, we must first ensure that the minimum inflow is met, for all cells in this row
+                if (state === 0) {
+                    // the assumption is that, as this row is inactive, then the transfer will be 0 for all cells in this row
+                    if ((account.minInflow || 0) * 12 <= workingSum) {
+                        for (let j = 0; j < 12; j++) {
+                            workingSum -= (account.minInflow || 0);
+                            data[accountIndex][1][j].transfer += (account.minInflow || 0);
+                            data[0][1][j].transfer -= (account.minInflow || 0);
+                        }
+                        data[accountIndex][2] = 1;
+                    }
+                    else {
+                        continue; // skip this cell, as we cannot meet the minimum inflow
+                    }
+                }
+
+                const existingInflow = row[month].transfer;
+                const maxExpenditure = Math.max(Math.min(((account.maxInflow || 0) - existingInflow), workingSum), 0);
+                if (maxExpenditure > 0) {
+                    workingSum -= maxExpenditure;
+                    row[month].transfer += maxExpenditure;
+                    data[0][1][month].transfer -= maxExpenditure;
+
+                    if (workingSum <= 0) {
+                        break;
+                    }
                 }
             }
         }
@@ -208,30 +227,32 @@ function enactDataTable(dataTable: [AccountInstance, Cell[]][], yieldTable: [Acc
                 row[month].interest += interestBuffer[i];
                 interestBuffer[i] = 0; // reset buffer
 
-                // if this is a savings account, we should feed this into a regular saver
-                if (account.type.toLowerCase() === 'savings') {
-                    // find best available cell to transfer to
-                    for (let j = 0; j < yieldList.length; j++) {
-                        const [idealAccountIndex, idealMonth, _yieldValue] = yieldList[j];
-                        // account must not be the same as the current account
-                        // cell must not be in the past, relative to when this interest was compounded
-                        if (idealAccountIndex === i || idealMonth < month) {
-                            continue;
-                        }
-                        // account must not be exclusive, unless it is owned
-                        if (data[idealAccountIndex][2] !== 1) { // only utilise already activated cells (not neccesarily best, but, good enough)
-                            continue;
-                        }
+                if (allowTransfers) {
+                    // if this is a savings account, we should feed this into a regular saver
+                    if (account.type.toLowerCase() === 'savings') {
+                        // find best available cell to transfer to
+                        for (let j = 0; j < yieldList.length; j++) {
+                            const [idealAccountIndex, idealMonth, _yieldValue] = yieldList[j];
+                            // account must not be the same as the current account
+                            // cell must not be in the past, relative to when this interest was compounded
+                            if (idealAccountIndex === i || idealMonth < month) {
+                                continue;
+                            }
+                            // account must not be exclusive, unless it is owned
+                            if (data[idealAccountIndex][2] !== 1) { // only utilise already activated cells (not neccesarily best, but, good enough)
+                                continue;
+                            }
 
-                        // enforce maxInflow
-                        // TODO: enforce minInflow
-                        if (data[idealAccountIndex][1][idealMonth].transfer >= (data[idealAccountIndex][0].maxInflow || 0)) {
-                            continue;
-                        }
+                            // enforce maxInflow
+                            // TODO: enforce minInflow
+                            if (data[idealAccountIndex][1][idealMonth].transfer >= (data[idealAccountIndex][0].maxInflow || 0)) {
+                                continue;
+                            }
 
-                        data[idealAccountIndex][1][idealMonth].transfer += row[month].interest;
-                        row[idealMonth].transfer -= row[month].interest;
-                        break;
+                            data[idealAccountIndex][1][idealMonth].transfer += row[month].interest;
+                            row[idealMonth].transfer -= row[month].interest;
+                            break;
+                        }
                     }
                 }
             }
@@ -248,7 +269,7 @@ function enactDataTable(dataTable: [AccountInstance, Cell[]][], yieldTable: [Acc
     return data;
 }
 
-const BankAccountTable: React.FC<BankAccountTableProps> = ({ accounts, mode, setTotalDelta, hideExclusiveAccounts }) => {
+const BankAccountTable: React.FC<BankAccountTableProps> = ({ accounts, mode, setTotalDelta, config, hideExclusiveAccounts }) => {
 
     const [accountInstances, setAccountInstances] = React.useState<AccountInstance[]>([]);
     const [lumpSum, setLumpSum] = React.useState<number>(0);
@@ -262,15 +283,24 @@ const BankAccountTable: React.FC<BankAccountTableProps> = ({ accounts, mode, set
     }, []);
 
     useEffect(() => {
-        const tempAccounts: AccountInstance[] = accounts.map((account) => {
+        if (accounts.length === 0) {
+            return;
+        }
+        if (config === undefined || config.customAccounts.length === 0) {
+            return;
+        }
+
+        const allAccounts = [...config.customAccounts, ...accounts];
+        const tempAccounts: AccountInstance[] = allAccounts.map((account) => {
             return {
                 id: `${account.bank}#${account.name}`.replace(/ /g, '-').toLowerCase(),
                 ...account,
                 initialDeposit: 0,
             };
         });
+        console.log(tempAccounts);
         setAccountInstances(tempAccounts);
-    }, [accounts]);
+    }, [accounts, config]);
 
     useEffect(() => {
         if (accountInstances.length > 0) {
@@ -284,8 +314,8 @@ const BankAccountTable: React.FC<BankAccountTableProps> = ({ accounts, mode, set
         if (accountInstances.length > 0) {
             // filter accounts
             const visibleAccounts = accountInstances.filter(account =>
-                account.type.toLowerCase() === 'savings'
-                || (account.type.toLowerCase() === 'regular saver' && (mode === 'crs' && account.state?.toLowerCase() === 'owned') || mode === 'nrs')
+                account.state?.toLowerCase() === 'owned'
+                || (account.type.toLowerCase() === 'regular saver' && mode === 'nrs')
                 || mode === 'yield'
             );
 
@@ -296,7 +326,7 @@ const BankAccountTable: React.FC<BankAccountTableProps> = ({ accounts, mode, set
             const tempYieldTable = createYieldTable(visibleAccounts);
 
             // calculate data table
-            const newDataTable = enactDataTable(tempDataTable, tempYieldTable);
+            const newDataTable = enactDataTable(tempDataTable, tempYieldTable, config, mode !== 'idle');
 
             setDataTable(newDataTable);
             setYieldTable(tempYieldTable);
@@ -312,9 +342,14 @@ const BankAccountTable: React.FC<BankAccountTableProps> = ({ accounts, mode, set
 
     }, [dataTable, setTotalDelta]);
 
-    function updateInitialValue(index: number, value: number) {
+    function updateInitialValue(account: AccountInstance, value: number) {
         const tempAccounts = accountInstances.slice();
-        tempAccounts[index].initialDeposit = value;
+        for (let i = 0; i < tempAccounts.length; i++) {
+            if (tempAccounts[i].id === account.id) {
+                tempAccounts[i].initialDeposit = value;
+                break;
+            }
+        }
         setAccountInstances(tempAccounts);
     }
 
@@ -398,7 +433,7 @@ const BankAccountTable: React.FC<BankAccountTableProps> = ({ accounts, mode, set
                                 { mode === 'yield' ? undefined :
                                     <td className='dotted-sides'>
                                         £ <input type='number'
-                                            value={account.initialDeposit} onChange={(e) => updateInitialValue(index, Number(e.target.value))}
+                                            value={account.initialDeposit} onChange={(e) => updateInitialValue(account, Number(e.target.value))}
                                             disabled={ownedAccount === false}
                                         />
                                     </td>
@@ -426,7 +461,7 @@ const BankAccountTable: React.FC<BankAccountTableProps> = ({ accounts, mode, set
                                                 <Tooltip>
                                                     <TooltipTrigger>{yieldTable[index][1][month+1].toFixed(4)}</TooltipTrigger>
                                                     <TooltipContent>
-                                                        <div>Ranking: {rank}</div>
+                                                        <span>{rank} (/{yieldTable.length * 12})</span>
                                                     </TooltipContent>
                                                 </Tooltip>
                                             </td>

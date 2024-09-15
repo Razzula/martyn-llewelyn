@@ -3,6 +3,7 @@ export interface Account {
     name: string;
 
     type: string;
+    interestType?: string;
     annualInterestRate: number;
     compoundRate: number;
     compoundOffset: number;
@@ -17,19 +18,19 @@ export interface Account {
 }
 
 export const accounts: Account[] = [
-    {
-        bank: 'Natwest',
-        name: 'First Saver',
+    // {
+    //     bank: 'NatWest',
+    //     name: 'First Saver',
 
-        type: 'savings',
-        annualInterestRate: 2.67,
-        compoundRate: 3,
-        compoundOffset: -1, // first payment on OCT not SEP
+    //     type: 'savings',
+    //     annualInterestRate: 2.67,
+    //     compoundRate: 3,
+    //     compoundOffset: -1, // first payment on OCT not SEP
 
-        exclusive: false,
-        state: 'owned',
-        // url: 'https://www.natwest.com/savings/first-saver.html',
-    },
+    //     exclusive: false,
+    //     state: 'owned',
+    //     // url: 'https://www.NatWest.com/savings/first-saver.html',
+    // },
     {
         bank: 'First Direct',
         name: 'Regular Saver',
@@ -117,7 +118,7 @@ export const accounts: Account[] = [
         url: 'https://www.lloydsbank.com/savings/club-lloyds-monthly-saver.html',
     },
     {
-        bank: 'Natwest',
+        bank: 'NatWest',
         name: 'Digital Regular Saver',
 
         type: 'regular saver',
@@ -129,7 +130,7 @@ export const accounts: Account[] = [
 
         exclusive: true,
         state: 'owned',
-        url: 'https://www.natwest.com/savings/digital-regular-saver.html',
+        url: 'https://www.NatWest.com/savings/digital-regular-saver.html',
     },
     {
         bank: 'RBS',

@@ -40,7 +40,7 @@ export const banks: Bank[] = [
         logoUrl: 'https://play-lh.googleusercontent.com/pOWNb4Hcl5juzwW1RdodrtdTEXRwmqIokIJAVLyVqGJ2Se7mL-qgB_e5mx2wCH-tf8s=w240-h480',
     },
     {
-        name: 'Natwest',
+        name: 'NatWest',
         logoUrl: 'https://play-lh.googleusercontent.com/1yX6eldsO2xi_8REM0fwZ7JHpT9tGcSvv0_waTK2nXIX7nZMYUpe35asAt3HOnFRV1w=w240-h480',
     },
     {
@@ -71,6 +71,8 @@ export const banks: Bank[] = [
         nameFull: 'Yorkshire Building Society',
         logoUrl: 'https://play-lh.googleusercontent.com/zUUoBYVQInG-oLJdBuwmB3zhnMDMhEJpct3dPU3lTCoNLG9i45KsFZTxtn9NH6PzJg=s48',
     },
+
+    { name: 'Your', nameFull: 'Misc.', logoUrl: './serenity.png' },
 ];
 
 export default banks;
