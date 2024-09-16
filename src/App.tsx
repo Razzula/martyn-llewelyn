@@ -15,6 +15,8 @@ function App() {
     const [totalDelta, setTotalDelta] = useState<number>(0);
     const [open, setOpen] = useState(false);
 
+    const [loading, setLoading] = useState(false);
+
     const [config, setConfig] = useState<Config>({
         banks: [],
         customAccounts: [{
@@ -67,6 +69,12 @@ function App() {
 
     return (
         <>
+            { loading &&
+                <div className="spinnerOverlay">
+                    <div className="spinner"></div>
+                </div>
+            }
+
             <Popover open={open} onOpenChange={setOpen}>
                 <PopoverTrigger onClick={() => setOpen((v) => !v)}><span className='glyph'>🔬</span></PopoverTrigger>
                 <PopoverContent className="Popover">
@@ -94,7 +102,7 @@ function App() {
             <Dialogue>
                 <DialogueTrigger><span className='glyph'>👤</span></DialogueTrigger>
                 <DialogueContent className="Dialogue">
-                    <ConfigControl config={config} setConfig={setConfig} />
+                    <ConfigControl config={config} setConfig={setConfig} setLoading={setLoading} />
                     <DialogueClose>Close</DialogueClose>
                 </DialogueContent>
             </Dialogue>

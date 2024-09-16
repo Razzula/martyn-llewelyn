@@ -1,6 +1,7 @@
 import { Account } from "../Accounts";
 import banks from '../Banks';
 import { Tooltip, TooltipContent, TooltipTrigger } from "./Tooltip";
+import WebScraper from "../WebScraper";
 
 export type Config = {
     banks: string[];
@@ -13,6 +14,7 @@ export type Config = {
 type ConfigControlProps = {
     config: Config;
     setConfig: (config: Config) => void;
+    setLoading: (loading: boolean) => void;
 }
 
 const defaultAccount: Account = {
@@ -30,7 +32,7 @@ const defaultAccount: Account = {
 
 const months: string[] = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-export function ConfigControl({ config, setConfig }: ConfigControlProps) {
+export function ConfigControl({ config, setConfig, setLoading }: ConfigControlProps) {
 
     function setPersonalAllowance(value: number) {
         setConfig({ ...config, personalAllowance: value });
@@ -53,6 +55,23 @@ export function ConfigControl({ config, setConfig }: ConfigControlProps) {
         const newAccounts = [...config.customAccounts];
         newAccounts.splice(index, 1);
         setConfig({ ...config, customAccounts: newAccounts });
+    }
+
+    function autoFillAccount(index: number) {
+        // const account = config.customAccounts[index];
+        // const url = prompt('Enter the URL of the account page') || undefined;
+        const url = 'https://www.natwest.com/savings/first-saver.html';
+
+        if (url) {
+            const webScraper = new WebScraper(url);
+            setLoading(true);
+            webScraper.scrapeAccount().then(data => {
+                setLoading(false);
+                console.log(data);
+            });
+
+            // setConfig({ ...config, customAccounts: [...config.customAccounts] });
+        }
     }
 
     return (
@@ -216,6 +235,14 @@ export function ConfigControl({ config, setConfig }: ConfigControlProps) {
                                     setConfig({ ...config, customAccounts: newAccounts });
                                 }} />
                             </td>
+                            <td hidden={true}>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <span className="glyph" style={{ cursor: "pointer" }} onClick={() => autoFillAccount(index)}>🌩</span>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Autofill from web</TooltipContent>
+                                </Tooltip>
+                            </td>
                             <td>
                                 <Tooltip>
                                     <TooltipTrigger>
@@ -228,7 +255,7 @@ export function ConfigControl({ config, setConfig }: ConfigControlProps) {
                     )
                 }
             </table>
-            <button onClick={createNewAccount}>Add Another Account</button>
+            <button style={{marginTop: 12}} onClick={createNewAccount}>Add Another Account <span className="glyph">➕</span></button>
 
             <hr/>
             <h3>
