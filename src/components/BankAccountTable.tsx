@@ -41,7 +41,7 @@ const months: string[] = ["SEP", "OCT", "NOV", "DEC", "JAN", "FEB", "MAR", "APR"
 //         const interest = currentBalance * monthlyInterestRate;
 //         store += interest;
 
-//         if ((month - compoundOffset) % compoundRate === 0) {
+//         if ((month + compoundOffset) % compoundRate === 0) {
 //             currentBalance += store;
 //             store = 0;
 //         }
@@ -61,7 +61,7 @@ function createDataTable(accounts: AccountInstance[]): [AccountInstance, Cell[]]
     return data;
 }
 
-function createYieldTable(accounts: AccountInstance[]): [AccountInstance, number[], number[]][] {
+function createYieldTable(accounts: AccountInstance[], monthOffset = 0): [AccountInstance, number[], number[]][] {
     // generate table of yields
     const data: [AccountInstance, number[], number[]][] = [];
     accounts.forEach((account) => {
@@ -76,7 +76,7 @@ function createYieldTable(accounts: AccountInstance[]): [AccountInstance, number
             const interest = balance * monthlyInterestRate;
             buffer += interest;
 
-            if ((month - account.compoundOffset) % account.compoundRate === 0) {
+            if ((month + account.compoundOffset + monthOffset) % account.compoundRate === 0) {
                 balance += buffer;
                 buffer = 0;
             }
@@ -115,7 +115,7 @@ function createYieldTable(accounts: AccountInstance[]): [AccountInstance, number
     return data;
 }
 
-function enactDataTable(dataTable: [AccountInstance, Cell[]][], yieldTable: [AccountInstance, number[], number[]][], config: Config, allowTransfers = true): [AccountInstance, Cell[], number][] {
+function enactDataTable(dataTable: [AccountInstance, Cell[]][], yieldTable: [AccountInstance, number[], number[]][], config: Config, monthOffset = 0, allowTransfers = true): [AccountInstance, Cell[], number][] {
 
     /*  ======================================
     *   CURRENT LIMITATIONS OF THE SYSTEM
@@ -135,7 +135,6 @@ function enactDataTable(dataTable: [AccountInstance, Cell[]][], yieldTable: [Acc
                 : 0;
         return [account, dataRow, state];
     });
-    console.log(data);
     const interestBuffer: number[] = new Array(data.length).fill(0);
 
     const yieldList: [number, number, number][] = []; // [accountIndex, month, yield]
@@ -220,7 +219,7 @@ function enactDataTable(dataTable: [AccountInstance, Cell[]][], yieldTable: [Acc
             }
 
             row[month].value = row[month - 1].value;
-            if ((month - account.compoundOffset) % account.compoundRate === 0) {
+            if ((month + account.compoundOffset + monthOffset) % account.compoundRate === 0) {
                 // only feed interest into balance if it's a compound month
                 row[month].value += interestBuffer[i];
                 row[month].interest += interestBuffer[i];
@@ -276,16 +275,15 @@ const BankAccountTable: React.FC<BankAccountTableProps> = ({ accounts, mode, set
     const [dataTable, setDataTable] = React.useState<[AccountInstance, Cell[], number][]>([]);
     const [yieldTable, setYieldTable] = React.useState<[AccountInstance, number[], number[]][]>([]);
 
+    const [monthOffset, setMonthOffset] = React.useState<number>(0);
+
     // HANDLE STATE CHANGE
     useEffect(() => {
         setLumpSum(1000); //temp
     }, []);
 
     useEffect(() => {
-        if (accounts.length === 0) {
-            return;
-        }
-        if (config === undefined || config.customAccounts.length === 0) {
+        if (config === undefined) {
             return;
         }
 
@@ -297,12 +295,11 @@ const BankAccountTable: React.FC<BankAccountTableProps> = ({ accounts, mode, set
                 initialDeposit: 0,
             };
         });
-        console.log(tempAccounts);
         setAccountInstances(tempAccounts);
     }, [accounts, config]);
 
     useEffect(() => {
-        if (accountInstances.length > 0) {
+        if (accountInstances !== undefined && accountInstances.length > 0) {
             const tempAccountInstances = accountInstances.slice();
             tempAccountInstances[0].initialDeposit = lumpSum;
             setAccountInstances(tempAccountInstances);
@@ -322,15 +319,15 @@ const BankAccountTable: React.FC<BankAccountTableProps> = ({ accounts, mode, set
             const tempDataTable = createDataTable(visibleAccounts);
 
             // generate yield table
-            const tempYieldTable = createYieldTable(visibleAccounts);
+            const tempYieldTable = createYieldTable(visibleAccounts, monthOffset);
 
             // calculate data table
-            const newDataTable = enactDataTable(tempDataTable, tempYieldTable, config, mode !== 'idle');
+            const newDataTable = enactDataTable(tempDataTable, tempYieldTable, config, monthOffset, mode !== 'idle');
 
             setDataTable(newDataTable);
             setYieldTable(tempYieldTable);
         }
-    }, [accountInstances, mode]);
+    }, [accountInstances, mode, monthOffset, config]);
 
     useEffect(() => {
         // handle total delta
@@ -368,18 +365,20 @@ const BankAccountTable: React.FC<BankAccountTableProps> = ({ accounts, mode, set
                             </Tooltip>
                         </th>
                         { mode !== 'yield' ? <th className='dotted-sides'>START</th> : undefined}
-                        {Array.from({ length: 12 }, (_, i) => (
+
+                        <th>
+                            <select value={monthOffset} onChange={(e) => setMonthOffset(Number(e.target.value))}>
+                                {months.map((month, index) => (
+                                    <option key={index} value={index}>{month}</option>
+                                ))}
+                            </select>
+                        </th>
+                        {Array.from({ length: 11 }, (_, i) => (
                             <th key={i}>
-                                { i == 0 ?
-                                    <select>
-                                        {months.map((month, index) => (
-                                            <option key={index}>{month}</option>
-                                        ))}
-                                    </select>
-                                    : months[i]
-                                }
+                                {months[(i + 1 + monthOffset) % months.length]}
                             </th>
                         ))}
+
                         { mode !== 'yield' ? <>
                             <th className='dotted-sides'>
                                 <Tooltip>

@@ -25,7 +25,7 @@ export const accounts: Account[] = [
     //     type: 'savings',
     //     annualInterestRate: 2.67,
     //     compoundRate: 3,
-    //     compoundOffset: -1, // first payment on OCT not SEP
+    //     compoundOffset: 1, // first payment on OCT not SEP
 
     //     exclusive: false,
     //     state: 'owned',

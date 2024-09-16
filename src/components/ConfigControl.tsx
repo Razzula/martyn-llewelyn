@@ -15,6 +15,21 @@ type ConfigControlProps = {
     setConfig: (config: Config) => void;
 }
 
+const defaultAccount: Account = {
+    bank: 'Your',
+    name: '',
+    type: 'savings',
+    interestType: 'variable',
+    annualInterestRate: 0,
+    compoundRate: 0,
+    compoundOffset: 0,
+    minInflow: 0,
+    maxInflow: Infinity,
+    exclusive: false,
+}
+
+const months: string[] = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
 export function ConfigControl({ config, setConfig }: ConfigControlProps) {
 
     function setPersonalAllowance(value: number) {
@@ -27,6 +42,17 @@ export function ConfigControl({ config, setConfig }: ConfigControlProps) {
 
     function setPersonalSavingsAllowance(value: number) {
         setConfig({ ...config, personalSavingsAllowance: value });
+    }
+
+    function createNewAccount() {
+        const newAccount = { ...defaultAccount, state: 'owned' };
+        setConfig({ ...config, customAccounts: [...config.customAccounts, newAccount] });
+    }
+
+    function deleteAccount(index: number) {
+        const newAccounts = [...config.customAccounts];
+        newAccounts.splice(index, 1);
+        setConfig({ ...config, customAccounts: newAccounts });
     }
 
     return (
@@ -69,11 +95,39 @@ export function ConfigControl({ config, setConfig }: ConfigControlProps) {
                     <th>Account</th>
                     <th>Type</th>
                     <th>Interest Type</th>
-                    <th>gross p.a.</th>
-                    <th>compound rate</th>
-                    <th>compound offset</th>
-                    <th>min inflow</th>
-                    <th>max inflow</th>
+                    <th>Gross p.a.</th>
+                    <th>
+                        <Tooltip>
+                            <TooltipTrigger>Compound Rate ℹ</TooltipTrigger>
+                            <TooltipContent>
+                                <div>How frequently is your accumulated interest added to your account?</div>
+                                <ul>
+                                    <li>Monthly (1)</li>
+                                    <li>Quarterly (3)</li>
+                                    <li>Annually (12)</li>
+                                    <li>...</li>
+                                </ul>
+                            </TooltipContent>
+                        </Tooltip>
+                    </th>
+                    <th>
+                        <Tooltip>
+                            <TooltipTrigger>Compound Offset ℹ</TooltipTrigger>
+                            <TooltipContent>What is the first month of the (calander) year on which you recieve your interest?</TooltipContent>
+                        </Tooltip>
+                    </th>
+                    <th>
+                        <Tooltip>
+                            <TooltipTrigger>Minimum Inflow ℹ</TooltipTrigger>
+                            <TooltipContent>What is the minimum amount you must pay into the account, each month, if any?</TooltipContent>
+                        </Tooltip>
+                    </th>
+                    <th>
+                        <Tooltip>
+                            <TooltipTrigger>Maximum Inflow ℹ</TooltipTrigger>
+                            <TooltipContent>What is the upper limit that you can pay into the account, each month, if any?</TooltipContent>
+                        </Tooltip>
+                    </th>
                 </tr>
                 {
                     config.customAccounts.map((account, index) =>
@@ -107,6 +161,8 @@ export function ConfigControl({ config, setConfig }: ConfigControlProps) {
                                 }}>
                                     <option value="savings">Savings</option>
                                     <option value="regular saver">Regular Saver</option>
+                                    <option value="cash isa">Cash ISA</option>
+                                    <option value="help to buy">Help to Buy ISA</option>
                                 </select>
                             </td>
                             <td>
@@ -134,11 +190,17 @@ export function ConfigControl({ config, setConfig }: ConfigControlProps) {
                                 }} />
                             </td>
                             <td>
-                                <input type="number" value={account.compoundOffset} onChange={(e) => {
+                                <select value={account.compoundOffset} onChange={(e) => {
                                     const newAccounts = [...config.customAccounts];
                                     newAccounts[index].compoundOffset = Number(e.target.value);
                                     setConfig({ ...config, customAccounts: newAccounts });
-                                }} />
+                                }}>
+                                    {
+                                        Array.from(Array(account.compoundRate).keys()).map(i =>
+                                            <option value={i+1}>{months[i]}</option>
+                                        )
+                                    }
+                                </select>
                             </td>
                             <td>
                                 <input type="number" value={account.minInflow} onChange={(e) => {
@@ -154,10 +216,19 @@ export function ConfigControl({ config, setConfig }: ConfigControlProps) {
                                     setConfig({ ...config, customAccounts: newAccounts });
                                 }} />
                             </td>
+                            <td>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <span className="glyph" style={{ cursor: "pointer" }} onClick={() => deleteAccount(index)}>🗑️</span>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Delete</TooltipContent>
+                                </Tooltip>
+                            </td>
                         </tr>
                     )
                 }
             </table>
+            <button onClick={createNewAccount}>Add Another Account</button>
 
             <hr/>
             <h3>

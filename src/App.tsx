@@ -24,7 +24,7 @@ function App() {
             interestType: 'variable',
             annualInterestRate: 2.67,
             compoundRate: 3,
-            compoundOffset: -1,
+            compoundOffset: 1,
             minInflow: 0,
             maxInflow: Infinity,
             exclusive: false,
