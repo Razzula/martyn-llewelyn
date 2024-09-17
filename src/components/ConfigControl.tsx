@@ -274,11 +274,14 @@ export function ConfigControl({ config, setConfig, setLoading }: ConfigControlPr
                                 }} />
                             </td>
                             <td>
-                                <select value={account.compoundOffset} onChange={(e) => {
-                                    const newAccounts = [...config.customAccounts];
-                                    newAccounts[index].compoundOffset = Number(e.target.value);
-                                    setConfig({ ...config, customAccounts: newAccounts });
-                                }}>
+                                <select value={account.compoundOffset}
+                                    disabled={account.compoundRate <= 1}
+                                    onChange={(e) => {
+                                        const newAccounts = [...config.customAccounts];
+                                        newAccounts[index].compoundOffset = Number(e.target.value);
+                                        setConfig({ ...config, customAccounts: newAccounts });
+                                    }
+                                }>
                                     {
                                         Array.from(Array(account.compoundRate).keys()).map(i =>
                                             <option value={i+1}>{months[i]}</option>

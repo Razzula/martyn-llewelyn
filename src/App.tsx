@@ -11,30 +11,47 @@ import ConfigControl, { Config } from './components/ConfigControl';
 
 const defaultConfig: Config = {
     banks: [],
-    customAccounts: [{
-        bank: 'Your',
-        name: 'Example Savings',
-        type: 'savings',
-        interestType: 'variable',
-        annualInterestRate: 2.67,
-        compoundRate: 3,
-        compoundOffset: 1,
-        minInflow: 0,
-        maxInflow: Infinity,
-        exclusive: false,
-        state: 'owned',
-    }],
+    customAccounts: [
+        {
+            bank: 'Your',
+            name: 'Example Savings',
+            type: 'savings',
+            interestType: 'variable',
+            annualInterestRate: 2.67,
+            compoundRate: 3,
+            compoundOffset: 1,
+            minInflow: 0,
+            maxInflow: Infinity,
+            exclusive: false,
+            state: 'owned',
+        },
+        {
+            bank: 'Your',
+            name: 'Example Regular Saver',
+            type: 'regular saver',
+            interestType: 'variable',
+            annualInterestRate: 4,
+            compoundRate: 1,
+            compoundOffset: 1,
+            minInflow: 0,
+            maxInflow: 100,
+            exclusive: false,
+            state: 'owned',
+        },
+    ],
     personalAllowance: 12570,
     startingRateForSavings: 5000,
     personalSavingsAllowance: 1000,
 };
 
-type Settings = {
+export type Settings = {
     hideExclusiveAccounts: boolean;
+    prioritiseSpecialAccounts: boolean;
 };
 
 const defaultSettings: Settings = {
     hideExclusiveAccounts: false,
+    prioritiseSpecialAccounts: true,
 };
 
 function App() {
@@ -144,9 +161,32 @@ function App() {
                         />
                         <label htmlFor="hideUnavailableContent">
                             Hide unavailable
-                            <Tooltip>
+                            <Tooltip placement='right'>
                                 <TooltipTrigger><span className=''>ℹ</span></TooltipTrigger>
                                 <TooltipContent>Accounts that are only available to existing customers of banks where you are not currently a customer.</TooltipContent>
+                            </Tooltip>
+                            accounts
+                        </label>
+                    </div>
+
+                    <div className="setting">
+                        <input
+                            type="checkbox"
+                            id="prioritiseSpecialAccounts"
+                            checked={settings.prioritiseSpecialAccounts}
+                            onChange={(e) => setSettings({ ...settings, prioritiseSpecialAccounts: e.target.checked })}
+                        />
+                        <label htmlFor="prioritiseSpecialAccounts">
+                            Prioritise special
+                            <Tooltip placement='right'>
+                                <TooltipTrigger><span className=''>ℹ</span></TooltipTrigger>
+                                <TooltipContent>
+                                    <div>Some accounts have benefits that make them more valuable, even if they yield less interst.</div>
+                                    <div className='mini'>
+                                        For example, a Help to Buy ISA offers a bonus upon purchasing a house,
+                                        making it good to invest into, despite offering low monthly interest.
+                                    </div>
+                                </TooltipContent>
                             </Tooltip>
                             accounts
                         </label>
@@ -205,7 +245,7 @@ function App() {
                     {worthyOfCelebration && '!'}
                     <span className='glyph' hidden={!worthyOfCelebration}> 🎉</span>
                 </h1>
-                <BankAccountTable accounts={accounts} mode={mode} setTotalDelta={setTotalDelta} config={config} hideExclusiveAccounts={settings.hideExclusiveAccounts} />
+                <BankAccountTable accounts={accounts} mode={mode} setTotalDelta={setTotalDelta} config={config} settings={settings} />
             </div>
         </>
     );

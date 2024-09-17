@@ -40,3 +40,7 @@ h4 {
     100% { transform: rotate(360deg); }
 }
 
+.warn {
+    background: #fff3cd;
+    color: #664d03;
+}

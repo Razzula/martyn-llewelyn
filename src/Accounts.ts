@@ -18,19 +18,6 @@ export interface Account {
 }
 
 export const accounts: Account[] = [
-    // {
-    //     bank: 'NatWest',
-    //     name: 'First Saver',
-
-    //     type: 'savings',
-    //     annualInterestRate: 2.67,
-    //     compoundRate: 3,
-    //     compoundOffset: 1, // first payment on OCT not SEP
-
-    //     exclusive: false,
-    //     state: 'owned',
-    //     // url: 'https://www.NatWest.com/savings/first-saver.html',
-    // },
     {
         bank: 'First Direct',
         name: 'Regular Saver',
