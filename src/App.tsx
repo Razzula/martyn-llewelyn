@@ -1,4 +1,4 @@
-import { useRef, useState, RefObject } from 'react';
+import { useRef, useState, RefObject, useEffect } from 'react';
 import { accounts } from './Accounts';
 import BankAccountTable from './components/BankAccountTable';
 import SegmentedControl from './components/SegmentedControl';
@@ -9,6 +9,34 @@ import { Popover, PopoverContent, PopoverTrigger } from './components/Popover';
 import { Dialogue, DialogueClose, DialogueContent, DialogueTrigger } from './components/Dialogue';
 import ConfigControl, { Config } from './components/ConfigControl';
 
+const defaultConfig: Config = {
+    banks: [],
+    customAccounts: [{
+        bank: 'Your',
+        name: 'Example Savings',
+        type: 'savings',
+        interestType: 'variable',
+        annualInterestRate: 2.67,
+        compoundRate: 3,
+        compoundOffset: 1,
+        minInflow: 0,
+        maxInflow: Infinity,
+        exclusive: false,
+        state: 'owned',
+    }],
+    personalAllowance: 12570,
+    startingRateForSavings: 5000,
+    personalSavingsAllowance: 1000,
+};
+
+type Settings = {
+    hideExclusiveAccounts: boolean;
+};
+
+const defaultSettings: Settings = {
+    hideExclusiveAccounts: false,
+};
+
 function App() {
     // State for selected value
     const [mode, setMode] = useState<string>('idle');
@@ -17,27 +45,27 @@ function App() {
 
     const [loading, setLoading] = useState(false);
 
-    const [config, setConfig] = useState<Config>({
-        banks: [],
-        customAccounts: [{
-            bank: 'Your',
-            name: 'Example Savings',
-            type: 'savings',
-            interestType: 'variable',
-            annualInterestRate: 2.67,
-            compoundRate: 3,
-            compoundOffset: 1,
-            minInflow: 0,
-            maxInflow: Infinity,
-            exclusive: false,
-            state: 'owned',
-        }],
-        personalAllowance: 12570,
-        startingRateForSavings: 5000,
-        personalSavingsAllowance: 1000,
-    });
+    const [config, setConfig] = useState<Config>(getInitialConfig);
+    const [settings, setSettings] = useState<Settings>(getInitialSettings);
 
-    const [hideExclusiveAccounts, setHideExclusiveAccounts] = useState(false);
+    // useEffect(() => {
+    //     setLoading(true);
+    //     setTimeout(() => {
+    //         setLoading(false);
+    //     }, 500);
+    // }, []);
+
+    useEffect(() => {
+        // store the config in local storage
+        const configString = JSON.stringify(config);
+        localStorage.setItem('config', configString);
+    }, [config]);
+
+    useEffect(() => {
+        // store the settings in local storage
+        const settingsString = JSON.stringify(settings);
+        localStorage.setItem('settings', settingsString);
+    }, [settings]);
 
     // Refs for SegmentedControl segments
     const segmentRefs: RefObject<HTMLDivElement>[] = [
@@ -50,13 +78,39 @@ function App() {
     // Ref for the SegmentedControl container
     const controlRef = useRef<HTMLDivElement>(null);
 
+    function getInitialConfig(): Config {
+        const storedConfig = localStorage.getItem('config');
+        if (storedConfig) {
+            try {
+                return JSON.parse(storedConfig) as Config;
+            } catch (e) {
+                console.error('Failed to parse config from localStorage:', e);
+                return defaultConfig;
+            }
+        }
+        return defaultConfig;
+    }
+
+    function getInitialSettings(): Settings {
+        const storedSettings = localStorage.getItem('settings');
+        if (storedSettings) {
+            try {
+                return JSON.parse(storedSettings) as Settings;
+            } catch (e) {
+                console.error('Failed to parse settings from localStorage:', e);
+                return defaultSettings;
+            }
+        }
+        return defaultSettings;
+    }
+
     let modeLong;
     switch (mode) {
         case 'idle':
             modeLong = 'if you only kept your money in your savings account';
             break;
         case 'crs':
-            modeLong = 'if you utilsed your current regular saver, as well as your savings';
+            modeLong = 'if you utilsed your other existing accounts, as well as your savings';
             break;
         case 'nrs':
             modeLong = 'if you utilised other available regular savers, as well as your existing accounts';
@@ -66,6 +120,8 @@ function App() {
             break;
         default:
     }
+
+    const worthyOfCelebration = mode !== 'idle' && totalDelta > 0;
 
     return (
         <>
@@ -83,8 +139,8 @@ function App() {
                         <input
                             type="checkbox"
                             id="hideUnavailableContent"
-                            checked={hideExclusiveAccounts}
-                            onChange={(e) => setHideExclusiveAccounts(e.target.checked)}
+                            checked={settings.hideExclusiveAccounts}
+                            onChange={(e) => setSettings({ ...settings, hideExclusiveAccounts: e.target.checked })}
                         />
                         <label htmlFor="hideUnavailableContent">
                             Hide unavailable
@@ -140,15 +196,16 @@ function App() {
             <div className="App">
             <h4 style={{ color: 'grey' }}>Let's see how much you would get {modeLong}. {mode === 'yield' && <Tooltip><TooltipTrigger><span className='glyph'>🤖</span></TooltipTrigger><TooltipContent>This data is primarily used for optimisation of the application's calculations; however, as a heatmap, it can provide some useful insights even to you humans.</TooltipContent></Tooltip>}</h4>
                 <h1 hidden={mode === 'yield'}>
-                    <span className='glyph' hidden={totalDelta < 0.01}>🎉 </span>
+                    <span className='glyph' hidden={!worthyOfCelebration}>🎉 </span>
                     You will gain <span style={{ color: '#1ed760' }}>£{totalDelta.toFixed(2)}</span>
                     <Tooltip>
                         <TooltipTrigger>*</TooltipTrigger>
                         <TooltipContent>One or more of your accounts is a variable-rate account, meaning the interest rate could decrease, causing the estimated yield to diminish. This value also does not account for inflation, and assumes that you do not remove money from these accounts.</TooltipContent>
                     </Tooltip>
-                    !<span className='glyph' hidden={totalDelta < 0.01}> 🎉</span>
+                    {worthyOfCelebration && '!'}
+                    <span className='glyph' hidden={!worthyOfCelebration}> 🎉</span>
                 </h1>
-                <BankAccountTable accounts={accounts} mode={mode} setTotalDelta={setTotalDelta} config={config} hideExclusiveAccounts={hideExclusiveAccounts} />
+                <BankAccountTable accounts={accounts} mode={mode} setTotalDelta={setTotalDelta} config={config} hideExclusiveAccounts={settings.hideExclusiveAccounts} />
             </div>
         </>
     );

@@ -1,4 +1,4 @@
-interface Bank {
+export interface Bank {
     name: string;
     nameFull?: string;
     url?: string;

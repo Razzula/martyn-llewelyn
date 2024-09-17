@@ -2,6 +2,7 @@ import { Account } from "../Accounts";
 import banks from '../Banks';
 import { Tooltip, TooltipContent, TooltipTrigger } from "./Tooltip";
 import WebScraper from "../WebScraper";
+import Select from "./Select";
 
 export type Config = {
     banks: string[];
@@ -72,27 +73,41 @@ export function ConfigControl({ config, setConfig, setLoading }: ConfigControlPr
 
             // setConfig({ ...config, customAccounts: [...config.customAccounts] });
         }
+
+        return index;
     }
+
+    const availableBanks = banks.filter(bank => !config.banks.includes(bank.name) && bank.name !== 'Your');
 
     return (
         <div>
             <h2>Configuration</h2>
-            {/* <h4 style={{ color: 'grey' }}>None of this information is stored. <Tooltip><TooltipTrigger><span className=''>ℹ</span></TooltipTrigger><TooltipContent>todo</TooltipContent></Tooltip></h4> */}
+            <h4 style={{ color: 'grey' }}>
+                None of this information is uploaded or shared. It is securely stored <b><u>only</u></b> on your device.
+                <Tooltip>
+                    <TooltipTrigger><span className=''>ℹ</span></TooltipTrigger>
+                    <TooltipContent>
+                        Your data is stored locally in your browser's cache, which is private to your device.
+                        We do not send or store this information on any external servers. This ensures that
+                        your sensitive data remains confidential and only accessible to you.
+                    </TooltipContent>
+                </Tooltip>
+            </h4>
 
             <hr/>
             <h3>
-                Your Banks
+                Your Bank{config.banks.length > 1 && 's'}
                 <Tooltip>
                     <TooltipTrigger><span className=''>ℹ</span></TooltipTrigger>
                     <TooltipContent>Some banks offer exclusive deals for existing customers. By knowing who you bank with, we can take these deals into account.</TooltipContent>
                 </Tooltip>
             </h3>
-            {
+            {/* {
                 banks.map(bank => bank.name === 'Your' ? null :
                     <div className='setting'>
-                        <input
-                            type="checkbox"
-                            id={bank.name}
+                            <input
+                                type="checkbox"
+                                id={bank.name}
                             checked={config.banks.includes(bank.name)}
                             onChange={(e) => {
                                 if (e.target.checked) {
@@ -101,13 +116,63 @@ export function ConfigControl({ config, setConfig, setLoading }: ConfigControlPr
                                     setConfig({ ...config, banks: config.banks.filter(b => b !== bank.name) });
                                 }
                             }}
-                        />
-                        <label htmlFor={bank.name}>{bank.nameFull || bank.name}</label>
-                    </div>
+                            />
+                            <label htmlFor={bank.name}>{bank.nameFull || bank.name}</label>
+                        </div>
                 )
-            }
+            } */}
+            {
+                config.banks.map(bankName => {
+                    const bank = banks.find(b => b.name === bankName);
 
-            <hr/><h3>Your Savings Account(s)</h3>
+                    return (bankName === 'Your' ? null :
+                        <Tooltip placement="right">
+                            <TooltipTrigger>
+                                <img
+                                    style={{ marginRight: 8, marginLeft: 10, borderRadius: '20%', cursor: 'pointer' }} src={bank?.logoUrl} alt={bankName} width={64} height={64}
+                                    onClick={() => setConfig({ ...config, banks: config.banks.filter(b => b !== bankName) })}
+                                />
+                            </TooltipTrigger>
+                            <TooltipContent>{bank?.nameFull || bank?.name}</TooltipContent>
+                        </Tooltip>
+                    );
+                })
+            }
+            <Tooltip>
+                <TooltipTrigger>
+                    {/* <img style={{ marginRight: 8, marginLeft: 10, borderRadius: '20%' }} src="" alt="Add Bank" width={64} height={64} /> */}
+                    <Select
+                        entries={availableBanks.map(bank => {
+                            const bankName = bank?.nameFull || bank?.name;
+
+                            const element = <Tooltip placement="right">
+                                <TooltipTrigger>
+                                    <img
+                                        style={{margin: 5, borderRadius: '20%', cursor: 'pointer' }} src={bank?.logoUrl} alt={bank?.name} width={48} height={48}
+                                    />
+                                </TooltipTrigger>
+                                <TooltipContent>{bankName}</TooltipContent>
+                            </Tooltip>;
+
+                            return ({
+                                name: bank.name,
+                                key: bank.name,
+                                element,
+                            });
+                        })}
+                        handleSelect={(index) => setConfig({ ...config, banks: [...config.banks, banks[index].name] })}
+                    >
+                        <span className="glyph" style={{ cursor: "pointer" }}>
+                            ➕
+                        </span>
+                    </Select>
+                </TooltipTrigger>
+                <TooltipContent>
+                    Add Bank
+                </TooltipContent>
+            </Tooltip>
+
+            <hr/><h3>Your Savings Account{config.customAccounts.length > 1 && 's'}</h3>
             <table>
                 <tr>
                     <th>Bank</th>

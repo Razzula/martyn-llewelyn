@@ -168,3 +168,27 @@ tr.locked > * {
     font-size: 0.8em;
     font-style: italic;
 }
+
+.column-container {
+    display: flex;
+    justify-content: space-between;
+}
+
+.column {
+    width: 45%;
+}
+
+.item {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 8px;
+    border: 1px solid #ddd;
+    margin-bottom: 8px;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+.item:hover {
+    background-color: #f0f0f0;
+}

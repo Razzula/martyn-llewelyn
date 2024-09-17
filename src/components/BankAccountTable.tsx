@@ -287,15 +287,56 @@ const BankAccountTable: React.FC<BankAccountTableProps> = ({ accounts, mode, set
             return;
         }
 
-        const allAccounts = [...config.customAccounts, ...accounts];
-        const tempAccounts: AccountInstance[] = allAccounts.map((account) => {
+        const accountToInstance = (account: Account): AccountInstance => {
             return {
                 id: `${account.bank}#${account.name}`.replace(/ /g, '-').toLowerCase(),
                 ...account,
                 initialDeposit: 0,
             };
+        };
+
+        const allAccounts: AccountInstance[] = [];
+
+        config.customAccounts.forEach((account) => {
+            // check is the user's custom account is already in the system
+            const existingAccount = accounts.find((a) =>
+                a.bank === account.bank && (
+                    a.name === account.name
+                    || ( a.type === account.type
+                        && a.annualInterestRate === account.annualInterestRate
+                        && a.compoundRate === account.compoundRate
+                        && a.compoundOffset === account.compoundOffset
+                        && a.minInflow === account.minInflow
+                        && a.maxInflow === account.maxInflow
+                    )
+                )
+            );
+
+            if (existingAccount) {
+                const existingAccountInstance = accountToInstance(existingAccount);
+                existingAccountInstance.state = 'owned';
+                allAccounts.push(existingAccountInstance);
+            }
+            else {
+                allAccounts.push(accountToInstance(account));
+            }
         });
-        setAccountInstances(tempAccounts);
+        accounts.forEach((account) => {
+            const alreadyAddedAccount = allAccounts.find((a) => a.bank === account.bank && a.name === account.name);
+            if (!alreadyAddedAccount) {
+                allAccounts.push(accountToInstance(account));
+            }
+        });
+
+        // const allAccounts = [...config.customAccounts, ...accounts];
+        // const tempAccounts: AccountInstance[] = allAccounts.map((account) => {
+        //     return {
+        //         id: `${account.bank}#${account.name}`.replace(/ /g, '-').toLowerCase(),
+        //         ...account,
+        //         initialDeposit: 0,
+        //     };
+        // });
+        setAccountInstances(allAccounts);
     }, [accounts, config]);
 
     useEffect(() => {

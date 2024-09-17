@@ -129,7 +129,6 @@ export const accounts: Account[] = [
         maxInflow: 150,
 
         exclusive: true,
-        state: 'owned',
         url: 'https://www.NatWest.com/savings/digital-regular-saver.html',
     },
     {
