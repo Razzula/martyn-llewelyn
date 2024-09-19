@@ -7,13 +7,14 @@ import Select from "./Select";
 export type Config = {
     banks: string[];
     customAccounts: Account[];
-    personalAllowance: number;
-    startingRateForSavings: number;
-    personalSavingsAllowance: number;
+    annualIncome: number;
 }
 
 type ConfigControlProps = {
     config: Config;
+    personalAllowance: number;
+    startingRateForSavings: number;
+    personalSavingsAllowance: number;
     setConfig: (config: Config) => void;
     setLoading: (loading: boolean) => void;
 }
@@ -33,18 +34,10 @@ const defaultAccount: Account = {
 
 const months: string[] = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-export function ConfigControl({ config, setConfig, setLoading }: ConfigControlProps) {
+export function ConfigControl({ config, personalAllowance, startingRateForSavings, personalSavingsAllowance, setConfig, setLoading }: ConfigControlProps) {
 
-    function setPersonalAllowance(value: number) {
-        setConfig({ ...config, personalAllowance: value });
-    }
-
-    function setStartingRateForSavings(value: number) {
-        setConfig({ ...config, startingRateForSavings: value });
-    }
-
-    function setPersonalSavingsAllowance(value: number) {
-        setConfig({ ...config, personalSavingsAllowance: value });
+    function setAnnualIncome(value: number) {
+        setConfig({ ...config, annualIncome: value });
     }
 
     function createNewAccount() {
@@ -78,6 +71,7 @@ export function ConfigControl({ config, setConfig, setLoading }: ConfigControlPr
     }
 
     const availableBanks = banks.filter(bank => !config.banks.includes(bank.name) && bank.name !== 'Your');
+    const taxFreeBuffer = personalAllowance + startingRateForSavings + personalSavingsAllowance;
 
     return (
         <div>
@@ -284,7 +278,7 @@ export function ConfigControl({ config, setConfig, setLoading }: ConfigControlPr
                                 }>
                                     {
                                         Array.from(Array(account.compoundRate).keys()).map(i =>
-                                            <option value={i+1}>{months[i]}</option>
+                                            <option value={i}>{months[i]}</option>
                                         )
                                     }
                                 </select>
@@ -334,17 +328,31 @@ export function ConfigControl({ config, setConfig, setLoading }: ConfigControlPr
                 </Tooltip>
             </h3>
             <div className='setting'>
-                <label htmlFor="pa">Personal Allowance</label>
-                <input type="number" id="pa" value={config.personalAllowance} onChange={(e) => setPersonalAllowance(Number(e.target.value))} />
+                <label htmlFor="income">Annual Income: </label>
+                <span>£<input type="number" id="income" value={config.annualIncome} onChange={(e) => setAnnualIncome(Number(e.target.value))} /></span>
+            </div>
+            <div className='setting'>
+                <label htmlFor="pa">Remaining Personal Allowance</label>
+                <input type="number" id="pa" value={personalAllowance} disabled={true} />
             </div>
             <div className='setting'>
                 <label htmlFor="srfs">Starting rate for savings</label>
-                <input type="number" id="srfs" value={config.startingRateForSavings} onChange={(e) => setStartingRateForSavings(Number(e.target.value))} />
+                <input type="number" id="srfs" value={startingRateForSavings} disabled={true} />
             </div>
             <div className='setting'>
                 <label htmlFor="psa">Personal Savings Allowance</label>
-                <input type="number" id="psa" value={config.personalSavingsAllowance} onChange={(e) => setPersonalSavingsAllowance(Number(e.target.value))} />
+                <input type="number" id="psa" value={personalSavingsAllowance} disabled={true} />
             </div>
+            { taxFreeBuffer > 0 ?
+                <h4>
+                    You can generate <span style={{ color: '#1ed760' }}>£{taxFreeBuffer}</span> of interest before being eligible for taxation.
+                    <Tooltip>
+                        <TooltipTrigger>*</TooltipTrigger>
+                        <TooltipContent>This figure assumes that you have not generated interest already this fiscal year!</TooltipContent>
+                    </Tooltip>
+                </h4>
+                : <h4 style={{ color: 'red' }}>You are not eligible for any tax-free interest.</h4>
+            }
         </div>
     )
 }

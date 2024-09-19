@@ -39,9 +39,7 @@ const defaultConfig: Config = {
             state: 'owned',
         },
     ],
-    personalAllowance: 12570,
-    startingRateForSavings: 5000,
-    personalSavingsAllowance: 1000,
+    annualIncome: 0,
 };
 
 export type Settings = {
@@ -140,6 +138,10 @@ function App() {
 
     const worthyOfCelebration = mode !== 'idle' && totalDelta > 0;
 
+    const personalAllowance = Math.max(12570 - config.annualIncome, 0);
+    const startingRateForSavings = Math.min(Math.max(17570 - config.annualIncome, 0), 5000);
+    const personalSavingsAllowance = config.annualIncome <= 37700 ? 1000 : config.annualIncome <= 125140 ? 500 : 0;
+
     return (
         <>
             { loading &&
@@ -198,7 +200,10 @@ function App() {
             <Dialogue>
                 <DialogueTrigger><span className='glyph'>👤</span></DialogueTrigger>
                 <DialogueContent className="Dialogue">
-                    <ConfigControl config={config} setConfig={setConfig} setLoading={setLoading} />
+                    <ConfigControl
+                        config={config} personalAllowance={personalAllowance} startingRateForSavings={startingRateForSavings}personalSavingsAllowance={personalSavingsAllowance}
+                        setConfig={setConfig} setLoading={setLoading}
+                    />
                     <DialogueClose>Close</DialogueClose>
                 </DialogueContent>
             </Dialogue>
@@ -245,7 +250,10 @@ function App() {
                     {worthyOfCelebration && '!'}
                     <span className='glyph' hidden={!worthyOfCelebration}> 🎉</span>
                 </h1>
-                <BankAccountTable accounts={accounts} mode={mode} setTotalDelta={setTotalDelta} config={config} settings={settings} />
+                <BankAccountTable
+                    accounts={accounts} mode={mode} setTotalDelta={setTotalDelta} config={config} settings={settings}
+                    personalAllowance={personalAllowance} startingRateForSavings={startingRateForSavings} personalSavingsAllowance={personalSavingsAllowance}
+                />
             </div>
         </>
     );
