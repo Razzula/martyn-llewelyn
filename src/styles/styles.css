@@ -192,3 +192,41 @@ tr.locked > * {
 .item:hover {
     background-color: #f0f0f0;
 }
+
+@media (max-width: 1560px) {
+
+    .main table,
+    .main thead,
+    .main tbody,
+    .main th,
+    .main td,
+    .main tr {
+        display: block;
+    }
+
+    .main thead {
+        display: none;
+    }
+
+    .main tbody {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(15em, 1fr));
+        grid-gap: 2px;
+    }
+
+    .main tr {
+        margin-bottom: 15px;
+    }
+
+    .main td {
+        padding: 8px;
+        min-height: 6em;
+        max-height: 6em;
+    }
+
+    /* .main td::before {
+        content: attr(data-label);
+        font-weight: bold;
+        margin-right: 10px;
+    } */
+}

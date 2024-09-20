@@ -601,7 +601,7 @@ const BankAccountTable: React.FC<BankAccountTableProps> = ({ accounts, mode, set
     }, 0);
 
     return (
-        <div>
+        <div className='main'>
             { mode === 'yield' &&
                 <div>
                     <label style={{ width: 200, minWidth: 200 }}>{ afterTax ? 'After' : 'Before' } Tax</label>
@@ -709,7 +709,7 @@ const BankAccountTable: React.FC<BankAccountTableProps> = ({ accounts, mode, set
                                                 {bank?.nameFull || bank?.name}
                                             </TooltipContent>
                                         </Tooltip>
-                                        <span style={{ flex: 1, textAlign: 'center' }}>{bank?.name} <a href={account?.url}>{account.name}</a></span>
+                                        <span style={{ flex: 1, textAlign: 'center' }} className='accountName'>{bank?.name} <a href={account?.url}>{account.name}</a></span>
                                         { pointsOfNote.length > 0 &&
                                             <Tooltip>
                                                 <TooltipTrigger><span>ℹ</span></TooltipTrigger>
