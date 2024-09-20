@@ -3,11 +3,12 @@ import { accounts } from './Accounts';
 import BankAccountTable from './components/BankAccountTable';
 import SegmentedControl from './components/SegmentedControl';
 import { Tooltip, TooltipContent, TooltipTrigger } from './components/Tooltip';
-
-import './styles/App.css';
 import { Popover, PopoverContent, PopoverTrigger } from './components/Popover';
 import { Dialogue, DialogueClose, DialogueContent, DialogueTrigger } from './components/Dialogue';
 import ConfigControl, { Config } from './components/ConfigControl';
+import { taxBrackets } from './utils.ts';
+
+import './styles/App.css';
 
 const defaultConfig: Config = {
     banks: [],
@@ -55,13 +56,19 @@ const defaultSettings: Settings = {
 function App() {
     // State for selected value
     const [mode, setMode] = useState<string>('idle');
-    const [totalDelta, setTotalDelta] = useState<number>(0);
+    const [totalDelta, setTotalDelta] = useState({ totalDelta: 0, taxableDelta: 0 });
     const [open, setOpen] = useState(false);
 
     const [loading, setLoading] = useState(false);
 
     const [config, setConfig] = useState<Config>(getInitialConfig);
     const [settings, setSettings] = useState<Settings>(getInitialSettings);
+
+    const [profitElement,  setProfitElement] = useState(<></>);
+
+    const personalAllowance = Math.max(12570 - config.annualIncome, 0);
+    const startingRateForSavings = Math.min(Math.max(17570 - config.annualIncome, 0), 5000);
+    const personalSavingsAllowance = config.annualIncome <= 37700 ? 1000 : config.annualIncome <= 125140 ? 500 : 0;
 
     // useEffect(() => {
     //     setLoading(true);
@@ -81,6 +88,70 @@ function App() {
         const settingsString = JSON.stringify(settings);
         localStorage.setItem('settings', settingsString);
     }, [settings]);
+
+    useEffect(() => {
+        let taxableIncome = totalDelta.taxableDelta;
+
+        const taxFreeBuffer = personalAllowance + startingRateForSavings + personalSavingsAllowance;
+        let taxBracketIndex = taxBrackets.findIndex(bracket => config.annualIncome < bracket.max);
+
+        let totalYield = totalDelta.totalDelta - totalDelta.taxableDelta;
+
+        if (taxFreeBuffer > 0) {
+            const delta = Math.min(taxFreeBuffer, taxableIncome);
+            totalYield += delta;
+            taxableIncome -= delta;
+        }
+        while (taxableIncome > 0) {
+            const taxBracket = taxBrackets[taxBracketIndex];
+            const taxBuffer = taxBracket.max - (taxBrackets[taxBracketIndex - 1]?.max || 0);
+
+            const delta = Math.min(taxableIncome, taxBuffer);
+            totalYield += delta * (1 - taxBracket.rate);
+            taxableIncome -= delta;
+            taxBracketIndex++;
+        }
+
+        const usingVariableInterest = config.customAccounts.some(account => account.interestType === 'variable');
+
+        const worthyOfCelebration = mode !== 'idle' && totalYield > 0;
+
+        setProfitElement(
+            <h1 hidden={mode === 'yield'}>
+                <span className='glyph' hidden={!worthyOfCelebration}>🎉 </span>
+                You will gain
+                <Tooltip>
+                    <TooltipTrigger><span style={{ color: '#1ed760' }}> £{totalYield.toFixed(2)} </span></TooltipTrigger>
+                    { totalDelta.totalDelta - totalYield >= 0.01 &&
+                        <TooltipContent>
+                            <table>
+                                <tr>
+                                    <th>Tax-Free Yield</th>
+                                    <th>Taxable Yield</th>
+                                    <th>Tax Paid</th>
+                                </tr>
+                                <tr>
+                                    <td>£{(totalDelta.totalDelta - totalDelta.taxableDelta).toFixed(2)}</td>
+                                    <td>£{totalDelta.taxableDelta.toFixed(2)}</td>
+                                    <td>£{(totalDelta.totalDelta - totalYield).toFixed(2)}</td>
+                                </tr>
+                            </table>
+                        </TooltipContent>
+                    }
+                </Tooltip>
+                <Tooltip>
+                    <TooltipTrigger>*</TooltipTrigger>
+                    <TooltipContent>
+                        { usingVariableInterest && 'One or more of your accounts is a variable-rate account, meaning the interest rate could decrease, causing the estimated yield to diminish.' }
+                        This value also does not account for inflation, and assumes that you do not remove money from these accounts.
+                    </TooltipContent>
+                </Tooltip>
+                {worthyOfCelebration && '!'}
+                <span className='glyph' hidden={!worthyOfCelebration}> 🎉</span>
+            </h1>
+        );
+
+    }, [totalDelta, personalAllowance, startingRateForSavings, personalSavingsAllowance]);
 
     // Refs for SegmentedControl segments
     const segmentRefs: RefObject<HTMLDivElement>[] = [
@@ -135,12 +206,6 @@ function App() {
             break;
         default:
     }
-
-    const worthyOfCelebration = mode !== 'idle' && totalDelta > 0;
-
-    const personalAllowance = Math.max(12570 - config.annualIncome, 0);
-    const startingRateForSavings = Math.min(Math.max(17570 - config.annualIncome, 0), 5000);
-    const personalSavingsAllowance = config.annualIncome <= 37700 ? 1000 : config.annualIncome <= 125140 ? 500 : 0;
 
     return (
         <>
@@ -240,16 +305,7 @@ function App() {
 
             <div className="App">
             <h4 style={{ color: 'grey' }}>Let's see how much you would get {modeLong}. {mode === 'yield' && <Tooltip><TooltipTrigger><span className='glyph'>🤖</span></TooltipTrigger><TooltipContent>This data is primarily used for optimisation of the application's calculations; however, as a heatmap, it can provide some useful insights even to you humans.</TooltipContent></Tooltip>}</h4>
-                <h1 hidden={mode === 'yield'}>
-                    <span className='glyph' hidden={!worthyOfCelebration}>🎉 </span>
-                    You will gain <span style={{ color: '#1ed760' }}>£{totalDelta.toFixed(2)}</span>
-                    <Tooltip>
-                        <TooltipTrigger>*</TooltipTrigger>
-                        <TooltipContent>One or more of your accounts is a variable-rate account, meaning the interest rate could decrease, causing the estimated yield to diminish. This value also does not account for inflation, and assumes that you do not remove money from these accounts.</TooltipContent>
-                    </Tooltip>
-                    {worthyOfCelebration && '!'}
-                    <span className='glyph' hidden={!worthyOfCelebration}> 🎉</span>
-                </h1>
+                {profitElement}
                 <BankAccountTable
                     accounts={accounts} mode={mode} setTotalDelta={setTotalDelta} config={config} settings={settings}
                     personalAllowance={personalAllowance} startingRateForSavings={startingRateForSavings} personalSavingsAllowance={personalSavingsAllowance}
