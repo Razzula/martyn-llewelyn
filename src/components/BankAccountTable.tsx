@@ -155,7 +155,12 @@ function enactDataTable(
             if (taxBuffer <= 0) {
                 const delta = taxBuffer;
                 taxBracketIndex++;
-                taxBuffer = taxBrackets[taxBracketIndex].max - taxBrackets[taxBracketIndex - 1].max + delta;
+                if (taxBracketIndex === 0) {
+                    taxBuffer = taxBrackets[taxBracketIndex].max + delta;
+                }
+                else {
+                    taxBuffer = taxBrackets[taxBracketIndex].max - taxBrackets[taxBracketIndex - 1].max + delta;
+                }
 
                 yieldTable = createYieldTable(accountInstances, monthOffset, taxBrackets[taxBracketIndex].rate);
                 yieldList = createYieldList();
