@@ -527,7 +527,7 @@ const BankAccountTable: React.FC<BankAccountTableProps> = ({ accounts, mode, set
             // calculate data table
             const taxFreeBuffer = personalAllowance + startingRateForSavings + personalSavingsAllowance;
             // const taxFreeBuffer = 50; // DEBUG
-            const taxBracketIndex = taxBrackets.findIndex(bracket => config.annualIncome < bracket.max);
+            const taxBracketIndex = taxBrackets.findIndex(bracket => config.annualIncome < bracket.max) || 0;
             const newDataTable = enactDataTable(tempDataTable, /*tempYieldTable,*/ config, settings, monthOffset, mode !== 'idle', taxFreeBuffer, taxBracketIndex);
 
             setDataTable(newDataTable);
