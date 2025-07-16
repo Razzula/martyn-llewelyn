@@ -88,7 +88,7 @@ export function ConfigControl({ config, personalAllowance, startingRateForSaving
                 </Tooltip>
             </h4>
 
-            <hr/>
+            <hr />
             <h3>
                 Your Bank{config.banks.length > 1 && 's'}
                 <Tooltip>
@@ -142,7 +142,7 @@ export function ConfigControl({ config, personalAllowance, startingRateForSaving
                             const element = <Tooltip placement="right">
                                 <TooltipTrigger>
                                     <img
-                                        style={{margin: 5, borderRadius: '20%', cursor: 'pointer' }} src={bank?.logoUrl} alt={bank?.name} width={48} height={48}
+                                        style={{ margin: 5, borderRadius: '20%', cursor: 'pointer' }} src={bank?.logoUrl} alt={bank?.name} width={48} height={48}
                                     />
                                 </TooltipTrigger>
                                 <TooltipContent>{bankName}</TooltipContent>
@@ -154,7 +154,15 @@ export function ConfigControl({ config, personalAllowance, startingRateForSaving
                                 element,
                             });
                         })}
-                        handleSelect={(index) => setConfig({ ...config, banks: [...config.banks, banks[index].name] })}
+                        
+                        handleSelect={(index) => {
+                            const selectedBank = availableBanks[index];
+                            setConfig({
+                                ...config,
+                                banks: [...config.banks, selectedBank.name],
+                            });
+                        }}
+
                     >
                         <span className="glyph" style={{ cursor: "pointer" }}>
                             ➕
@@ -166,7 +174,7 @@ export function ConfigControl({ config, personalAllowance, startingRateForSaving
                 </TooltipContent>
             </Tooltip>
 
-            <hr/><h3>Your Savings Account{config.customAccounts.length > 1 && 's'}</h3>
+            <hr /><h3>Your Savings Account{config.customAccounts.length > 1 && 's'}</h3>
             <table>
                 <tr>
                     <th>Bank</th>
@@ -275,7 +283,7 @@ export function ConfigControl({ config, personalAllowance, startingRateForSaving
                                         newAccounts[index].compoundOffset = Number(e.target.value);
                                         setConfig({ ...config, customAccounts: newAccounts });
                                     }
-                                }>
+                                    }>
                                     {
                                         Array.from(Array(account.compoundRate).keys()).map(i =>
                                             <option value={i}>{months[i]}</option>
@@ -317,9 +325,9 @@ export function ConfigControl({ config, personalAllowance, startingRateForSaving
                     )
                 }
             </table>
-            <button style={{marginTop: 12}} onClick={createNewAccount}>Add Another Account <span className="glyph">➕</span></button>
+            <button style={{ marginTop: 12 }} onClick={createNewAccount}>Add Another Account <span className="glyph">➕</span></button>
 
-            <hr/>
+            <hr />
             <h3>
                 Your Tax Rate
                 <Tooltip>
@@ -343,7 +351,7 @@ export function ConfigControl({ config, personalAllowance, startingRateForSaving
                 <label htmlFor="psa">Personal Savings Allowance</label>
                 <input type="number" id="psa" value={personalSavingsAllowance} disabled={true} />
             </div>
-            { taxFreeBuffer > 0 ?
+            {taxFreeBuffer > 0 ?
                 <h4>
                     You can generate <span style={{ color: '#1ed760' }}>£{taxFreeBuffer}</span> of interest before being eligible for taxation.
                     <Tooltip>
