@@ -31,15 +31,17 @@ jobs:
           echo "$HOME/.bun/bin" >> $GITHUB_PATH
 
       - name: Install dependencies
+        working-directory: ./client
         run: bun install
 
       - name: Build the project
+        working-directory: ./client
         run: bun run build
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: client/dist
 
   deploy:
     environment:
