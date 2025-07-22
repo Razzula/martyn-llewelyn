@@ -1,10 +1,38 @@
 # martyn-llewelyn
 
+## Installation
+### Configuration
+`./.env`
+```py
+VITE_TRUELAYER_ENV=... # 'sandbox' for DEV
+VITE_TRUELAYER_CLIENT_ID=...
+VITE_TRUELAYER_REDIRECT_URI=http://localhost:3000/callback
+
+TRUELAYER_CLIENT_SECRET=... # not exposed to frontend
 ```
+See https://console.truelayer.com/
+
+### Client
+```bash
+cd ./client
 bun install
 ```
+### Server
+```bash
+cd ./server
+bun install
 ```
+
+## Usage
+### Client
+```bash
+cd ./client
 bun run dev
+```
+### Server
+```bash
+cd ./server
+bun ./index.ts
 ```
 ## License
 
