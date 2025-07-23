@@ -1,38 +1,31 @@
 # martyn-llewelyn
 
-## Installation
-### Configuration
+<center>
+    <img src="./app/public/MasterBagel.png" alt="Martyn Llewelyn Logo" width="64">
+    <h1>Master Bagel</h1>
+</center>
+
+## Pre-Requisites
 `./.env`
 ```py
-VITE_TRUELAYER_ENV=... # 'sandbox' for DEV
+VITE_TRUELAYER_ENV=... # 'sandbox' for DEV, any other non-null for PROD
 VITE_TRUELAYER_CLIENT_ID=...
-VITE_TRUELAYER_REDIRECT_URI=http://localhost:3000/callback
+VITE_TRUELAYER_REDIRECT_URI=http://localhost:3180/martyn-llewelyn/callback
 
 TRUELAYER_CLIENT_SECRET=... # not exposed to frontend
 ```
 See https://console.truelayer.com/
 
-### Client
+## Installation
 ```bash
-cd ./client
-bun install
-```
-### Server
-```bash
-cd ./server
+cd ./app
 bun install
 ```
 
 ## Usage
-### Client
 ```bash
-cd ./client
-bun run dev
-```
-### Server
-```bash
-cd ./server
-bun ./index.ts
+cd ./app
+bun tauri dev
 ```
 ## License
 
