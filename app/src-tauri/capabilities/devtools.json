@@ -1,0 +1,7 @@
+{
+  "identifier": "devtools",
+  "windows": ["main"],
+  "permissions": [
+    "core:webview:allow-internal-toggle-devtools"
+  ]
+}

@@ -2,10 +2,10 @@
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Master Bagel",
   "version": "0.1.0",
-  "identifier": "com.tauri.dev",
+  "identifier": "io.github.razzula.martyn-llewelyn",
   "build": {
     "frontendDist": "../dist",
-    "devUrl": "http://localhost:3180/martyn-llewelyn/",
+    "devUrl": "http://localhost:3180/",
     "beforeDevCommand": "bun run dev",
     "beforeBuildCommand": "bun run build"
   },
@@ -16,11 +16,17 @@
         "width": 800,
         "height": 600,
         "resizable": true,
-        "fullscreen": false
+        "fullscreen": false,
+        "devtools": true
       }
     ],
     "security": {
-      "csp": null
+      "csp": null,
+      "capabilities": [
+        "shell-perms",
+        "devtools",
+        "main-capability"
+      ]
     }
   },
   "bundle": {
@@ -33,5 +39,15 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": ["bagel"]
+      }
+    },
+    "shell": {
+      "open": "^((mailto:\\w+)|(tel:\\w+)|(https?://\\S+)|(bagel://.+))$"
+    }
   }
 }

@@ -10,7 +10,7 @@
 ```py
 VITE_TRUELAYER_ENV=... # 'sandbox' for DEV, any other non-null for PROD
 VITE_TRUELAYER_CLIENT_ID=...
-VITE_TRUELAYER_REDIRECT_URI=http://localhost:3180/martyn-llewelyn/callback
+VITE_TRUELAYER_REDIRECT_URI=bagel://callback
 
 TRUELAYER_CLIENT_SECRET=... # not exposed to frontend
 ```

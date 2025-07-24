@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 
-import { TrueLayerAccount } from "../types/TrueLayer";
+import { TrueLayerAccessTokenResponse, TrueLayerAccount } from "../types/TrueLayer";
 import { generateCodeChallenge, generateCodeVerifier } from "../utils/PKCE";
 
 export async function getTrueLayerAuthURL() {
@@ -39,4 +39,15 @@ export async function fetchAccountData(accessToken: string): Promise<TrueLayerAc
         await invoke('fetchAccountData', { accessToken })
     );
     return res.results || [];
+}
+
+export async function handleTokenExchange(code: string) {
+    const verifier = sessionStorage.getItem('code_verifier');
+
+    const tokens: TrueLayerAccessTokenResponse = JSON.parse(
+        await invoke('exchangeToken', { code, verifier })
+    );
+
+    // store/access tokens as needed
+    sessionStorage.setItem('accessToken', tokens.access_token);
 }

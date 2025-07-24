@@ -3,7 +3,33 @@
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-  tauri::Builder::default()
+  // load environment variables from .env file
+  dotenvy::dotenv().ok();
+
+  // initialise the Tauri application
+  let mut builder = tauri::Builder::default();
+
+  // configure desktop-specific features
+  #[cfg(desktop)]
+  {
+    builder = builder.plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
+      // compress window calls into the main window
+      println!("Second instance launched with args: {argv:?}");
+
+      // focus the main window
+      use tauri::Manager;
+      if let Some(window) = app.get_webview_window("main") {
+        let _ = window.unminimize();
+        let _ = window.set_focus();
+        let _ = window.show(); // ensures it's visible
+      }
+    }));
+  }
+
+  // configure universal features
+  builder
+    .plugin(tauri_plugin_deep_link::init())
+    .plugin(tauri_plugin_shell::init())
 
     // expose functions through Tauri
     .invoke_handler(tauri::generate_handler![
@@ -12,6 +38,15 @@ pub fn run() {
     ])
 
     .setup(|app| {
+
+      // regiter deep link schemes
+      #[cfg(any(windows, target_os = "linux"))]
+      {
+        use tauri_plugin_deep_link::DeepLinkExt;
+        app.deep_link().register_all()?;
+      }
+
+      // general setup
       if cfg!(debug_assertions) {
         app.handle().plugin(
           tauri_plugin_log::Builder::default()
@@ -19,6 +54,7 @@ pub fn run() {
             .build(),
         )?;
       }
+
       Ok(())
     })
     .run(tauri::generate_context!())
