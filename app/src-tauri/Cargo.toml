@@ -32,7 +32,3 @@ tauri-plugin-shell = "2.0"
 tauri-plugin-opener = "2"
 uuid = { version = "1", features = ["v4"] }
 once_cell = "1"
-
-[target.x86_64-linux-android]
-ar = "${NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android-ar"
-linker = "${NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android21-clang"

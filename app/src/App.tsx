@@ -35,7 +35,7 @@ function App() {
         }
 
         // XXX
-        invoke('loadwalletTokens')
+        invoke('loadWalletTokens')
             .then((tokens: string[]) => {
                 if (tokens.length > 0) {
                     // use the first token for now
@@ -188,7 +188,7 @@ function App() {
     }
 
     return (
-        <>
+        <div id='app'>
 
             {accountsState === ResponseState.ERROR &&
                 <div className='column'>
@@ -236,47 +236,52 @@ function App() {
             {
                 Object.keys(accounts).length > 0 ? (
                     // POPULATED RECORD
-                    <table className='accounts'>
-                        <tbody>
-                            {Object.entries(accounts).sort().map(([accountId, account]) => {
-                                const isCard = 'card_network' in account;
+                    <div className='accountsGrid'>
+                        {Object.entries(accounts).sort().map(([accountId, account]) => {
 
-                                return (
-                                    <tr key={accountId}>
-                                        <td>
+                            const isCard = 'card_network' in account;
+
+                            const balance = 'balance' in account ? account.balance : null;
+                            const available = balance?.available ?? null;
+                            const currency = balance?.currency === 'GBP' ? '£' : balance?.currency;
+                            const displayBalance = balance ? `${currency}\u00A0${balance.current.toFixed(2)}` : null;
+                            const displayAvailable = available ? `${currency}\u00A0${available.toFixed(2)}` : null;
+
+                            return (
+                                <div className='accountCard' key={accountId}>
+                                    <div className='header'>
+                                        <div className='row'>
                                             <img
                                                 className='bankLogo'
                                                 src={!isCard ? account.provider.logo_uri : '/serenity.png'}
                                                 alt={`${account.display_name} Logo`}
-                                                style={{ objectFit: 'contain', flexShrink: 0 }}
                                             />
-                                        </td>
-                                        {/* <td>{!isCard ? account.provider.display_name : account.provider.provider_id}</td> */}
-                                        <td>
-                                            {isCard
-                                                ? "**** **** **** " + (account as TrueLayerCard).partial_card_number
-                                                : (account as TrueLayerAccount).account_number.number}
-                                        </td>
-                                        <td>{account.display_name}</td>
-                                        <td>
-                                            {'balance' in account && account.balance ? (
-                                                <>
-                                                    {account.balance.currency} {account.balance.current.toFixed(2)}
-                                                </>
-                                            ) : (
-                                                <div className='spinner' style={{ width: '1rem', height: '1rem' }} />
-                                            )}
-                                        </td>
-                                        <td>
+                                            <div className='verticalSeparator' />
+                                            <div className='name'>{account.display_name}</div>
+                                        </div>
+                                        <div className='balance'>{displayAvailable || <div className='spinner' />}</div>
+                                    </div>
+                                    <div className='body'>
+                                        <div className='type'>
                                             {isCard
                                                 ? (account as TrueLayerCard).card_type
                                                 : (account as TrueLayerAccount).account_type}
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
+                                        </div>
+                                        <div className='number'>
+                                            {isCard
+                                                ? "**** **** **** " + (account as TrueLayerCard).partial_card_number
+                                                : (account as TrueLayerAccount).account_number.number}
+                                        </div>
+                                        {displayAvailable && (
+                                            <div className='available'>({displayBalance})</div>
+                                        )}
+                                        <div className='interestRate'>TODO: Interest Rate</div>
+                                        <div className='delta'>TODO: Delta</div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
                 ) : (
                     // EMPTY RECORD
                     <div className='column'>
@@ -317,7 +322,8 @@ function App() {
                     </div>
                 </div>
             }
-        </>
+
+        </div>
     );
 }
 

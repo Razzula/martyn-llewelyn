@@ -1,8 +1,12 @@
 #![allow(non_snake_case)]
 #![allow(unused_parens)]
 
+use std::sync::Mutex;
+
+use tauri::Manager; 
+
 mod wallet;
-use wallet::{TokenEntry, getWallet, Wallet};
+use wallet::{TokenEntry, Wallet};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -43,10 +47,14 @@ pub fn run() {
             fetchAccountBalance,
             fetchCardBalance,
             // WALLET
-            loadwalletTokens,
+            loadWalletTokens,
         ])
         .setup(|app| {
-            // regiter deep link schemes
+            // setup wallet
+            let wallet = Wallet::load(&app.handle());
+            app.manage(std::sync::Mutex::new(wallet));
+
+            // register deep link schemes
             #[cfg(any(windows, target_os = "linux"))]
             {
                 // see https://v2.tauri.app/plugin/deep-linking/
@@ -91,7 +99,11 @@ pub fn getTrueLayerAuthUrl() -> &'static str {
 }
 
 #[tauri::command]
-async fn exchangeToken(code: String, verifier: String) -> Result<String, String> {
+async fn exchangeToken(
+    wallet: tauri::State<'_, Mutex<Wallet>>,
+    code: String,
+    verifier: String,
+) -> Result<String, String> {
     // load data from .env
     use dotenvy::from_path;
     use std::env;
@@ -135,11 +147,16 @@ async fn exchangeToken(code: String, verifier: String) -> Result<String, String>
         expiresAt: expiresAt,
     };
 
-    let walletToken = getWallet().insert(entry);
+    let mut wallet = wallet.lock().unwrap();
+    let walletToken = wallet.insert(entry);
     Ok(walletToken)
 }
 
-async fn refreshToken(walletToken: &str, existingRefreshToken: &str) -> Result<TokenEntry, String> {
+async fn refreshToken(
+    wallet: tauri::State<'_, Mutex<Wallet>>,
+    walletToken: &str,
+    existingRefreshToken: &str,
+) -> Result<TokenEntry, String> {
     use dotenvy::from_path;
     use std::env;
 
@@ -178,7 +195,7 @@ async fn refreshToken(walletToken: &str, existingRefreshToken: &str) -> Result<T
         expiresAt: expiresAt,
     };
 
-    let mut wallet = getWallet();
+    let mut wallet = wallet.lock().unwrap();
     wallet.update(walletToken, entry.clone());
     Ok(entry)
 }
@@ -192,48 +209,71 @@ fn nowEpoch() -> u64 {
 }
 
 #[tauri::command]
-async fn fetchUserData(walletToken: &str) -> Result<String, String> {
-    fetchFromTrueLayer(walletToken, "data/v1/info").await
+async fn fetchUserData(
+    wallet: tauri::State<'_, Mutex<Wallet>>,
+    walletToken: &str,
+) -> Result<String, String> {
+    fetchFromTrueLayer(walletToken, "data/v1/info", wallet).await
 }
 
 #[tauri::command]
-async fn fetchAccountsData(walletToken: &str) -> Result<String, String> {
-    fetchFromTrueLayer(walletToken, "data/v1/accounts").await
+async fn fetchAccountsData(
+    wallet: tauri::State<'_, Mutex<Wallet>>,
+    walletToken: &str,
+) -> Result<String, String> {
+    fetchFromTrueLayer(walletToken, "data/v1/accounts", wallet).await
 }
 
 #[tauri::command]
-async fn fetchCardsData(walletToken: &str) -> Result<String, String> {
-    fetchFromTrueLayer(walletToken, "data/v1/cards").await
+async fn fetchCardsData(
+    wallet: tauri::State<'_, Mutex<Wallet>>,
+    walletToken: &str,
+) -> Result<String, String> {
+    fetchFromTrueLayer(walletToken, "data/v1/cards", wallet).await
 }
 
 #[tauri::command]
-async fn fetchAccountBalance(walletToken: &str, accountID: &str) -> Result<String, String> {
+async fn fetchAccountBalance(
+    wallet: tauri::State<'_, Mutex<Wallet>>,
+    walletToken: &str,
+    accountID: &str,
+) -> Result<String, String> {
     let endpoint = format!("data/v1/accounts/{}/balance", accountID);
-    fetchFromTrueLayer(walletToken, &endpoint).await
+    fetchFromTrueLayer(walletToken, &endpoint, wallet).await
 }
+
 
 #[tauri::command]
-async fn fetchCardBalance(walletToken: &str, cardID: &str) -> Result<String, String> {
+async fn fetchCardBalance(
+    wallet: tauri::State<'_, Mutex<Wallet>>,
+    walletToken: &str,
+    cardID: &str,
+) -> Result<String, String> {
     let endpoint = format!("data/v1/cards/{}/balance", cardID);
-    fetchFromTrueLayer(walletToken, &endpoint).await
+    fetchFromTrueLayer(walletToken, &endpoint, wallet).await
 }
 
-async fn fetchFromTrueLayer(walletToken: &str, endpoint: &str) -> Result<String, String> {
+async fn fetchFromTrueLayer(
+    walletToken: &str,
+    endpoint: &str,
+    wallet: tauri::State<'_, Mutex<Wallet>>,
+) -> Result<String, String> {
 
     // GET ACCESS TOKEN FROM WALLET
     let (needsRefresh, tokenToRefresh) = {
-        let wallet = getWallet();
+        let wallet = wallet.lock().unwrap();
         let entry = wallet.get(walletToken).cloned().ok_or("Invalid walletToken")?;
 
         let now = nowEpoch();
         (entry.expiresAt <= now + 60, entry.refreshToken)
     };
 
-    let accessToken = if (needsRefresh) {
-        let refreshed = refreshToken(&walletToken, &tokenToRefresh).await?;
+    let accessToken = if needsRefresh {
+        let refreshed = refreshToken(wallet, walletToken, &tokenToRefresh).await?;
         refreshed.accessToken
-    } else {
-        let wallet = getWallet();
+    }
+    else {
+        let wallet = wallet.lock().unwrap();
         wallet.get(walletToken).unwrap().accessToken.clone()
     };
 
@@ -268,7 +308,7 @@ async fn fetchFromTrueLayer(walletToken: &str, endpoint: &str) -> Result<String,
 }
 
 #[tauri::command]
-async fn loadwalletTokens() -> Vec<String> {
-    let wallet = Wallet::load();
+fn loadWalletTokens(wallet: tauri::State<'_, std::sync::Mutex<Wallet>>) -> Vec<String> {
+    let wallet = wallet.lock().unwrap();
     wallet.tokenList()
 }
