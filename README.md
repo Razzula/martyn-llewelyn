@@ -5,8 +5,8 @@
     <h1>Master Bagel</h1>
 </center>
 
-## Pre-Requisites
-`./.env`
+## Setup
+### Secrets
 ```py
 VITE_TRUELAYER_ENV=... # 'sandbox' for DEV, any other non-null for PROD
 VITE_TRUELAYER_CLIENT_ID=...
@@ -15,6 +15,10 @@ VITE_TRUELAYER_REDIRECT_URI=bagel://callback
 TRUELAYER_CLIENT_SECRET=... # not exposed to frontend
 ```
 See https://console.truelayer.com/
+
+### Tauri
+- [Linux](https://tauri.app/start/prerequisites/)
+- [Android](https://tauri.app/start/prerequisites/) (`adb` recommended)
 
 ## Installation
 ```bash
@@ -25,8 +29,15 @@ bun install
 ## Usage
 ```bash
 cd ./app
-bun tauri dev
+bun dev
 ```
+
+## Building
+```bash
+cd ./app
+bun run build
+```
+
 ## License
 
 This project includes emoji images sourced from SerenityOS, which are licensed under the BSD 2-Clause License. 

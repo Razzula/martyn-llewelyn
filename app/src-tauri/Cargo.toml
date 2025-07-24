@@ -16,6 +16,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
 tauri-build = { version = "2.3.1", features = [] }
+dotenv-build = "0.1"
 
 [dependencies]
 serde_json = "1.0"
@@ -23,8 +24,13 @@ serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
 tauri = { version = "2.7.0", features = ["devtools"] }
 tauri-plugin-log = "2"
-reqwest = { version = "0.12.22", features = ["json"] }
+reqwest = { version = "0.12.22", default-features = false, features = ["json", "rustls-tls"] }
 dotenvy = "0.15"
-tauri-plugin-deep-link = "2.0"
+tauri-plugin-deep-link = "2.4"
 tauri-plugin-single-instance = { version = "2.0", features = ["deep-link"] }
 tauri-plugin-shell = "2.0"
+tauri-plugin-opener = "2"
+
+[target.x86_64-linux-android]
+ar = "${NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android-ar"
+linker = "${NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android21-clang"

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { onOpenUrl } from '@tauri-apps/plugin-deep-link';
-import { open } from '@tauri-apps/plugin-shell';
+import { openUrl } from '@tauri-apps/plugin-opener';
 
 import { fetchAccountData, getTrueLayerAuthURL, handleTokenExchange } from './lib/TrueLayer.ts';
 import type { TrueLayerAccount } from './types/TrueLayer.ts';
@@ -84,9 +84,12 @@ function App() {
 
     async function openInBrowser(uri: string | null) {
         if (uri) {
-            await open(uri);
+            console.log('Opening in browser:', uri);
+            await openUrl(uri);
         }
     }
+
+    console.log(redirectURI);
 
     return (
         <>

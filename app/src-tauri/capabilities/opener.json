@@ -1,0 +1,10 @@
+{
+  "identifier": "opener-perms",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "opener:allow-default-urls",
+    "opener:allow-open-url",
+    "opener:allow-open-path"
+  ]
+}

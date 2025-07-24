@@ -6,8 +6,8 @@
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:3180/",
-    "beforeDevCommand": "bun run dev",
-    "beforeBuildCommand": "bun run build"
+    "beforeDevCommand": "bun run dev:vite",
+    "beforeBuildCommand": "bun run build:vite"
   },
   "app": {
     "windows": [
@@ -25,7 +25,8 @@
       "capabilities": [
         "shell-perms",
         "devtools",
-        "main-capability"
+        "main-capability",
+        "opener-perms"
       ]
     }
   },
@@ -42,6 +43,12 @@
   },
   "plugins": {
     "deep-link": {
+      "mobile": [
+        {
+          "scheme": ["bagel"],
+          "host": "callback"
+        }
+      ],
       "desktop": {
         "schemes": ["bagel"]
       }
