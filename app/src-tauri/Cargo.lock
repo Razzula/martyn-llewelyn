@@ -2182,6 +2182,7 @@ dependencies = [
  "dotenv-build",
  "dotenvy",
  "log",
+ "once_cell",
  "reqwest",
  "serde",
  "serde_json",
@@ -2192,6 +2193,7 @@ dependencies = [
  "tauri-plugin-opener",
  "tauri-plugin-shell",
  "tauri-plugin-single-instance",
+ "uuid",
 ]
 
 [[package]]

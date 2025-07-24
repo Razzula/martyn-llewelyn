@@ -1,8 +1,5 @@
-export type TrueLayerAccessTokenResponse = {
-    access_token: string;
-    expires_in: number; // seconds
-    token_type: 'Bearer';
-    scope: string;
+export type TrueLayerUser = {
+    // TODO
 };
 
 export type TrueLayerAccount = {
@@ -22,4 +19,44 @@ export type TrueLayerAccount = {
         provider_id: string;
         logo_uri: string;
     };
+    
+    balance?: TrueLayerAccountBalance;
+};
+
+export type TrueLayerAccountBalance = {
+    currency: string;
+    available: number;
+    current: number;
+    overdraft: number;
+    update_timestamp: string;
+}
+
+export type TrueLayerCard = {
+    account_id: string;
+    card_network: 'VISA' | 'MASTERCARD' | string;
+    card_type: 'CREDIT' | 'CHARGE' | string;
+    currency: string;
+    display_name: string;
+    partial_card_number: string;
+    name_on_card: string;
+    valid_from: string; // YYYY-MM
+    valid_to: string;   // YYYY-MM
+    update_timestamp: string; // ISO timestamp
+    provider: {
+        provider_id: string;
+    };
+
+    balance?: TrueLayerCardBalance;
+};
+
+export type TrueLayerCardBalance = {
+    available: number;
+    currency: string;
+    current: number;
+    credit_limit: number;
+    last_statement_balance: number;
+    last_statement_date: string; // YYYY-MM-DD
+    payment_due: number;
+    payment_due_date: string; // YYYY-MM-DD
+    update_timestamp: string; // ISO timestamp
 };

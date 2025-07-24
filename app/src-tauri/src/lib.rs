@@ -1,6 +1,9 @@
 #![allow(non_snake_case)]
 #![allow(unused_parens)]
 
+mod wallet;
+use wallet::{TokenEntry, getWallet, Wallet};
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // load environment variables from .env file
@@ -31,7 +34,17 @@ pub fn run() {
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_shell::init())
         // expose functions through Tauri
-        .invoke_handler(tauri::generate_handler![exchangeToken, fetchAccountData,])
+        .invoke_handler(tauri::generate_handler![
+            // TRUELAYER
+            exchangeToken,
+            fetchUserData,
+            fetchAccountsData,
+            fetchCardsData,
+            fetchAccountBalance,
+            fetchCardBalance,
+            // WALLET
+            loadwalletTokens,
+        ])
         .setup(|app| {
             // regiter deep link schemes
             #[cfg(any(windows, target_os = "linux"))]
@@ -109,14 +122,125 @@ async fn exchangeToken(code: String, verifier: String) -> Result<String, String>
         .map_err(|e| e.to_string())?;
 
     let text = res.text().await.map_err(|e| e.to_string())?;
-    Ok(text)
+    let json: serde_json::Value = serde_json::from_str(&text).map_err(|e| e.to_string())?;
+
+    let accessToken = json["access_token"].as_str().ok_or("missing access_token")?.to_string();
+    let refreshToken = json["refresh_token"].as_str().ok_or("missing refresh_token")?.to_string();
+    let expiresIn = json["expires_in"].as_u64().ok_or("missing expires_in")?;
+    let expiresAt = nowEpoch() + expiresIn;
+
+    let entry = TokenEntry {
+        accessToken: accessToken.clone(),
+        refreshToken: refreshToken.clone(),
+        expiresAt: expiresAt,
+    };
+
+    let walletToken = getWallet().insert(entry);
+    Ok(walletToken)
+}
+
+async fn refreshToken(walletToken: &str, existingRefreshToken: &str) -> Result<TokenEntry, String> {
+    use dotenvy::from_path;
+    use std::env;
+
+    // load .env
+    let _ = from_path("../../.env");
+    let clientID = env!("VITE_TRUELAYER_CLIENT_ID").to_string();
+    let clientSecret = env!("TRUELAYER_CLIENT_SECRET").to_string();
+
+    let client = reqwest::Client::new();
+    let params = [
+        ("grant_type", "refresh_token"),
+        ("refresh_token", existingRefreshToken),
+        ("client_id", &clientID),
+        ("client_secret", &clientSecret),
+    ];
+
+    let res = client
+        .post(format!("{}/connect/token", getTrueLayerAuthUrl()))
+        .header("Content-Type", "application/x-www-form-urlencoded")
+        .form(&params)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let text = res.text().await.map_err(|e| e.to_string())?;
+    let json: serde_json::Value = serde_json::from_str(&text).map_err(|e| e.to_string())?;
+
+    let accessToken = json["access_token"].as_str().ok_or("missing access_token")?.to_string();
+    let refreshToken = json["refresh_token"].as_str().ok_or("missing refresh_token")?.to_string();
+    let expiresIn = json["expires_in"].as_u64().ok_or("missing expires_in")?;
+    let expiresAt = nowEpoch() + expiresIn;
+
+    let entry = TokenEntry {
+        accessToken: accessToken.clone(),
+        refreshToken: refreshToken.clone(),
+        expiresAt: expiresAt,
+    };
+
+    let mut wallet = getWallet();
+    wallet.update(walletToken, entry.clone());
+    Ok(entry)
+}
+
+fn nowEpoch() -> u64 {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("Time went backwards")
+        .as_secs()
 }
 
 #[tauri::command]
-async fn fetchAccountData(accessToken: &str) -> Result<String, String> {
-    let url = format!("{}/data/v1/accounts", getTrueLayerApiUrl());
+async fn fetchUserData(walletToken: &str) -> Result<String, String> {
+    fetchFromTrueLayer(walletToken, "data/v1/info").await
+}
 
+#[tauri::command]
+async fn fetchAccountsData(walletToken: &str) -> Result<String, String> {
+    fetchFromTrueLayer(walletToken, "data/v1/accounts").await
+}
+
+#[tauri::command]
+async fn fetchCardsData(walletToken: &str) -> Result<String, String> {
+    fetchFromTrueLayer(walletToken, "data/v1/cards").await
+}
+
+#[tauri::command]
+async fn fetchAccountBalance(walletToken: &str, accountID: &str) -> Result<String, String> {
+    let endpoint = format!("data/v1/accounts/{}/balance", accountID);
+    fetchFromTrueLayer(walletToken, &endpoint).await
+}
+
+#[tauri::command]
+async fn fetchCardBalance(walletToken: &str, cardID: &str) -> Result<String, String> {
+    let endpoint = format!("data/v1/cards/{}/balance", cardID);
+    fetchFromTrueLayer(walletToken, &endpoint).await
+}
+
+async fn fetchFromTrueLayer(walletToken: &str, endpoint: &str) -> Result<String, String> {
+
+    // GET ACCESS TOKEN FROM WALLET
+    let (needsRefresh, tokenToRefresh) = {
+        let wallet = getWallet();
+        let entry = wallet.get(walletToken).cloned().ok_or("Invalid walletToken")?;
+
+        let now = nowEpoch();
+        (entry.expiresAt <= now + 60, entry.refreshToken)
+    };
+
+    let accessToken = if (needsRefresh) {
+        let refreshed = refreshToken(&walletToken, &tokenToRefresh).await?;
+        refreshed.accessToken
+    } else {
+        let wallet = getWallet();
+        wallet.get(walletToken).unwrap().accessToken.clone()
+    };
+
+    // HANDLE REQUEST
+    let url = format!("{}/{}", getTrueLayerApiUrl(), endpoint);
     let client = reqwest::Client::new();
+
     let res = client
         .get(&url)
         .bearer_auth(accessToken)
@@ -124,15 +248,27 @@ async fn fetchAccountData(accessToken: &str) -> Result<String, String> {
         .await
         .map_err(|e| e.to_string())?;
 
-    if (res.status() == reqwest::StatusCode::UNAUTHORIZED) {
+    let status = res.status();
+
+    if (status == reqwest::StatusCode::UNAUTHORIZED) {
         return Err("unauthorised".to_string());
     }
 
-    if (!res.status().is_success()) {
-        let err = res.text().await.map_err(|e| e.to_string())?;
-        return Err(format!("TrueLayer API error: {}", err));
+    let body = res.text().await.map_err(|e| e.to_string())?;
+
+    if (!status.is_success()) {
+        return Err(format!(
+            "TrueLayer API error ({}): {}",
+            status,
+            if body.trim().is_empty() { "<no content>" } else { &body }
+        ));
     }
 
-    let body = res.text().await.map_err(|e| e.to_string())?;
     Ok(body)
+}
+
+#[tauri::command]
+async fn loadwalletTokens() -> Vec<String> {
+    let wallet = Wallet::load();
+    wallet.tokenList()
 }

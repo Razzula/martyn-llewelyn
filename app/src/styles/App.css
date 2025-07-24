@@ -5,12 +5,68 @@
     text-align: center;
 }
 
-.card {
-    padding: 2em;
+.column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
-h4 {
-    margin-top: 0;
+.row {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}
+
+button {
+    padding: 0.5rem;
+}
+
+button, .clickable {
+    cursor: pointer;
+}
+
+.mini {
+    font-size: 0.6rem;
+}
+
+.footend {
+    margin-top: 0.5rem;
+    font-style: italic;
+}
+
+.verticalSeparator {
+    width: 1px;
+    background-color: #dadada;
+    height: 24px;
+    margin: 0 0.5rem;
+}
+
+.accounts {
+    margin: 1rem;
+}
+
+table {
+    border-spacing: 0px;
+    border-collapse: collapse;
+
+    table-layout: auto;
+    border-collapse: collapse;
+    width: 100%;
+}
+
+th, td{
+    border: 1px solid #dadada;
+}
+
+.bankLogo {
+    width: 32px;
+    height: auto;
+}
+
+.providerLogo {
+    width: 128px;
+    height: auto;
 }
 
 .spinnerOverlay {
@@ -38,9 +94,4 @@ h4 {
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
-}
-
-.warn {
-    background: #fff3cd;
-    color: #664d03;
 }
