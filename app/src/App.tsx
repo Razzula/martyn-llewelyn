@@ -7,6 +7,7 @@ import { fetchAccountBalance, fetchAccountsData, fetchCardBalance, fetchCardsDat
 import type { TrueLayerAccount, TrueLayerAccountBalance, TrueLayerCard, TrueLayerCardBalance } from './types/TrueLayer.ts';
 
 import './styles/App.css';
+import { BankAccount, BankCard } from './types/Bagel.ts';
 
 const isTauri = !!(window as any).__TAURI_INTERNALS__;
 
@@ -20,10 +21,10 @@ function App() {
 
     const [redirectURI, setRedirectURI] = useState<string | null>(null);
 
-    const [accounts, setAccounts] = useState<Record<string, (TrueLayerAccount | TrueLayerCard)>>({});
+    const [accounts, setAccounts] = useState<Record<string, (BankAccount | BankCard)>>({});
     const [accountsState, setAccountsState] = useState<ResponseState | null>(null);
 
-    const [walletToken, setwalletToken] = useState<string | null>(null);
+    const [walletTokens, setWalletTokens] = useState<string[]>([]);
 
     useEffect(() => {
         // HANDLE SETUP
@@ -39,7 +40,7 @@ function App() {
             .then((tokens: string[]) => {
                 if (tokens.length > 0) {
                     // use the first token for now
-                    setwalletToken(tokens[0]);
+                    setWalletTokens(tokens);
                 }
             })
             .catch(err => {
@@ -61,7 +62,13 @@ function App() {
             if (code) {
                 handleTokenExchange(code)
                     .then(() => {
-                        setwalletToken(sessionStorage.getItem('walletToken'));
+                        const token = sessionStorage.getItem('walletToken');
+                        // XXX
+                        if (!token) {
+                            console.error('No wallet token found after token exchange');
+                            return;
+                        }
+                        setWalletTokens([token]); // XXX
                     })
                     .catch(err => {
                         console.error('Token exchange failed:', err);
@@ -80,53 +87,56 @@ function App() {
 
     useEffect(() => {
         // FETCH ACCOUNTS
-        if (walletToken) {
+        if (walletTokens.length > 0) {
             setAccounts({});
             setAccountsState(ResponseState.LOADING); // reset accounts while fetching
 
-            fetchAccountsData(walletToken)
-                .then(data => {
-                    data.forEach(account => {
-                        addAccount(account);
+            walletTokens.forEach(token => {
+                fetchAccountsData(token)
+                    .then(data => {
+                        data.forEach(account => {
+                            addAccount(account);
+                        });
+                        if (accountsState !== ResponseState.ERROR) {
+                            setAccountsState(ResponseState.SUCCESS);
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Failed to fetch accounts:', err);
+                        setAccountsState(ResponseState.ERROR);
                     });
-                    if (accountsState !== ResponseState.ERROR) {
-                        setAccountsState(ResponseState.SUCCESS);
-                    }
-                })
-                .catch(err => {
-                    console.error('Failed to fetch accounts:', err);
-                    setAccountsState(ResponseState.ERROR);
-                });
 
-            fetchCardsData(walletToken)
-                .then(data => {
-                    data.forEach(account => {
-                        addAccount(account);
+                fetchCardsData(token)
+                    .then(data => {
+                        data.forEach(account => {
+                            addAccount(account);
+                        });
+                    })
+                    .catch(err => {
+                        console.error('Failed to fetch cards:', err);
+                        setAccountsState(ResponseState.ERROR);
                     });
-                })
-                .catch(err => {
-                    console.error('Failed to fetch cards:', err);
-                    setAccountsState(ResponseState.ERROR);
-                });
+            });
         }
         else {
             setAccounts({});
         }
-    }, [walletToken]);
+    }, [walletTokens]);
 
     useEffect(() => {
         // FETCH ACCOUNT BALANCES
-        if (!walletToken || !accounts) return;
+        if (walletTokens.length === 0 || !accounts) return;
 
         if (Object.keys(accounts).length > 0) {
 
-            Object.entries(accounts).forEach(([accountId, account]: [string, TrueLayerAccount | TrueLayerCard]) => {
+            Object.entries(accounts).forEach(([accountId, account]: [string, BankAccount | BankCard]) => {
                 if (account.balance) {
                     // already has balance, skip fetching
                     return;
                 }
 
                 const isCard = account.hasOwnProperty('card_network');
+                const walletToken = account.walletToken || walletTokens[0]; // XXX: use the first token if not specified
 
                 if (!isCard) {
                     fetchAccountBalance(walletToken, accountId)
@@ -154,7 +164,7 @@ function App() {
                 }
             });
         }
-    }, [accounts, walletToken]);
+    }, [accounts, walletTokens]);
 
     async function openInBrowser(uri: string | null) {
         if (uri) {
@@ -232,6 +242,24 @@ function App() {
                     />
                 </div>
             }
+
+            {/* { // DEBUG
+                walletTokens.length > 0 ? (
+                    <div>
+                        {
+                            walletTokens.map(token => (
+                                <div key={token}>    
+                                    <h4>{token}</h4>
+                                </div>
+                            ))
+                        }
+                    </div>
+                ) : (
+                    <div>
+                        <p>Wallet is empty!!!</p>
+                    </div>
+                )
+            } */}
 
             {
                 Object.keys(accounts).length > 0 ? (

@@ -24,22 +24,19 @@ impl Wallet {
     pub fn load(appHandle: &AppHandle) -> Self {
         let walletPath = appHandle
             .path()
-            .app_config_dir()
-            .expect("Failed to resolve app_config_dir")
+            .app_local_data_dir()
+            .expect("Failed to resolve app_local_data_dir")
             .join("wallet.json");
         println!("Wallet path: {}", walletPath.display());
 
         if (walletPath.exists()) {
             // load from file, if exists
             let data = fs::read_to_string(&walletPath).unwrap_or_default();
-            println!("Loading wallet from file: {}", walletPath.display());
-            println!("Wallet data: {}", &data);
             serde_json::from_str::<Wallet>(&data).unwrap_or_default()
                 .withPath(walletPath)
         }
         else {
             // fresh wallet
-            println!("No wallet found, creating a new one.");
             Wallet::default().withPath(walletPath)
         }
     }
@@ -51,7 +48,6 @@ impl Wallet {
 
     pub fn save(&self) {
         // write to file
-        println!("Saving wallet to file: {}", self.path.display());
         let data = serde_json::to_string_pretty(&self).expect("Failed to serialize wallet");
         // write
         if let Some(parent) = self.path.parent() {

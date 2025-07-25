@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 
 import { TrueLayerAccount, TrueLayerAccountBalance, TrueLayerCard, TrueLayerCardBalance, TrueLayerUser } from "../types/TrueLayer";
 import { generateCodeChallenge, generateCodeVerifier } from "../utils/PKCE";
+import { BankAccount, BankCard } from "src/types/Bagel";
 
 export async function getTrueLayerAuthURL() {
 
@@ -38,9 +39,7 @@ export async function handleTokenExchange(code: string) {
     const verifier = sessionStorage.getItem('codeVerifier');
 
     const walletToken: string = await invoke('exchangeToken', { code, verifier });
-
-    // store/access tokens as needed
-    sessionStorage.setItem('walletToken', walletToken);
+    return walletToken;
 }
 
 export async function fetchUserData(walletToken: string): Promise<TrueLayerUser | null> {
@@ -50,18 +49,32 @@ export async function fetchUserData(walletToken: string): Promise<TrueLayerUser 
     return res.results || null;
 }
 
-export async function fetchAccountsData(walletToken: string): Promise<TrueLayerAccount[]> {
+export async function fetchAccountsData(walletToken: string): Promise<BankAccount[]> {
     const res = JSON.parse(
         await invoke('fetchAccountsData', { walletToken })
     );
-    return res.results || [];
+    const data: BankAccount[] = res.results.map((account: TrueLayerAccount) => {
+        return {
+            ...account,
+            balance: undefined, // ensure balance is defined
+            walletToken: walletToken // store the walletToken needed to access the account
+        };
+    });
+    return data;
 }
 
-export async function fetchCardsData(walletToken: string): Promise<TrueLayerCard[]> {
+export async function fetchCardsData(walletToken: string): Promise<BankCard[]> {
     const res = JSON.parse(
         await invoke('fetchCardsData', { walletToken })
     );
-    return res.results || [];
+    const data: BankCard[] = res.results.map((card: TrueLayerCard) => {
+        return {
+            ...card,
+            balance: undefined, // ensure balance is defined
+            walletToken: walletToken // store the walletToken needed to access the card
+        };
+    });
+    return data;
 }
 
 export async function fetchAccountBalance(walletToken: string, accountId: string): Promise<TrueLayerAccountBalance[]> {

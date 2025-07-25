@@ -19,8 +19,6 @@ export type TrueLayerAccount = {
         provider_id: string;
         logo_uri: string;
     };
-    
-    balance?: TrueLayerAccountBalance;
 };
 
 export type TrueLayerAccountBalance = {
@@ -45,8 +43,6 @@ export type TrueLayerCard = {
     provider: {
         provider_id: string;
     };
-
-    balance?: TrueLayerCardBalance;
 };
 
 export type TrueLayerCardBalance = {

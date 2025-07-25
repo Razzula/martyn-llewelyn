@@ -79,24 +79,25 @@ pub fn run() {
 }
 
 pub fn getTrueLayerApiUrl() -> &'static str {
-    match std::env::var("VITE_TRUELAYER_ENV")
-        .unwrap_or_else(|_| "sandbox".to_string())
-        .as_str()
-    {
-        "sandbox" => "https://api.truelayer-sandbox.com",
-        _ => "https://api.truelayer.com",
+    let env = option_env!("VITE_TRUELAYER_ENV").unwrap_or("sandbox");
+    if (env.eq_ignore_ascii_case("sandbox")) {
+        "https://api.truelayer-sandbox.com"
+    }
+    else {
+        "https://api.truelayer.com"
     }
 }
 
 pub fn getTrueLayerAuthUrl() -> &'static str {
-    match std::env::var("VITE_TRUELAYER_ENV")
-        .unwrap_or_else(|_| "sandbox".to_string())
-        .as_str()
-    {
-        "sandbox" => "https://auth.truelayer-sandbox.com",
-        _ => "https://auth.truelayer.com",
+    let env = option_env!("VITE_TRUELAYER_ENV").unwrap_or("sandbox");
+    if (env.eq_ignore_ascii_case("sandbox")) {
+        "https://auth.truelayer-sandbox.com"
+    }
+    else {
+        "https://auth.truelayer.com"
     }
 }
+
 
 #[tauri::command]
 async fn exchangeToken(
