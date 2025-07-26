@@ -26,7 +26,8 @@
         "shell-perms",
         "devtools",
         "main-capability",
-        "opener-perms"
+        "opener-perms",
+        "mobile-capability"
       ]
     }
   },
@@ -39,7 +40,10 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "android": {
+      "minSdkVersion": 28
+    }
   },
   "plugins": {
     "deep-link": {

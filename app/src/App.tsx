@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { onOpenUrl } from '@tauri-apps/plugin-deep-link';
 import { openUrl } from '@tauri-apps/plugin-opener';
+import { platform } from '@tauri-apps/plugin-os';
 import { invoke } from '@tauri-apps/api/core';
+import { authenticate } from '@tauri-apps/plugin-biometric';
+import { retrieve, store } from "@impierce/tauri-plugin-keystore";
 
 import { fetchAccountBalance, fetchAccountsData, fetchCardBalance, fetchCardsData, getTrueLayerAuthURL, handleTokenExchange } from './lib/TrueLayer.ts';
 import type { TrueLayerAccountBalance, TrueLayerCardBalance } from './types/TrueLayer.ts';
@@ -20,6 +23,7 @@ enum ResponseState {
 
 function App() {
 
+    const [authKey, setAuthKey] = useState<string | null>(null);
     const [users, setUsers] = useState<User[] | null>(null);
 
     const [accounts, setAccounts] = useState<Record<string, (BankAccount | BankCard)>>({});
@@ -89,6 +93,12 @@ function App() {
             if (unlisten) unlisten();
         };
     }, []);
+
+    useEffect(() => {
+        if (authKey === null) {
+            authenticateUser();
+        }
+    }, [authKey]);
 
     useEffect(() => {
         // SAVE USERS
@@ -279,6 +289,68 @@ function App() {
         }
     }
 
+    function authenticateUser() {
+        if (platform() === 'android') {
+            // ANDROID
+            // biometric authentication is handled by the OS
+            authenticate('In order to access your financial data, please authenticate.', {
+                allowDeviceCredential: true,
+                cancelTitle: 'Cancel',
+                title: 'Secure Login',
+                subtitle: 'Authenticate with biometrics or device credentials',
+                confirmationRequired: true,
+            })
+                .then(() => {
+                    // use keystore to fetch or generate a key
+                    retrieve('wallet-encryption', 'default', 'wallet-master')
+                        .then((key: string | null) => {
+                            if (key === null) {
+                                // no key found, generate a new one
+                                const key = crypto.getRandomValues(new Uint8Array(32));
+                                const hexKey = Array.from(key).map(b => b.toString(16).padStart(2, '0')).join('');
+                                store({
+                                    keyAlias: 'wallet-master',
+                                    value: hexKey,
+                                    promptTitle: 'Secure Key Storage',
+                                    promptSubtitle: 'Authenticate to save your encryption key',
+                                    promptNegativeButtonText: 'Cancel',
+                                })
+                                    .then(() => {
+                                        // set the generated key as authKey
+                                        setAuthKey(hexKey);
+                                    })
+                                    .catch((err) => {
+                                        console.error('Failed to store wallet key:', err?.message ?? err);
+                                    });
+                            }
+                            else {
+                                // key found, set it as authKey
+                                setAuthKey(key);
+                            }
+                        })
+                        .catch((err) => {
+                            console.error('Failed to retrieve wallet key:', err?.message ?? err);
+                        });
+                })
+                .catch((err) => {
+                    console.error('Biometric authentication failed:', err?.message ?? err);
+                });
+        }
+    }
+
+    function fetchOrGenerateMasterKey() {
+
+    }
+
+    if (platform() === 'android') {
+        // on mobile, we don't show the app until biometric auth is done
+        if (authKey === null) {
+            return (
+                <h1>Unauthorised</h1>
+            );
+        }
+    }
+
     return (
         <div id='app'>
 
@@ -292,7 +364,7 @@ function App() {
 
                     <div className='column'>
                         <div className='row'>
-                            { users &&
+                            {users &&
                                 users.map(user => (
                                     <button key={user.id}
                                         onClick={() => {
@@ -314,7 +386,7 @@ function App() {
             </ResponsiveModal>
 
             {/* USER CREATION MODAL */}
-            <ResponsiveModal title={ selectedUser === null ? 'Add a new user' : 'Edit user' }
+            <ResponsiveModal title={selectedUser === null ? 'Add a new user' : 'Edit user'}
                 open={openEditUser !== null}
                 onClose={() => {
                     setOpenEditUser(null);
@@ -337,13 +409,13 @@ function App() {
 
                 {/* USER BUTTONS */}
                 <div className='row left'>
-                    { users &&
+                    {users &&
                         users.map((user, index) => (
                             <button
                                 key={index}
                                 className='userButton'
                                 onClick={() => {
-                                    setOpenEditUser(() => {});
+                                    setOpenEditUser(() => { });
                                     setSelectedUser(user);
                                 }}
                             >
@@ -353,7 +425,7 @@ function App() {
                     }
                     <button
                         className='userButton'
-                        onClick={() => setOpenEditUser(() => {})}
+                        onClick={() => setOpenEditUser(() => { })}
                     >
                         {users && users.length > 0 ? '+' : 'Setup User'}
                     </button>
@@ -549,7 +621,7 @@ type UserEditPanelProps = {
     close: () => void;
 };
 
-function UserEditPanel({user, updateOrAddUser, deleteUser, onClose, close}: UserEditPanelProps) {
+function UserEditPanel({ user, updateOrAddUser, deleteUser, onClose, close }: UserEditPanelProps) {
 
     const [userID, setUserID] = useState(user !== null ? user.id : crypto.randomUUID());
     const [userName, setUserName] = useState('');
@@ -589,7 +661,7 @@ function UserEditPanel({user, updateOrAddUser, deleteUser, onClose, close}: User
                 >
                     {user ? 'Update' : 'Add'}
                 </button>
-                { user !== null &&
+                {user !== null &&
                     <button className='centre threat'
                         onClick={() => {
                             deleteUser(user?.id);

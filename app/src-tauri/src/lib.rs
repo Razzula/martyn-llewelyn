@@ -1,12 +1,14 @@
 #![allow(non_snake_case)]
 #![allow(unused_parens)]
 
-use std::sync::Mutex;
-
-use tauri::Manager;
+use tauri::{Manager, State};
+use tokio::sync::Mutex;
 
 mod wallet;
 use wallet::{TokenEntry, Wallet};
+
+#[cfg(target_os = "android")]
+use wallet::MasterKey;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -14,29 +16,43 @@ pub fn run() {
     dotenvy::dotenv().ok();
 
     // initialise the Tauri application
-    let mut builder = tauri::Builder::default().plugin(tauri_plugin_opener::init());
+    let mut builder = tauri::Builder::default()
+        .plugin(tauri_plugin_os::init())
+        .plugin(tauri_plugin_opener::init());
 
     // configure desktop-specific features
     #[cfg(desktop)]
     {
-        builder = builder.plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
-            // compress window calls into the main window
-            println!("Second instance launched with args: {argv:?}");
+        builder = builder
+            .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
+                // compress window calls into the main window
+                println!("Second instance launched with args: {argv:?}");
 
-            // focus the main window
-            use tauri::Manager;
-            if let Some(window) = app.get_webview_window("main") {
-                let _ = window.unminimize();
-                let _ = window.set_focus();
-                let _ = window.show(); // ensures it's visible
-            }
-        }));
+                // focus the main window
+                use tauri::Manager;
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.unminimize();
+                    let _ = window.set_focus();
+                    let _ = window.show(); // ensures it's visible
+                }
+            }))
+            .plugin(tauri_plugin_keyring::init());
+    }
+
+    // configure Android-specific features
+    #[cfg(target_os = "android")]
+    {
+        builder = builder
+            .plugin(tauri_plugin_biometric::init())
+            .invoke_handler(tauri::generate_handler![setMasterKey,])
     }
 
     // configure universal features
     builder
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_keystore::init())
+        // .manage(wallet::MasterPasswordState(Mutex::new(None)))
         // expose functions through Tauri
         .invoke_handler(tauri::generate_handler![
             // WALLET
@@ -54,8 +70,7 @@ pub fn run() {
         ])
         .setup(|app| {
             // setup wallet
-            let wallet = Wallet::load(&app.handle());
-            app.manage(std::sync::Mutex::new(wallet));
+            app.manage(tauri::async_runtime::Mutex::new(Wallet::default()));
 
             // register deep link schemes
             #[cfg(any(windows, target_os = "linux"))]
@@ -64,6 +79,12 @@ pub fn run() {
                 // macos, android, ios: "Deep links must be registered in config. Dynamic registration at runtime is not supported."
                 use tauri_plugin_deep_link::DeepLinkExt;
                 app.deep_link().register_all()?;
+            }
+
+            // setup Android keystore
+            #[cfg(target_os = "android")]
+            {
+                app.manage(MasterKey::new());
             }
 
             // general setup
@@ -115,8 +136,7 @@ pub fn getTrueLayerApiUrl() -> &'static str {
     let env = option_env!("VITE_TRUELAYER_ENV").unwrap_or("sandbox");
     if (env.eq_ignore_ascii_case("sandbox")) {
         "https://api.truelayer-sandbox.com"
-    }
-    else {
+    } else {
         "https://api.truelayer.com"
     }
 }
@@ -125,14 +145,14 @@ pub fn getTrueLayerAuthUrl() -> &'static str {
     let env = option_env!("VITE_TRUELAYER_ENV").unwrap_or("sandbox");
     if (env.eq_ignore_ascii_case("sandbox")) {
         "https://auth.truelayer-sandbox.com"
-    }
-    else {
+    } else {
         "https://auth.truelayer.com"
     }
 }
 
 #[tauri::command]
 async fn exchangeToken(
+    app: tauri::AppHandle,
     wallet: tauri::State<'_, Mutex<Wallet>>,
     code: String,
     userID: String,
@@ -170,8 +190,14 @@ async fn exchangeToken(
     let text = res.text().await.map_err(|e| e.to_string())?;
     let json: serde_json::Value = serde_json::from_str(&text).map_err(|e| e.to_string())?;
 
-    let accessToken = json["access_token"].as_str().ok_or("missing access_token")?.to_string();
-    let refreshToken = json["refresh_token"].as_str().ok_or("missing refresh_token")?.to_string();
+    let accessToken = json["access_token"]
+        .as_str()
+        .ok_or("missing access_token")?
+        .to_string();
+    let refreshToken = json["refresh_token"]
+        .as_str()
+        .ok_or("missing refresh_token")?
+        .to_string();
     let expiresIn = json["expires_in"].as_u64().ok_or("missing expires_in")?;
     let expiresAt = nowEpoch() + expiresIn;
 
@@ -182,12 +208,13 @@ async fn exchangeToken(
         userID: userID.clone(),
     };
 
-    let mut wallet = wallet.lock().unwrap();
-    let walletToken = wallet.insert(entry);
+    let mut wallet = wallet.lock().await;
+    let walletToken = wallet.insert(entry, app).await;
     Ok(walletToken)
 }
 
 async fn refreshToken(
+    app: tauri::AppHandle,
     wallet: tauri::State<'_, Mutex<Wallet>>,
     walletToken: &str,
     existingRefreshToken: &str,
@@ -220,8 +247,14 @@ async fn refreshToken(
     let text = res.text().await.map_err(|e| e.to_string())?;
     let json: serde_json::Value = serde_json::from_str(&text).map_err(|e| e.to_string())?;
 
-    let accessToken = json["access_token"].as_str().ok_or("missing access_token")?.to_string();
-    let refreshToken = json["refresh_token"].as_str().ok_or("missing refresh_token")?.to_string();
+    let accessToken = json["access_token"]
+        .as_str()
+        .ok_or("missing access_token")?
+        .to_string();
+    let refreshToken = json["refresh_token"]
+        .as_str()
+        .ok_or("missing refresh_token")?
+        .to_string();
     let expiresIn = json["expires_in"].as_u64().ok_or("missing expires_in")?;
     let expiresAt = nowEpoch() + expiresIn;
 
@@ -232,8 +265,8 @@ async fn refreshToken(
         userID: userID.to_string(),
     };
 
-    let mut wallet = wallet.lock().unwrap();
-    wallet.update(walletToken, entry.clone());
+    let mut wallet = wallet.lock().await;
+    wallet.update(walletToken, entry.clone(), app).await;
     Ok(entry)
 }
 
@@ -247,88 +280,100 @@ fn nowEpoch() -> u64 {
 
 #[tauri::command]
 async fn fetchUserData(
+    app: tauri::AppHandle,
     wallet: tauri::State<'_, Mutex<Wallet>>,
     walletToken: &str,
 ) -> Result<String, String> {
-    fetchFromTrueLayerUsingWallet(walletToken, "data/v1/info", wallet).await
+    fetchFromTrueLayerUsingWallet(app, walletToken, "data/v1/info", wallet).await
 }
 
 #[tauri::command]
 async fn fetchAccountsData(
+    app: tauri::AppHandle,
     wallet: tauri::State<'_, Mutex<Wallet>>,
     walletToken: &str,
 ) -> Result<String, String> {
-    fetchFromTrueLayerUsingWallet(walletToken, "data/v1/accounts", wallet).await
+    fetchFromTrueLayerUsingWallet(app, walletToken, "data/v1/accounts", wallet).await
 }
 
 #[tauri::command]
 async fn fetchCardsData(
+    app: tauri::AppHandle,
     wallet: tauri::State<'_, Mutex<Wallet>>,
     walletToken: &str,
 ) -> Result<String, String> {
-    fetchFromTrueLayerUsingWallet(walletToken, "data/v1/cards", wallet).await
+    fetchFromTrueLayerUsingWallet(app, walletToken, "data/v1/cards", wallet).await
 }
 
 #[tauri::command]
 async fn fetchAccountBalance(
+    app: tauri::AppHandle,
     wallet: tauri::State<'_, Mutex<Wallet>>,
     walletToken: &str,
     accountID: &str,
 ) -> Result<String, String> {
     let endpoint = format!("data/v1/accounts/{}/balance", accountID);
-    fetchFromTrueLayerUsingWallet(walletToken, &endpoint, wallet).await
+    fetchFromTrueLayerUsingWallet(app, walletToken, &endpoint, wallet).await
 }
-
 
 #[tauri::command]
 async fn fetchCardBalance(
+    app: tauri::AppHandle,
     wallet: tauri::State<'_, Mutex<Wallet>>,
     walletToken: &str,
     cardID: &str,
 ) -> Result<String, String> {
     let endpoint = format!("data/v1/cards/{}/balance", cardID);
-    fetchFromTrueLayerUsingWallet(walletToken, &endpoint, wallet).await
+    fetchFromTrueLayerUsingWallet(app, walletToken, &endpoint, wallet).await
 }
 
 async fn fetchFromTrueLayerUsingWallet(
+    app: tauri::AppHandle,
     walletToken: &str,
     endpoint: &str,
     wallet: tauri::State<'_, Mutex<Wallet>>,
 ) -> Result<String, String> {
-
     // GET ACCESS TOKEN FROM WALLET
     let (needsRefresh, tokenToRefresh, userID) = {
-        let wallet = wallet.lock().unwrap();
-        let entry = wallet.get(walletToken).cloned().ok_or("Invalid walletToken")?;
+        let mut wallet = wallet.lock().await;
+        let entry = wallet
+            .get(walletToken, &app)
+            .await
+            .cloned()
+            .ok_or("Invalid walletToken")?;
 
         let now = nowEpoch();
-        (entry.expiresAt <= now + 60, entry.refreshToken, entry.userID.clone())
+        (
+            entry.expiresAt <= now + 60,
+            entry.refreshToken,
+            entry.userID.clone(),
+        )
     };
 
     // REFRESH TOKEN, IF NEEDED
     let accessToken = if needsRefresh {
-        let refreshed = refreshToken(wallet, walletToken, &tokenToRefresh, &userID).await?;
+        let refreshed = refreshToken(app, wallet, walletToken, &tokenToRefresh, &userID).await?;
         refreshed.accessToken
-    }
-    else {
-        let wallet = wallet.lock().unwrap();
-        wallet.get(walletToken).unwrap().accessToken.clone()
+    } else {
+        let mut wallet = wallet.lock().await;
+        wallet
+            .get(walletToken, &app)
+            .await
+            .unwrap()
+            .accessToken
+            .clone()
     };
 
     // EMBED userID IN RESPONSE
     let raw = fetchFromTrueLayer(&accessToken, &endpoint).await?;
 
     let mut json: serde_json::Value = serde_json::from_str(&raw).map_err(|e| e.to_string())?;
-    json["userID"] = serde_json::Value::String(userID);
+    json["userID"] = serde_json::Value::String(userID.to_string());
 
     Ok(json.to_string())
 }
 
-async fn fetchFromTrueLayer(
-    accessToken: &str,
-    endpoint: &str,
-) -> Result<String, String> {
-
+async fn fetchFromTrueLayer(accessToken: &str, endpoint: &str) -> Result<String, String> {
     // HANDLE REQUEST
     let url = format!("{}/{}", getTrueLayerApiUrl(), endpoint);
     let client = reqwest::Client::new();
@@ -352,7 +397,11 @@ async fn fetchFromTrueLayer(
         return Err(format!(
             "TrueLayer API error ({}): {}",
             status,
-            if body.trim().is_empty() { "<no content>" } else { &body }
+            if body.trim().is_empty() {
+                "<no content>"
+            } else {
+                &body
+            }
         ));
     }
 
@@ -360,7 +409,19 @@ async fn fetchFromTrueLayer(
 }
 
 #[tauri::command]
-fn loadWalletTokens(wallet: tauri::State<'_, std::sync::Mutex<Wallet>>) -> Vec<String> {
-    let wallet = wallet.lock().unwrap();
-    wallet.tokenList()
+async fn loadWalletTokens(
+    app: tauri::AppHandle,
+    wallet: State<'_, Mutex<Wallet>>,
+) -> Result<Vec<String>, String> {
+    let mut wallet = wallet.lock().await;
+    Ok(wallet.tokenList(&app).await?)
+}
+
+#[cfg(target_os = "android")]
+#[tauri::command]
+fn setMasterKey(state: tauri::State<'_, MasterKey>, key: String) -> Result<(), String> {
+    let bytes = hex::decode(key).map_err(|e| e.to_string())?;
+    let arr: [u8; 32] = bytes.try_into().map_err(|_| "invalid key length")?;
+    state.set(arr);
+    Ok(())
 }
