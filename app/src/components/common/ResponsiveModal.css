@@ -1,0 +1,41 @@
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.centreModal {
+  background: white;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.bottomSheet {
+  background: white;
+  padding: 1rem;
+  border-radius: 1rem 1rem 0 0;
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  max-width: 100vw;
+  max-height: 50vh;
+  overflow-y: auto;
+  animation: slideUp 0.2s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}

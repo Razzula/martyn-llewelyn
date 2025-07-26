@@ -4,7 +4,7 @@ import { TrueLayerAccount, TrueLayerAccountBalance, TrueLayerCard, TrueLayerCard
 import { generateCodeChallenge, generateCodeVerifier } from "../utils/PKCE";
 import { BankAccount, BankCard } from "src/types/Bagel";
 
-export async function getTrueLayerAuthURL() {
+export async function getTrueLayerAuthURL(userID: string) {
 
     const env = import.meta.env.VITE_TRUELAYER_ENV || 'sandbox';
 
@@ -22,8 +22,8 @@ export async function getTrueLayerAuthURL() {
         client_id: import.meta.env.VITE_TRUELAYER_CLIENT_ID,
         redirect_uri: import.meta.env.VITE_TRUELAYER_REDIRECT_URI,
         scope: 'info accounts cards balance transactions offline_access',
-        state: crypto.randomUUID(),
-        nonce: crypto.randomUUID(),
+        state: userID,
+        // nonce: crypto.randomUUID(),
         code_challenge: challenge,
         code_challenge_method: 'S256',
         enable_mock: (env === 'sandbox').toString(),
@@ -35,10 +35,10 @@ export async function getTrueLayerAuthURL() {
     return redirectURI;
 }
 
-export async function handleTokenExchange(code: string) {
+export async function handleTokenExchange(code: string, state: string) {
     const verifier = sessionStorage.getItem('codeVerifier');
 
-    const walletToken: string = await invoke('exchangeToken', { code, verifier });
+    const walletToken: string = await invoke('exchangeToken', { code, userId: state, verifier });
     return walletToken;
 }
 
@@ -56,6 +56,7 @@ export async function fetchAccountsData(walletToken: string): Promise<BankAccoun
     const data: BankAccount[] = res.results.map((account: TrueLayerAccount) => {
         return {
             ...account,
+            user: res.userID,
             balance: undefined, // ensure balance is defined
             walletToken: walletToken // store the walletToken needed to access the account
         };
@@ -70,6 +71,7 @@ export async function fetchCardsData(walletToken: string): Promise<BankCard[]> {
     const data: BankCard[] = res.results.map((card: TrueLayerCard) => {
         return {
             ...card,
+            user: res.userID,
             balance: undefined, // ensure balance is defined
             walletToken: walletToken // store the walletToken needed to access the card
         };

@@ -2,6 +2,14 @@
     text-align: center;
 }
 
+#app {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    justify-content: space-between;
+    /* padding: 1rem; */
+}
+
 .column {
     display: flex;
     flex-direction: column;
@@ -30,8 +38,34 @@ button {
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
+button.threat {
+    background-color: #e42c2c;
+}
+
+button:disabled {
+    background-color: #dadada;
+    cursor: not-allowed;
+}
+
+button:disabled:hover,
+button:disabled:active {
+    /* prevent colour changes */
+    background-color: #dadada;
+    transform: none !important; /* prevent animation */
+}
+
 button:hover {
     background-color: #708238;
+    transform: translateY(-1px);
+}
+
+button:active {
+    background-color: #556B2F;
+    transform: translateY(0);
+}
+
+button.threat:hover {
+    background-color: #FF0000;
     transform: translateY(-1px);
 }
 
@@ -44,8 +78,30 @@ button, .clickable {
     cursor: pointer;
 }
 
+.small {
+    font-size: 0.8rem;
+}
+
 .mini {
     font-size: 0.6rem;
+}
+
+.header {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+}
+
+.left {
+    justify-self: start;
+}
+
+.center {
+    justify-self: center;
+}
+
+.right {
+    justify-self: end;
 }
 
 .footend {
@@ -72,7 +128,6 @@ button, .clickable {
     max-width: 100%;
 }
 
-
 .accountCard {
     border-radius: 0.5rem;
     padding: 1rem;
@@ -84,7 +139,7 @@ button, .clickable {
     margin: 0.5rem;
 }
 
-.header {
+.accountHeader {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -96,7 +151,7 @@ button, .clickable {
     font-size: 1.1rem;
 }
 
-.header .name {
+.accountHeader .name {
     font-weight: 600;
     font-size: 1rem;
 }
@@ -106,17 +161,15 @@ button, .clickable {
     margin-top: 0.25rem;
 }
 
-table {
-    border-spacing: 0px;
-    border-collapse: collapse;
-
-    table-layout: auto;
-    border-collapse: collapse;
-    width: 100%;
-}
-
-th, td{
-    border: 1px solid #dadada;
+.userButton {
+    background-color: #8A9A5B;
+    color: white;
+    border: none;
+    border-radius: 1rem;
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
 }
 
 .bankLogo {

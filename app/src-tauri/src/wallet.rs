@@ -5,11 +5,12 @@ use tauri::{AppHandle, Manager};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TokenEntry {
     pub accessToken: String,
     pub refreshToken: String,
     pub expiresAt: u64, // epoch seconds
+    pub userID: String,
 }
 
 #[derive(Serialize, Deserialize, Default)]
