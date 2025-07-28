@@ -76,6 +76,7 @@ button:active {
 
 button, .clickable {
     cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .small {
@@ -161,6 +162,26 @@ button, .clickable {
     margin-top: 0.25rem;
 }
 
+input[type="text"] {
+    padding: 0.75rem;
+    width: 100%;
+    max-width: 400px;
+    border-radius: 0.5rem;
+    border: 1px solid #dadada;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    transition: border-color 0.3s ease;
+}
+
+input[type="text"]:focus {
+    outline: none;
+    border-color: #8A9A5B;
+}
+
+input[type="text"]:disabled {
+    background-color: #f0f0f0;
+}
+
 .userButton {
     background-color: #8A9A5B;
     color: white;
@@ -170,6 +191,27 @@ button, .clickable {
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
+}
+
+.userSelection p {
+  margin-bottom: 1rem;
+  color: #555;
+  line-height: 1.4;
+}
+
+.userSelection .row {
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.userSelection .row > button {
+  font-size: 0.95rem;
+}
+
+.userSelection .small.centre {
+  margin-top: 1rem;
+  color: #aaa;
 }
 
 .bankLogo {

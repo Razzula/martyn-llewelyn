@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
 import { onOpenUrl } from '@tauri-apps/plugin-deep-link';
 import { openUrl } from '@tauri-apps/plugin-opener';
-import { platform } from '@tauri-apps/plugin-os';
 import { invoke } from '@tauri-apps/api/core';
-import { authenticate } from '@tauri-apps/plugin-biometric';
 // import { retrieve, store } from "@impierce/tauri-plugin-keystore";
 
 import { fetchAccountBalance, fetchAccountsData, fetchCardBalance, fetchCardsData, getTrueLayerAuthURL, handleTokenExchange } from './lib/TrueLayer.ts';
@@ -33,6 +31,8 @@ function App() {
     const [openSelectUser, setOpenSelectUser] = useState<any | null>(null); // holds a function to redirect after user selection
     const [openEditUser, setOpenEditUser] = useState<((userID: string) => void) | null>(null); // holds a function to redirect after user creation
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
+
+    const [modesty, setModesty] = useState<boolean>(true);
 
     useEffect(() => {
         // HANDLE SETUP
@@ -218,6 +218,7 @@ function App() {
                         [accountID]: {
                             ...account,
                             balance: balance as TrueLayerCardBalance,
+                            update_timestamp: balance.update_timestamp,
                         },
                     };
                 } else {
@@ -227,6 +228,7 @@ function App() {
                         [accountID]: {
                             ...account,
                             balance: balance as TrueLayerAccountBalance,
+                            update_timestamp: balance.update_timestamp,
                         },
                     };
                 }
@@ -282,16 +284,41 @@ function App() {
         }
     }
 
+    const footend = (
+        <div className='column footend mini'>
+            <span>Powered by</span>
+            <div className='row'>
+                <img
+                    className='providerLogo clickable'
+                    src='./TrueLayer/TrueLayerLogo/TrueLayer-LOGO-charcoal-transp-horizontal.svg'
+                    alt='TrueLayer'
+                    onClick={() => openInBrowser('https://truelayer.com')}
+                />
+                <div className='verticalSeparator' />
+                <img
+                    className='providerLogo clickable'
+                    src='./OpenBanking-Logo.svg'
+                    alt='Open Banking'
+                    onClick={() => openInBrowser('https://www.openbanking.org.uk')}
+                />
+            </div>
+        </div>
+    );
+
     return (
         <div id='app'>
 
             {/* USER SELECTION MODAL */}
             <ResponsiveModal title='Whose bank do you want to link with?'
                 open={openSelectUser !== null}
-                onClose={() => setOpenSelectUser(false)}
+                onClose={() => setOpenSelectUser(null)}
+                forceMode='bottomSheet'
             >
                 <div className='userSelection'>
-                    <p>Bagel will group accounts and cards from this bank connection under the selected profile.</p>
+                    <p>
+                        Bagel will neatly organise any accounts and cards from this bank connection under
+                        the selected profile — which drawer of his little filing cabinet should he use?
+                    </p>
 
                     <div className='column'>
                         <div className='row'>
@@ -312,6 +339,11 @@ function App() {
                             {/* <button onClick={createNewProfile}>+ Add someone new</button> */}
                         </div>
                         <p className='small centre'><i>This is for display purposes only, and does not impact authentication.</i></p>
+
+                        <ResponsiveModal.SheetOnly>
+                            {footend}
+                        </ResponsiveModal.SheetOnly>
+
                     </div>
                 </div>
             </ResponsiveModal>
@@ -323,6 +355,7 @@ function App() {
                     setOpenEditUser(null);
                     setSelectedUser(null);
                 }}
+                forceMode='centreModal'
             >
                 <UserEditPanel
                     user={selectedUser}
@@ -333,6 +366,7 @@ function App() {
                         setOpenEditUser(null);
                         setSelectedUser(null);
                     }}
+                    existingUsers={users}
                 />
             </ResponsiveModal>
 
@@ -408,6 +442,17 @@ function App() {
                     }
                 </div>
 
+                {/* USER BUTTONS */}
+                <div className='row right'>
+                    <input
+                        type='checkbox'
+                        id='modestyToggle'
+                        checked={modesty}
+                        onChange={(e) => setModesty(e.target.checked)}
+                        style={{ marginRight: '1rem' }}
+                    />
+                </div>
+
             </div>
 
             {/* { // DEBUG
@@ -438,12 +483,19 @@ function App() {
 
                             const balance = 'balance' in account ? account.balance : null;
 
-                            const available = balance?.available ?? null;
+                            const available = modesty ? '***' : balance?.available?.toFixed(2) ?? null;
+                            const current = modesty ? '***' : balance?.current?.toFixed(2) ?? null;
+
                             const currency = balance?.currency === 'GBP' ? '£' : balance?.currency;
-                            const displayBalance = balance ? `${currency}\u00A0${isCard ? '-' : ''}${balance.current.toFixed(2)}` : null;
-                            const displayAvailable = available ? `${currency}\u00A0${available.toFixed(2)}` : null;
+                            const displayBalance = current ? `${currency}\u00A0${isCard ? '-' : ''}${current}` : null;
+                            const displayAvailable = available ? `${currency}\u00A0${available}` : null;
 
                             const user = users?.find(user => user.id === account.user);
+
+                            const updateDate = new Date(account.update_timestamp);
+                            const now = new Date();
+                            const diffInMinutes = (now.getTime() - updateDate.getTime()) / 60000; // in minutes
+                            const isRecent = diffInMinutes <= 60; // consider recent if updated within the last hour
 
                             return (
                                 <div className='accountCard' key={accountId}>
@@ -455,6 +507,15 @@ function App() {
                                                 alt={`${account.display_name} Logo`}
                                             />
                                             <div className='verticalSeparator' />
+                                            <div
+                                                style={{
+                                                    width: '8px',
+                                                    height: '8px',
+                                                    borderRadius: '50%',
+                                                    backgroundColor: isRecent ? '#4CAF50' : '#F44336',
+                                                    margin: '5px',
+                                                }}
+                                            />
                                             <div className='name'>{account.display_name}</div>
                                         </div>
                                         <div className='balance'>
@@ -481,8 +542,15 @@ function App() {
                                         {displayAvailable && (
                                             <div className='available'>({!isCard ? displayBalance : displayAvailable})</div>
                                         )}
-                                        <div className='interestRate'>TODO: Interest Rate</div>
-                                        <div className='delta'>TODO: Delta</div>
+
+                                        {!isCard && account.interestRate && (
+                                            <div className='interestRate'>TODO: Interest Rate</div>
+                                        )}
+
+                                        {account.lastBalance && (
+                                            <div className='delta'>TODO: Delta</div>
+                                        )}
+
                                     </div>
                                 </div>
                             );
@@ -518,24 +586,7 @@ function App() {
                     </button>
                 </div>
 
-                <div className='column footend mini'>
-                    <span>Powered by</span>
-                    <div className='row'>
-                        <img
-                            className='providerLogo clickable'
-                            src='./TrueLayer/TrueLayerLogo/TrueLayer-LOGO-charcoal-transp-horizontal.svg'
-                            alt='TrueLayer'
-                            onClick={() => openInBrowser('https://truelayer.com')}
-                        />
-                        <div className='verticalSeparator' />
-                        <img
-                            className='providerLogo clickable'
-                            src='./OpenBanking-Logo.svg'
-                            alt='Open Banking'
-                            onClick={() => openInBrowser('https://www.openbanking.org.uk')}
-                        />
-                    </div>
-                </div>
+                {footend}
             </div>
 
         </div>
@@ -550,10 +601,17 @@ type UserEditPanelProps = {
     deleteUser: (userID: string) => void;
     onClose: ((userID: string) => void) | null;
     close: () => void;
+    existingUsers?: User[] | null;
 };
 
-function UserEditPanel({ user, updateOrAddUser, deleteUser, onClose, close }: UserEditPanelProps) {
-
+function UserEditPanel({
+    user,
+    updateOrAddUser,
+    deleteUser,
+    onClose,
+    close,
+    existingUsers
+}: UserEditPanelProps) {
     const [userID, setUserID] = useState(user !== null ? user.id : crypto.randomUUID());
     const [userName, setUserName] = useState('');
 
@@ -561,15 +619,17 @@ function UserEditPanel({ user, updateOrAddUser, deleteUser, onClose, close }: Us
         if (user) {
             setUserID(user.id);
             setUserName(user.name);
-        }
-        else {
+        } else {
             setUserID(crypto.randomUUID());
         }
     }, [user]);
 
+    const invalidName =
+        userName.trim() === '' ||
+        existingUsers?.some((existingUser) => existingUser.name === userName && existingUser.id !== userID);
+
     return (
         <div className='column'>
-
             <input
                 className='centre'
                 type='text'
@@ -578,9 +638,9 @@ function UserEditPanel({ user, updateOrAddUser, deleteUser, onClose, close }: Us
                 onChange={(e) => setUserName(e.target.value)}
                 autoFocus
             />
-
             <div className='row'>
-                <button className='centre'
+                <button
+                    className='centre'
                     onClick={() => {
                         updateOrAddUser(userName, user?.id);
                         close();
@@ -588,23 +648,22 @@ function UserEditPanel({ user, updateOrAddUser, deleteUser, onClose, close }: Us
                             onClose(userID);
                         }
                     }}
-                    disabled={!userName.trim()}
+                    disabled={invalidName}
                 >
                     {user ? 'Update' : 'Add'}
                 </button>
-                {user !== null &&
-                    <button className='centre threat'
+                {user !== null && (
+                    <button
+                        className='centre threat'
                         onClick={() => {
                             deleteUser(user?.id);
                             close();
                         }}
-                        disabled={!userName.trim()}
                     >
                         Delete
                     </button>
-                }
+                )}
             </div>
-
         </div>
     );
 }
