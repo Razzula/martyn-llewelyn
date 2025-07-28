@@ -23,4 +23,5 @@ export interface BankCard extends TrueLayerCard {
 export interface User {
     id: string;
     name: string;
+    email: string;
 }

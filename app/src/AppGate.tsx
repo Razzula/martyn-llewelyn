@@ -42,13 +42,14 @@ function AppGate() {
             <div id='app'>
                 <div className='column' style={{ flexGrow: 1, justifyContent: 'center' }}>
                     <img
-                        src={ failedAuthentication ? './ConfusedBagel-alt.png' : './MasterBagel.png'}
+                        src={failedAuthentication ? './ConfusedBagel-alt.png' : './MasterBagel.png'}
                         alt='Authentication Required'
                         style={{ width: '100px', height: '100px', marginBottom: '1rem' }}
                     />
-                    <h2>Authenticate to continue</h2>
+                    <h2>Authentication Required</h2>
                     <p className='small centre'>
-                        Your financial data is securely encrypted on your device and can only be unlocked by you. Please verify your identity to unlock access.
+                        Your financial data is encrypted and stored securely on your device.
+                        Only you can unlock it — Bagel just needs to check it’s really you.
                     </p>
                     <button onClick={authenticateUser} style={{ marginTop: '1rem' }}>
                         Authenticate

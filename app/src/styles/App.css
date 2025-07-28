@@ -182,6 +182,10 @@ input[type="text"]:disabled {
     background-color: #f0f0f0;
 }
 
+input[type="text"].invalid {
+    border-color: #e42c2c;
+}
+
 .userButton {
     background-color: #8A9A5B;
     color: white;

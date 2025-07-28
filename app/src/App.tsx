@@ -28,8 +28,8 @@ function App() {
 
     const [walletTokens, setWalletTokens] = useState<string[]>([]);
 
-    const [openSelectUser, setOpenSelectUser] = useState<any | null>(null); // holds a function to redirect after user selection
-    const [openEditUser, setOpenEditUser] = useState<((userID: string) => void) | null>(null); // holds a function to redirect after user creation
+    const [openSelectUser, setOpenSelectUser] = useState<((userID: string, userEmail: string) => void) | null>(null); // holds a function to redirect after user selection
+    const [openEditUser, setOpenEditUser] = useState<((userID: string, userEmail: string) => void) | null>(null); // holds a function to redirect after user creation
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
     const [modesty, setModesty] = useState<boolean>(true);
@@ -187,9 +187,9 @@ function App() {
         }
     }
 
-    function redirectToTrueLayer(userID: string) {
+    function redirectToTrueLayer(userID: string, userEmail: string) {
         if (userID !== null) {
-            getTrueLayerAuthURL(userID)
+            getTrueLayerAuthURL(userID, userEmail)
                 .then(redirectURI => openInBrowser(redirectURI));
         }
     }
@@ -238,14 +238,14 @@ function App() {
 
     function startLinkAccount() {
         if (isTauri) {
-            const redirect = (userID: string) => redirectToTrueLayer(userID);
+            const redirect = (userID: string, userEmail: string) => redirectToTrueLayer(userID, userEmail);
             if (users === null || users.length === 0) {
                 // if no users, prompt to add a user
                 setOpenEditUser(() => redirect);
             }
             else if (users.length === 1) {
                 // if only one user, select them automatically
-                redirect(users[0].id);
+                redirect(users[0].id, users[0].email);
             }
             else {
                 // if multiple users, prompt to select one
@@ -254,19 +254,19 @@ function App() {
         }
     }
 
-    function updateOrAddUser(userName: string, userID: string) {
+    function updateOrAddUser(user: User) {
         if (users !== null) {
             setUsers(prev => {
-                const existingUserIndex = prev ? prev.findIndex(user => user.id === userID) : -1;
+                const existingUserIndex = prev ? prev.findIndex(u => u.id === user.id) : -1;
 
                 if (existingUserIndex !== -1) {
                     // update existing user
                     const updatedUsers = [...(prev || [])];
-                    updatedUsers[existingUserIndex] = { ...updatedUsers[existingUserIndex], name: userName };
+                    updatedUsers[existingUserIndex] = { ...updatedUsers[existingUserIndex], ...user };
                     return updatedUsers;
                 } else {
                     // add new user
-                    return [...(prev || []), { id: userID, name: userName }];
+                    return [...(prev || []), { ...user }];
                 }
             });
         }
@@ -274,9 +274,15 @@ function App() {
 
     async function deleteUser(userID: string) {
         if (users !== null) {
+            const user = users.find(u => u.id === userID);
+            if (!user) {
+                console.warn(`User with ID ${userID} not found.`);
+                return;
+            }
+
             // check if user has any linked accounts
-            const hasLinkedAccounts = Object.values(accounts).some(account => account.user === userID);
-            if (hasLinkedAccounts) {
+            const linkedAccounts = Object.values(accounts).filter(account => account.user === userID);
+            if (linkedAccounts.length > 0) {
                 // get walletTokens of accounts linked to this user
                 const linkedWalletTokens = Object.values(accounts)
                     .filter(account => account.user === userID)
@@ -285,7 +291,10 @@ function App() {
 
                 
                 // confirm with user before unlinking
-                const userConfirmation = await confirm(`This user has linked accounts. Are you sure you want to unlink them?`); // XXX: ugly, but gets the job done
+                const userConfirmation = await confirm(
+                    `${user.name} has ${linkedAccounts.length} linked accounts. Are you sure you want to unlink them?`
+                ); // XXX: ugly, but gets the job done
+                
                 if (!userConfirmation) {
                     return; // user cancelled
                 }
@@ -350,7 +359,7 @@ function App() {
                                     <button key={user.id}
                                         onClick={() => {
                                             if (openSelectUser) {
-                                                openSelectUser(user.id); // call the redirect function
+                                                openSelectUser(user.id, user.email); // call the redirect function
                                             }
                                             setOpenSelectUser(null); // close modal
                                         }}
@@ -620,9 +629,9 @@ export default App;
 
 type UserEditPanelProps = {
     user: User | null;
-    updateOrAddUser: (userName: string, userID: string) => void;
+    updateOrAddUser: (newUser: User) => void;
     deleteUser: (userID: string) => void;
-    onClose: ((userID: string) => void) | null;
+    onClose: ((userID: string, userEmail: string) => void) | null;
     close: () => void;
     existingUsers?: User[] | null;
 };
@@ -636,43 +645,74 @@ function UserEditPanel({
     existingUsers
 }: UserEditPanelProps) {
 
-    const [userID, setUserID] = useState(user !== null ? user.id : crypto.randomUUID());
-    const [userName, setUserName] = useState('');
+    const [ephemeralUser, setEphemeralUser] = useState<User>({
+        id: user ? user.id : crypto.randomUUID(),
+        name: user ? user.name : '',
+        email: user ? user.email : '',
+    });
 
     useEffect(() => {
         if (user) {
-            setUserID(user.id);
-            setUserName(user.name);
-        } else {
-            setUserID(crypto.randomUUID());
+            setEphemeralUser({
+                ...user,
+            });
+        }
+        else {
+            setEphemeralUser({
+                id: crypto.randomUUID(),
+                name: '',
+                email: '',
+            });
         }
     }, [user]);
 
-    const invalidName =
-        userName.trim() === '' ||
-        existingUsers?.some((existingUser) => existingUser.name === userName && existingUser.id !== userID);
+    const invalidName = (
+        // non-nulls
+        ephemeralUser.name.trim() === ''
+        // unique
+        || existingUsers?.some((existingUser) => existingUser.name === ephemeralUser.name && existingUser.id !== ephemeralUser.id)
+    );
+    const invalidEmail = (
+        // non-nulls
+        ephemeralUser.email.trim() === ''
+        // email format (basic check)
+        || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ephemeralUser.email)
+    );
+
+    const invalidForm = invalidName || invalidEmail;
 
     return (
         <div className='column'>
+
             <input
-                className='centre'
+                className={`centre ${invalidName ? 'invalid' : ''}`}
                 type='text'
                 placeholder='User Name'
-                value={userName}
-                onChange={(e) => setUserName(e.target.value)}
+                value={ephemeralUser.name}
+                onChange={(e) => setEphemeralUser({ ...ephemeralUser, name: e.target.value })}
                 autoFocus
             />
+
+            <input
+                className={`centre ${invalidEmail ? 'invalid' : ''}`}
+                type='text'
+                placeholder='Email Address'
+                value={ephemeralUser.email}
+                onChange={(e) => setEphemeralUser({ ...ephemeralUser, email: e.target.value })}
+                autoFocus
+            />
+
             <div className='row'>
                 <button
                     className='centre'
                     onClick={() => {
-                        updateOrAddUser(userName, userID);
+                        updateOrAddUser(ephemeralUser);
                         close();
                         if (onClose !== null && onClose !== undefined) {
-                            onClose(userID);
+                            onClose(ephemeralUser.id, ephemeralUser.email);
                         }
                     }}
-                    disabled={invalidName}
+                    disabled={invalidForm}
                 >
                     {user ? 'Update' : 'Add'}
                 </button>
@@ -687,6 +727,13 @@ function UserEditPanel({
                         Delete
                     </button>
                 )}
+            </div>
+
+            <div className='footend small'>
+                <p>
+                    TrueLayer requires your email to identify you when linking your bank.
+                    This is only used for verification and never shared.
+                </p>
             </div>
         </div>
     );

@@ -4,7 +4,7 @@ import { TrueLayerAccount, TrueLayerAccountBalance, TrueLayerCard, TrueLayerCard
 import { generateCodeChallenge, generateCodeVerifier } from "../utils/PKCE";
 import { BankAccount, BankCard } from "src/types/Bagel";
 
-export async function getTrueLayerAuthURL(userID: string) {
+export async function getTrueLayerAuthURL(userID: string, userEmail: string): Promise<string> {
 
     const env = import.meta.env.VITE_TRUELAYER_ENV || 'sandbox';
 
@@ -23,6 +23,7 @@ export async function getTrueLayerAuthURL(userID: string) {
         redirect_uri: import.meta.env.VITE_TRUELAYER_REDIRECT_URI,
         scope: 'info accounts cards balance transactions offline_access',
         state: userID,
+        user_email: userEmail,
         // nonce: crypto.randomUUID(),
         code_challenge: challenge,
         code_challenge_method: 'S256',
