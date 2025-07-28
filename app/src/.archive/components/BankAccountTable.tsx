@@ -1,12 +1,12 @@
 import React, { useEffect } from 'react';
-import { Account } from '../Accounts.ts';
-import { Tooltip, TooltipContent, TooltipTrigger } from './Tooltip.tsx';
-import Colour from '../utils/Colour.ts';
-import banks from '../Banks.ts';
+import { Account } from '../../Accounts.ts';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../../components/Tooltip.tsx';
+import Colour from '../../utils/Colour.ts';
+import banks from '../../Banks.ts';
 import { Config } from './ConfigControl.tsx';
-import { Settings } from '../Old.tsx';
-import { ToggleSwitch } from './ToggleSwitch.tsx';
-import { months, taxBrackets } from '../utils.ts';
+import { Settings } from '../../Old.tsx';
+import { ToggleSwitch } from '../../components/ToggleSwitch.tsx';
+import { months, taxBrackets } from '../../utils.ts';
 
 import '../styles/App.css';
 

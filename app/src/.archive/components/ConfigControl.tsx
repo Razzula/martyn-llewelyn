@@ -1,7 +1,7 @@
-import { Account } from "../Accounts";
-import banks from '../Banks';
+import { Account } from "../../Accounts";
+import banks from '../../Banks';
 import { Tooltip, TooltipContent, TooltipTrigger } from "./Tooltip";
-import WebScraper from "../WebScraper";
+import WebScraper from "../../WebScraper";
 import Select from "./Select";
 
 export type Config = {

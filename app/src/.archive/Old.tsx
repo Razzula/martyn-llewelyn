@@ -1,11 +1,11 @@
 import { useRef, useState, RefObject, useEffect } from 'react';
 import { accounts } from './Accounts.ts';
-import BankAccountTable from './components/BankAccountTable.tsx';
-import SegmentedControl from './components/SegmentedControl.tsx';
-import { Tooltip, TooltipContent, TooltipTrigger } from './components/Tooltip.tsx';
-import { Popover, PopoverContent, PopoverTrigger } from './components/Popover.tsx';
-import { Dialogue, DialogueClose, DialogueContent, DialogueTrigger } from './components/Dialogue.tsx';
-import ConfigControl, { Config } from './components/ConfigControl.tsx';
+import BankAccountTable from './.archive/components/BankAccountTable.tsx';
+import SegmentedControl from './.archive/components/SegmentedControl.tsx';
+import { Tooltip, TooltipContent, TooltipTrigger } from './.archive/components/Tooltip.tsx';
+import { Popover, PopoverContent, PopoverTrigger } from './.archive/components/Popover.tsx';
+import { Dialogue, DialogueClose, DialogueContent, DialogueTrigger } from './.archive/components/Dialogue.tsx';
+import ConfigControl, { Config } from './.archive/components/ConfigControl.tsx';
 import { taxBrackets } from './utils.ts';
 
 import './styles/App.css';
