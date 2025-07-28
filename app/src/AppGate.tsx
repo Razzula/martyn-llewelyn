@@ -5,13 +5,15 @@ import { authenticate } from '@tauri-apps/plugin-biometric';
 import './styles/App.css';
 import App from './App.tsx';
 
+const isTauri = !!(window as any).__TAURI_INTERNALS__;
+
 function AppGate() {
 
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
     const [failedAuthentication, setFailedAuthentication] = useState<boolean>(false);
 
     useEffect(() => {
-        if (!isAuthenticated) {
+        if (!isAuthenticated && isTauri) {
             authenticateUser();
         }
     }, [isAuthenticated]);
@@ -37,31 +39,33 @@ function AppGate() {
         }
     }
 
-    if (platform() === 'android' && !isAuthenticated) {
-        return (
-            <div id='app'>
-                <div className='column' style={{ flexGrow: 1, justifyContent: 'center' }}>
-                    <img
-                        src={failedAuthentication ? './ConfusedBagel-alt.png' : './MasterBagel.png'}
-                        alt='Authentication Required'
-                        style={{ width: '100px', height: '100px', marginBottom: '1rem' }}
-                    />
-                    <h2>Authentication Required</h2>
-                    <p className='small centre'>
-                        Your financial data is encrypted and stored securely on your device.
-                        Only you can unlock it — Bagel just needs to check it’s really you.
-                    </p>
-                    <button onClick={authenticateUser} style={{ marginTop: '1rem' }}>
-                        Authenticate
-                    </button>
-                    {failedAuthentication && (
-                        <p className='small centre' style={{ color: '#e42c2c', marginTop: '0.5rem' }}>
-                            Authentication failed. Please try again.
+    if (isTauri) {
+        if (platform() === 'android' && !isAuthenticated) {
+            return (
+                <div id='app'>
+                    <div className='column' style={{ flexGrow: 1, justifyContent: 'center' }}>
+                        <img
+                            src={failedAuthentication ? './ConfusedBagel-alt.png' : './MasterBagel.png'}
+                            alt='Authentication Required'
+                            style={{ width: '100px', height: '100px', marginBottom: '1rem' }}
+                        />
+                        <h2>Authentication Required</h2>
+                        <p className='small centre'>
+                            Your financial data is encrypted and stored securely on your device.
+                            Only you can unlock it — Bagel just needs to check it’s really you.
                         </p>
-                    )}
+                        <button onClick={authenticateUser} style={{ marginTop: '1rem' }}>
+                            Authenticate
+                        </button>
+                        {failedAuthentication && (
+                            <p className='small centre' style={{ color: '#e42c2c', marginTop: '0.5rem' }}>
+                                Authentication failed. Please try again.
+                            </p>
+                        )}
+                    </div>
                 </div>
-            </div>
-        );
+            );
+        }
     }
 
     return (

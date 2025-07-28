@@ -1,7 +1,7 @@
 import React from 'react';
 import { FloatingPortal, Placement, autoUpdate, flip, offset, shift, useDismiss, useFloating, useHover, useInteractions, useMergeRefs, useRole } from '@floating-ui/react';
 
-import '../styles/tooltip.css';
+import './Tooltip.css';
 
 interface TooltipOptions {
     initialOpen?: boolean;

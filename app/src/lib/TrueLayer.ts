@@ -1,8 +1,9 @@
 import { invoke } from "@tauri-apps/api/core";
 
-import { TrueLayerAccount, TrueLayerAccountBalance, TrueLayerCard, TrueLayerCardBalance, TrueLayerUser } from "../types/TrueLayer";
-import { generateCodeChallenge, generateCodeVerifier } from "../utils/PKCE";
-import { BankAccount, BankCard } from "src/types/Bagel";
+import { TrueLayerAccount, TrueLayerAccountBalance, TrueLayerCard, TrueLayerCardBalance, TrueLayerUser } from "../types/TrueLayer.ts";
+import { generateCodeChallenge, generateCodeVerifier } from "../utils/PKCE.ts";
+import { BankAccount } from "src/types/Bagel.ts";
+import { fromTrueLayerAccount, fromTrueLayerCard } from "../types/TrueLayerAdapters.ts";
 
 export async function getTrueLayerAuthURL(userID: string, userEmail: string): Promise<string> {
 
@@ -56,7 +57,7 @@ export async function fetchAccountsData(walletToken: string): Promise<BankAccoun
     );
     const data: BankAccount[] = res.results.map((account: TrueLayerAccount) => {
         return {
-            ...account,
+            ...fromTrueLayerAccount(account),
             users: [{
                 id: res.userID,
                 walletToken: walletToken, // store the walletToken needed to access the account
@@ -67,13 +68,13 @@ export async function fetchAccountsData(walletToken: string): Promise<BankAccoun
     return data;
 }
 
-export async function fetchCardsData(walletToken: string): Promise<BankCard[]> {
+export async function fetchCardsData(walletToken: string): Promise<BankAccount[]> {
     const res = JSON.parse(
         await invoke('fetchCardsData', { walletToken })
     );
-    const data: BankCard[] = res.results.map((card: TrueLayerCard) => {
+    const data: BankAccount[] = res.results.map((card: TrueLayerCard) => {
         return {
-            ...card,
+            ...fromTrueLayerCard(card),
             users: [{
                 id: res.userID,
                 walletToken: walletToken, // store the walletToken needed to access the account

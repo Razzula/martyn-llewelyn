@@ -1,11 +1,11 @@
-import { BankAccount, BankCard, UserSignature } from "./types/Bagel";
+import { BankAccount, UserSignature } from "./types/Bagel";
 
 export class AccountManager {
-    private map: Record<string, BankAccount | BankCard> = {};
+    private map: Record<string, BankAccount > = {};
 
-    merge(account: BankAccount | BankCard) {
+    merge(account: BankAccount ) {
         // merge two instances of an account
-        const id = account.account_id;
+        const id = account.id;
         const existing = this.map[id];
 
         if (existing) {
@@ -25,7 +25,7 @@ export class AccountManager {
         return [...existing, ...incoming.filter(u => !ids.has(u.id))];
     }
 
-    applyTo(prev: Record<string, BankAccount | BankCard>) {
+    applyTo(prev: Record<string, BankAccount>) {
         // merge the current map with the previous state
         const merged = { ...prev };
         for (const id in this.map) {

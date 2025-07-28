@@ -5,12 +5,13 @@ import { invoke } from '@tauri-apps/api/core';
 // import { retrieve, store } from "@impierce/tauri-plugin-keystore";
 
 import { fetchAccountBalance, fetchAccountsData, fetchCardBalance, fetchCardsData, getTrueLayerAuthURL, handleTokenExchange } from './lib/TrueLayer.ts';
-import type { TrueLayerAccountBalance, TrueLayerCardBalance } from './types/TrueLayer.ts';
 
 import './styles/App.css';
-import { BankAccount, BankCard, User } from './types/Bagel.ts';
+import { BankAccount, BankAccountBalance, emptyBankAccount, User } from './types/Bagel.ts';
 import { ResponsiveModal } from './components/common/ResponsiveModal.tsx';
 import { AccountManager } from './AccountManager.ts';
+import { fromTrueLayerAccountBalance, fromTrueLayerCardBalance } from './types/TrueLayerAdapters.ts';
+import { Tooltip, TooltipContent, TooltipTrigger } from './components/common/Tooltip.tsx';
 
 const isTauri = !!(window as any).__TAURI_INTERNALS__;
 
@@ -24,13 +25,18 @@ function App() {
 
     const [users, setUsers] = useState<User[] | null>(null);
 
-    const [accounts, setAccounts] = useState<Record<string, (BankAccount | BankCard)>>({});
+    const [accounts, setAccounts] = useState<Record<string, (BankAccount)>>({});
     const [accountsState, setAccountsState] = useState<ResponseState | null>(null);
+
+    const [accountsDataLive, setAccountsDataLive] = useState<Record<string, BankAccount>>({});
+    const [accountsDataOffline, setAccountsDataOffline] = useState<Record<string, BankAccount>>({});
+    const [accountsDataPatches, setAccountsDataPatches] = useState<Record<string, BankAccount>>({});
 
     const [walletTokens, setWalletTokens] = useState<string[]>([]);
 
     const [openSelectUser, setOpenSelectUser] = useState<((userID: string, userEmail: string) => void) | null>(null); // holds a function to redirect after user selection
     const [openEditUser, setOpenEditUser] = useState<((userID: string, userEmail: string) => void) | null>(null); // holds a function to redirect after user creation
+    const [openEditAccount, setOpenEditAccount] = useState<BankAccount | null>(null);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
     const [modesty, setModesty] = useState<boolean>(true);
@@ -145,36 +151,40 @@ function App() {
 
         if (Object.keys(accounts).length > 0) {
 
-            Object.entries(accounts).forEach(([accountId, account]: [string, BankAccount | BankCard]) => {
+            Object.entries(accounts).forEach(([accountID, account]: [string, BankAccount]) => {
                 if (account.balance) {
                     // already has balance, skip fetching
                     return;
                 }
+                if (account.source !== 'TrueLayer') {
+                    // only fetch balances for TrueLayer accounts
+                    return;
+                }
 
-                const isCard = account.hasOwnProperty('card_network');
+                const isCard = account.cardNetwork !== undefined;
                 const walletToken = account.users?.[0]?.walletToken || walletTokens[0]; // XXX: use the first token if not specified
 
                 if (!isCard) {
-                    fetchAccountBalance(walletToken, accountId)
+                    fetchAccountBalance(walletToken, accountID)
                         .then(data => {
                             if (data) {
-                                updateAccountBalance(accountId, data[0]);
+                                updateAccountBalance(accountID, fromTrueLayerAccountBalance(data[0]));
                             }
                         })
                         .catch(err => {
-                            console.error(`Failed to fetch balance for account ${accountId}:`, err);
+                            console.error(`Failed to fetch balance for account ${accountID}:`, err);
                             setAccountsState(ResponseState.ERROR);
                         });
                 }
                 else {
-                    fetchCardBalance(walletToken, accountId)
+                    fetchCardBalance(walletToken, accountID)
                         .then(data => {
                             if (data) {
-                                updateAccountBalance(accountId, data[0]);
+                                updateAccountBalance(accountID, fromTrueLayerCardBalance(data[0]));
                             }
                         })
                         .catch(err => {
-                            console.error(`Failed to fetch balance for card ${accountId}:`, err);
+                            console.error(`Failed to fetch balance for card ${accountID}:`, err);
                             setAccountsState(ResponseState.ERROR);
                         });
                 }
@@ -195,32 +205,17 @@ function App() {
         }
     }
 
-    function updateAccountBalance(accountID: string, balance: TrueLayerAccountBalance | TrueLayerCardBalance) {
+    function updateAccountBalance(accountID: string, balance: BankAccountBalance) {
         if (accounts && accounts[accountID]) {
-            setAccounts(prev => {
-                const account = prev[accountID];
-                if ('card_network' in account) {
-                    // BankCard
-                    return {
-                        ...prev,
-                        [accountID]: {
-                            ...account,
-                            balance: balance as TrueLayerCardBalance,
-                            update_timestamp: balance.update_timestamp,
-                        },
-                    };
-                } else {
-                    // BankAccount
-                    return {
-                        ...prev,
-                        [accountID]: {
-                            ...account,
-                            balance: balance as TrueLayerAccountBalance,
-                            update_timestamp: balance.update_timestamp,
-                        },
-                    };
-                }
-            });
+            const account = accounts[accountID];
+            setAccounts(prev => ({
+                ...prev,
+                [accountID]: {
+                    ...account,
+                    balance: balance,
+                    updateTimestamp: balance.updateTimestamp,
+                },
+            }));
         }
     }
 
@@ -243,18 +238,14 @@ function App() {
     }
 
     function startCreateAccount() {
-        const redirect = (userID: string, userEmail: string) => redirectToTrueLayer(userID, userEmail);
+        const redirect = (_userID: string, _userEmail: string) => setOpenEditAccount({} as BankAccount);
         if (users === null || users.length === 0) {
             // if no users, prompt to add a user
             setOpenEditUser(() => redirect);
         }
-        else if (users.length === 1) {
-            // if only one user, select them automatically
-            redirect(users[0].id, users[0].email);
-        }
         else {
-            // if multiple users, prompt to select one
-            setOpenSelectUser(() => redirect);
+            // user selection handled by panel
+            redirect('', '');
         }
     }
 
@@ -291,7 +282,7 @@ function App() {
                 const linkedWalletTokens: string[] = [];
                 linkedAccounts.forEach(account => {
                     const userSignature = account.users.find(u => u.id === userID);
-                    if (userSignature) {
+                    if (userSignature?.walletToken) {
                         linkedWalletTokens.push(userSignature.walletToken);
                     }
                 });
@@ -320,6 +311,15 @@ function App() {
                     console.error('Failed to save users:', err);
                 });
         }
+    }
+
+    function updateOrAddAccount(account: BankAccount) {
+        const accountManager = new AccountManager();
+        accountManager.merge(account);
+        setAccounts(prev => accountManager.applyTo(prev));
+    }
+
+    function deleteAccount(accountID: string) {
     }
 
     const footend = (
@@ -421,37 +421,70 @@ function App() {
                 />
             </ResponsiveModal>
 
+            {/* ACCOUNT CREATION MODAL */}
+            <ResponsiveModal title={selectedUser === null ? 'Create a manual account' : 'Edit account'}
+                open={openEditAccount !== null}
+                onClose={() => {
+                    setOpenEditAccount(null);
+                }}
+                forceMode='centreModal'
+            >
+                <AccountEditPanel
+                    account={openEditAccount}
+                    updateOrAddAccount={updateOrAddAccount}
+                    deleteAccount={deleteAccount}
+                    close={() => setOpenEditAccount(null)}
+                    existingAccounts={accounts}
+                    users={users || []}
+                />
+            </ResponsiveModal>
+
             <div className='header row'>
 
                 {/* USER BUTTONS */}
                 <div className='row left'>
                     {users &&
                         users.map((user, index) => (
-                            <button
-                                key={index}
-                                className='userButton'
-                                onClick={() => {
-                                    setOpenEditUser(() => { });
-                                    setSelectedUser(user);
-                                }}
-                            >
-                                {user.icon ?
-                                    <img
-                                        className='userIcon'
-                                        src={user.icon}
-                                        alt={user.name}
-                                        style={{ width: '32px', height: '32px' }}
-                                    /> : <span>{user.name.charAt(0).toUpperCase()}</span>
-                                }
-                            </button>
+                            <Tooltip key={user.id}>
+                                <TooltipTrigger>
+                                    <button
+                                        key={index}
+                                        className='userButton'
+                                        onClick={() => {
+                                            setOpenEditUser(() => { });
+                                            setSelectedUser(user);
+                                        }}
+                                    >
+                                        {user.icon ?
+                                            <img
+                                                className='userIcon'
+                                                src={user.icon}
+                                                alt={user.name}
+                                                style={{ width: '32px', height: '32px' }}
+                                            /> : <span>{user.name.charAt(0).toUpperCase()}</span>
+                                        }
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    {user.name}
+                                </TooltipContent>
+                            </Tooltip>
                         ))
                     }
-                    <button
-                        className={users && users.length > 0 ? 'userButton' : ''}
-                        onClick={() => setOpenEditUser(() => { })}
-                    >
-                        {users && users.length > 0 ? '+' : 'Setup Profile'}
-                    </button>
+
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <button
+                                className={users && users.length > 0 ? 'userButton' : ''}
+                                onClick={() => setOpenEditUser(() => { })}
+                            >
+                                {users && users.length > 0 ? '+' : 'Setup Profile'}
+                            </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            {users && users.length > 0 ? 'Create a Profile' : ''}
+                        </TooltipContent>
+                    </Tooltip>
                 </div>
 
                 {/* BAGEL ICON */}
@@ -537,7 +570,7 @@ function App() {
                     <div className='accountsGrid'>
                         {Object.entries(accounts).sort().map(([accountId, account]) => {
 
-                            const isCard = 'card_network' in account;
+                            const isCard = account.cardNetwork !== undefined;
 
                             const balance = 'balance' in account ? account.balance : null;
 
@@ -550,40 +583,74 @@ function App() {
 
                             const accountUsers = users?.filter(user => account.users.some(u => u.id === user.id));
 
-                            const updateDate = new Date(account.update_timestamp);
+                            const updateDate = new Date(account.updateTimestamp);
                             const now = new Date();
                             const diffInMinutes = (now.getTime() - updateDate.getTime()) / 60000; // in minutes
-                            const isRecent = diffInMinutes <= 60; // consider recent if updated within the last hour
+                            const isRecent = diffInMinutes <= 60; // consider recent if updated within the last 60 minutes
 
                             return (
-                                <div className='accountCard' key={accountId}>
+                                <div className='accountCard' key={accountId}
+                                    style={{ position: 'relative' }}
+                                >
+
+                                    <Tooltip>
+                                        <TooltipTrigger>
+                                            <div
+                                                style={{
+                                                    position: 'absolute',
+                                                    top: 0,
+                                                    left: 0,
+                                                    width: '8px',
+                                                    height: '8px',
+                                                    borderRadius: '50%',
+                                                    backgroundColor: account.source === 'TrueLayer' ? (isRecent ? '#4CAF50' : '#eea342ff') : '#dadada',
+                                                    margin: '0.4rem',
+                                                }}
+                                            />
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            {updateDate.toLocaleDateString('en-GB', {
+                                                year: 'numeric',
+                                                month: '2-digit',
+                                                day: '2-digit',
+                                                hour: '2-digit',
+                                                minute: '2-digit',
+                                            })}
+                                        </TooltipContent>
+                                    </Tooltip>
+
                                     <div className='accountHeader'>
                                         <div className='row'>
                                             {
                                                 accountUsers?.map(user => (
-                                                    <img
-                                                        key={user.id}
-                                                        className='bankLogo'
-                                                        src={user.icon}
-                                                    />
+                                                    <Tooltip key={user.id}>
+                                                        <TooltipTrigger>
+                                                            <img
+                                                                key={user.id}
+                                                                className='bankLogo'
+                                                                src={user.icon}
+                                                            />
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            {user.name}
+                                                        </TooltipContent>
+                                                    </Tooltip>
                                                 ))
                                             }
-                                            <img
-                                                className='bankLogo'
-                                                src={!isCard ? account.provider.logo_uri : '/Serenity/unknown.png'}
-                                                alt={`${account.display_name} Logo`}
-                                            />
+                                            <Tooltip>
+                                                <TooltipTrigger>
+                                                    <img
+                                                        className='bankLogo'
+                                                        src={account.provider.logoURI || '/Serenity/unknown.png'}
+                                                        alt={`${account.name} Logo`}
+                                                    />
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    {account.provider.name ?? account.provider.id}
+                                                </TooltipContent>
+                                            </Tooltip>
                                             <div className='verticalSeparator' />
-                                            <div
-                                                style={{
-                                                    width: '8px',
-                                                    height: '8px',
-                                                    borderRadius: '50%',
-                                                    backgroundColor: isRecent ? '#4CAF50' : '#F44336',
-                                                    margin: '5px',
-                                                }}
-                                            />
-                                            <div className='name'>{account.display_name}</div>
+                                            <div className='name'>{account.name}</div>
                                         </div>
                                         <div className='balance'>
                                             {
@@ -594,14 +661,13 @@ function App() {
                                     </div>
                                     <div className='body'>
                                         <div className='type'>
-                                            {isCard
-                                                ? (account as BankCard).card_type
-                                                : (account as BankAccount).account_type}
+                                            {account.type}
                                         </div>
                                         <div className='number'>
-                                            {isCard
-                                                ? ((account as BankCard).card_network === 'VISA' ? 4 : 5) + '*** **** **** ' + (account as BankCard).partial_card_number
-                                                : (account as BankAccount).account_number.number}
+                                            {account.number.number}
+                                        </div>
+                                        <div className='number'>
+                                            {account.number.sortCode}
                                         </div>
                                         {displayAvailable && (
                                             <div className='available'>({!isCard ? displayBalance : displayAvailable})</div>
@@ -651,8 +717,7 @@ function App() {
                     </button>
                     <button
                         className='column'
-                        onClick={() => startCreateAccount()}
-                        disabled={!isTauri}
+                        onClick={startCreateAccount}
                     >
                         <img
                             src='./Serenity/dir.png'
@@ -721,8 +786,13 @@ function UserEditPanel({
     }, [user]);
 
     const icons = [
-        '/Serenity/pengwyn.png',
-        '/Serenity/jiraff.png',
+        '/Serenity/bagel.png',
+        '/Serenity/nim.png',
+        // '/Serenity/paun.png',
+        // '/Serenity/andreas.png',
+        '/Serenity/mochyn.png',
+        '/Serenity/hwyaden.png',
+        // '/Serenity/trex.png',
     ]
 
     const invalidName = (
@@ -736,7 +806,7 @@ function UserEditPanel({
         ephemeralUser.email.trim() === ''
         // email format (basic check)
         || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ephemeralUser.email)
-    );
+    ) && isTauri; // email only needs to be valid in Tauri context
 
     const invalidForm = invalidName || invalidEmail;
 
@@ -766,14 +836,16 @@ function UserEditPanel({
                 autoFocus
             />
 
-            <input
-                className={`centre ${invalidEmail ? 'invalid' : ''}`}
-                type='text'
-                placeholder='Email Address'
-                value={ephemeralUser.email}
-                onChange={(e) => setEphemeralUser({ ...ephemeralUser, email: e.target.value })}
-                autoFocus
-            />
+            {isTauri &&
+                <input
+                    className={`centre ${invalidEmail ? 'invalid' : ''}`}
+                    type='text'
+                    placeholder='Email Address'
+                    value={ephemeralUser.email}
+                    onChange={(e) => setEphemeralUser({ ...ephemeralUser, email: e.target.value })}
+                    autoFocus
+                />
+            }
 
             <div className='row'>
                 <button
@@ -803,11 +875,188 @@ function UserEditPanel({
             </div>
 
             <div className='footend small'>
-                <p>
-                    TrueLayer requires your email to identify you when linking your bank.
-                    This is only used for verification and never shared.
-                </p>
+                {isTauri &&
+                    <p>
+                        TrueLayer requires your email to identify you when linking your bank.
+                        This is only used for verification and never shared.
+                    </p>
+                }
             </div>
+        </div>
+    );
+}
+
+type AccountEditPanelProps = {
+    account: BankAccount | null;
+    updateOrAddAccount: (newAccount: BankAccount) => void;
+    deleteAccount: (accountID: string) => void;
+    close: () => void;
+    existingAccounts?: Record<string, BankAccount> | null;
+    users?: User[];
+};
+
+function AccountEditPanel({
+    account,
+    updateOrAddAccount,
+    deleteAccount,
+    close,
+    existingAccounts,
+    users,
+}: AccountEditPanelProps) {
+    const [ephemeralAccount, setEphemeralAccount] = useState<BankAccount>(constructAccount());
+
+    useEffect(() => {
+        setEphemeralAccount(constructAccount());
+    }, [account]);
+
+    function constructAccount(): BankAccount {
+        return {
+            ...emptyBankAccount,
+            ...account,
+            id: account?.id || crypto.randomUUID(),
+        };
+    }
+
+    const isAccountOnline = ephemeralAccount?.source === 'TrueLayer';
+    const isCard = ephemeralAccount?.cardNetwork !== undefined;
+
+    const invalidUsers = (
+        // non-null
+        ephemeralAccount?.users?.length === 0
+    );
+    const invalidName = (
+        // non-null
+        ephemeralAccount?.name?.trim() === ''
+    );
+    const invalidNumber = (
+        // non-null
+        ephemeralAccount?.number?.number?.trim() === ''
+    );
+    const invalidSortCode = (
+        // non-null
+        ephemeralAccount?.number?.sortCode === undefined
+        || ephemeralAccount?.number?.sortCode?.trim() === ''
+    );
+
+    const invalidForm = (
+        invalidUsers || invalidName || invalidNumber || invalidSortCode
+    );
+
+    return (
+        <div className='column'>
+
+            {/* INPUTS */}
+            <div className='row'>
+                {/* User(s) */}
+                {
+                    users && users.length > 0 ? (
+                        users.map((user, index) => {
+                            const isSelected = ephemeralAccount?.users?.find(u => u.id === user.id);
+
+                            return (
+                                <Tooltip key={user.id}>
+                                    <TooltipTrigger>
+                                        <img className={`userIcon clickable ${!isSelected ? 'unselected' : ''}`}
+                                            key={index}
+                                            src={user.icon}
+                                            alt={user.name}
+                                            onClick={() => {
+                                                setEphemeralAccount(prev => {
+                                                    const userSignatures = [...(prev.users || [])];
+                                                    const userIndex = userSignatures.findIndex(u => u.id === user.id);
+                                                    if (userIndex !== -1) {
+                                                        // remove user
+                                                        userSignatures.splice(userIndex, 1);
+                                                    }
+                                                    else {
+                                                        // add user
+                                                        userSignatures.push({ id: user.id, walletToken: '' });
+                                                    }
+                                                    return { ...prev, users: userSignatures };
+                                                });
+                                            }}
+                                        />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        {user.name}
+                                    </TooltipContent>
+                                </Tooltip>
+                            );
+                        })
+                    ) : (
+                        <span className='centre'>No users selected</span>
+                    )
+                }
+            </div>
+
+            <input
+                className={`centre ${invalidName ? 'invalid' : ''}`}
+                type='text'
+                placeholder='Account Name'
+                value={ephemeralAccount?.name}
+                onChange={(e) => setEphemeralAccount({ ...ephemeralAccount, name: e.target.value })}
+                autoFocus
+            />
+
+            <div className='row'>
+                <input
+                    className={`centre ${invalidNumber ? 'invalid' : ''}`}
+                    type='text'
+                    placeholder='Account Number'
+                    value={ephemeralAccount?.number?.number}
+                    onChange={(e) => setEphemeralAccount({ ...ephemeralAccount, number: { ...ephemeralAccount.number, number: e.target.value } })}
+                    autoFocus
+                    disabled={isAccountOnline}
+                />
+                <input
+                    className={`centre ${invalidSortCode ? 'invalid' : ''}`}
+                    type='text'
+                    placeholder='Sort Code'
+                    value={ephemeralAccount?.number?.sortCode}
+                    onChange={(e) => setEphemeralAccount({ ...ephemeralAccount, number: { ...ephemeralAccount.number, sortCode: e.target.value } })}
+                    autoFocus
+                    disabled={isAccountOnline}
+                />
+            </div>
+
+            <select
+                className='centre'
+                value={ephemeralAccount?.type}
+                onChange={(e) => setEphemeralAccount({ ...ephemeralAccount, type: e.target.value })}
+                defaultValue={''}
+                disabled={isAccountOnline}
+            >
+                <option disabled value=''>Select Account Type</option>
+                <option value='savings'>Savings</option>
+                <option value='checking'>Checking</option>
+                <option value='business'>Business</option>
+            </select>
+
+            {/* BUTTONS */}
+            <div className='row'>
+                <button
+                    className='centre'
+                    onClick={() => {
+                        updateOrAddAccount(ephemeralAccount);
+                        close();
+                    }}
+                    disabled={invalidForm}
+                >
+                    {account?.id ? 'Update' : 'Add'}
+                </button>
+                {account?.id && (
+                    <button
+                        className='centre threat'
+                        onClick={() => {
+                            deleteAccount(account.id);
+                            close();
+                        }}
+                    >
+                        Delete
+                    </button>
+                )}
+            </div>
+
         </div>
     );
 }
