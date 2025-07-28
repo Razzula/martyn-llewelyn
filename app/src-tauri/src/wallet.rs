@@ -11,6 +11,9 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 use uuid::Uuid;
 
+#[cfg(target_os = "android")]
+use tauri_plugin_android_keystore::AndroidKeystoreExt;
+
 pub async fn getOrGenerateMasterKey(app: AppHandle) -> Result<[u8; 32], String> {
     // LINUX, ...
     #[cfg(not(target_os = "android"))]
@@ -43,14 +46,25 @@ pub async fn getOrGenerateMasterKey(app: AppHandle) -> Result<[u8; 32], String> 
     // ANDROID
     #[cfg(target_os = "android")]
     {
-        // try to retrieve the key
-        let masterKey = app.state::<MasterKey>();
-        if let Some(key) = masterKey.get() {
-            return Ok(key);
-        }
+        use tauri_plugin_android_keystore::mobile::StoreRequest;
 
-        // if not found, error
-        Err("Master key not set. Please set it using the Android keystore.".into())
+        // try to retrieve the key
+        if let Some(hexKey) = app.androidKeystore().fetch().map_err(|e| e.to_string())? {
+            let key = hex::decode(&hexKey).map_err(|e| e.to_string())?;
+            return Ok(key.try_into().map_err(|_| "invalid key length")?);
+        }
+        
+        // if not found, generate and store one
+        let mut key = [0u8; 32];
+        rand::rng().fill_bytes(&mut key);
+        let payload = StoreRequest {
+            value: hex::encode(&key),
+        };
+        app.androidKeystore()
+            .store(payload)
+            .map_err(|e| e.to_string())?;
+
+        return Ok(key);
     }
 }
 
@@ -109,9 +123,11 @@ impl Wallet {
         if (walletPath.exists()) {
             // load from file, if exists
             let encryptedData = fs::read(&walletPath).unwrap_or_default();
+            let masterKey = getOrGenerateMasterKey(app.clone()).await.unwrap();
+
             let data = decryptData(
                 &encryptedData,
-                &getOrGenerateMasterKey(app.clone()).await.unwrap(),
+                &masterKey,
             )
             .expect("Failed to decrypt wallet data");
 
@@ -178,26 +194,5 @@ impl Wallet {
         }
         // return flat list of all wallet tokens
         Ok(self.tokens.keys().cloned().collect())
-    }
-}
-
-#[cfg(target_os = "android")]
-use std::sync::Mutex;
-
-#[cfg(target_os = "android")]
-pub struct MasterKey(Mutex<Option<[u8; 32]>>);
-
-#[cfg(target_os = "android")]
-impl MasterKey {
-    pub fn new() -> Self {
-        MasterKey(Mutex::new(None))
-    }
-
-    pub fn get(&self) -> Option<[u8; 32]> {
-        *self.0.lock().unwrap()
-    }
-
-    pub fn set(&self, key: [u8; 32]) {
-        *self.0.lock().unwrap() = Some(key);
     }
 }

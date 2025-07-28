@@ -7,9 +7,6 @@ use tokio::sync::Mutex;
 mod wallet;
 use wallet::{TokenEntry, Wallet};
 
-#[cfg(target_os = "android")]
-use wallet::MasterKey;
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // load environment variables from .env file
@@ -44,14 +41,13 @@ pub fn run() {
     {
         builder = builder
             .plugin(tauri_plugin_biometric::init())
-            .invoke_handler(tauri::generate_handler![setMasterKey,])
+            .plugin(tauri_plugin_android_keystore::init());
     }
 
     // configure universal features
     builder
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_keystore::init())
         // .manage(wallet::MasterPasswordState(Mutex::new(None)))
         // expose functions through Tauri
         .invoke_handler(tauri::generate_handler![
@@ -81,10 +77,10 @@ pub fn run() {
                 app.deep_link().register_all()?;
             }
 
-            // setup Android keystore
+            // setup Android ...
             #[cfg(target_os = "android")]
             {
-                app.manage(MasterKey::new());
+
             }
 
             // general setup
@@ -415,13 +411,4 @@ async fn loadWalletTokens(
 ) -> Result<Vec<String>, String> {
     let mut wallet = wallet.lock().await;
     Ok(wallet.tokenList(&app).await?)
-}
-
-#[cfg(target_os = "android")]
-#[tauri::command]
-fn setMasterKey(state: tauri::State<'_, MasterKey>, key: String) -> Result<(), String> {
-    let bytes = hex::decode(key).map_err(|e| e.to_string())?;
-    let arr: [u8; 32] = bytes.try_into().map_err(|_| "invalid key length")?;
-    state.set(arr);
-    Ok(())
 }

@@ -4,7 +4,7 @@ import { openUrl } from '@tauri-apps/plugin-opener';
 import { platform } from '@tauri-apps/plugin-os';
 import { invoke } from '@tauri-apps/api/core';
 import { authenticate } from '@tauri-apps/plugin-biometric';
-import { retrieve, store } from "@impierce/tauri-plugin-keystore";
+// import { retrieve, store } from "@impierce/tauri-plugin-keystore";
 
 import { fetchAccountBalance, fetchAccountsData, fetchCardBalance, fetchCardsData, getTrueLayerAuthURL, handleTokenExchange } from './lib/TrueLayer.ts';
 import type { TrueLayerAccountBalance, TrueLayerCardBalance } from './types/TrueLayer.ts';
@@ -23,7 +23,6 @@ enum ResponseState {
 
 function App() {
 
-    const [authKey, setAuthKey] = useState<string | null>(null);
     const [users, setUsers] = useState<User[] | null>(null);
 
     const [accounts, setAccounts] = useState<Record<string, (BankAccount | BankCard)>>({});
@@ -93,12 +92,6 @@ function App() {
             if (unlisten) unlisten();
         };
     }, []);
-
-    useEffect(() => {
-        if (authKey === null) {
-            authenticateUser();
-        }
-    }, [authKey]);
 
     useEffect(() => {
         // SAVE USERS
@@ -286,68 +279,6 @@ function App() {
                 .catch(err => {
                     console.error('Failed to save users:', err);
                 });
-        }
-    }
-
-    function authenticateUser() {
-        if (platform() === 'android') {
-            // ANDROID
-            // biometric authentication is handled by the OS
-            authenticate('In order to access your financial data, please authenticate.', {
-                allowDeviceCredential: true,
-                cancelTitle: 'Cancel',
-                title: 'Secure Login',
-                subtitle: 'Authenticate with biometrics or device credentials',
-                confirmationRequired: true,
-            })
-                .then(() => {
-                    // use keystore to fetch or generate a key
-                    retrieve('wallet-encryption', 'default', 'wallet-master')
-                        .then((key: string | null) => {
-                            if (key === null) {
-                                // no key found, generate a new one
-                                const key = crypto.getRandomValues(new Uint8Array(32));
-                                const hexKey = Array.from(key).map(b => b.toString(16).padStart(2, '0')).join('');
-                                store({
-                                    keyAlias: 'wallet-master',
-                                    value: hexKey,
-                                    promptTitle: 'Secure Key Storage',
-                                    promptSubtitle: 'Authenticate to save your encryption key',
-                                    promptNegativeButtonText: 'Cancel',
-                                })
-                                    .then(() => {
-                                        // set the generated key as authKey
-                                        setAuthKey(hexKey);
-                                    })
-                                    .catch((err) => {
-                                        console.error('Failed to store wallet key:', err?.message ?? err);
-                                    });
-                            }
-                            else {
-                                // key found, set it as authKey
-                                setAuthKey(key);
-                            }
-                        })
-                        .catch((err) => {
-                            console.error('Failed to retrieve wallet key:', err?.message ?? err);
-                        });
-                })
-                .catch((err) => {
-                    console.error('Biometric authentication failed:', err?.message ?? err);
-                });
-        }
-    }
-
-    function fetchOrGenerateMasterKey() {
-
-    }
-
-    if (platform() === 'android') {
-        // on mobile, we don't show the app until biometric auth is done
-        if (authKey === null) {
-            return (
-                <h1>Unauthorised</h1>
-            );
         }
     }
 
