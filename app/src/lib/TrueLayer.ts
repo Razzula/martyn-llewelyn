@@ -57,9 +57,11 @@ export async function fetchAccountsData(walletToken: string): Promise<BankAccoun
     const data: BankAccount[] = res.results.map((account: TrueLayerAccount) => {
         return {
             ...account,
-            user: res.userID,
+            users: [{
+                id: res.userID,
+                walletToken: walletToken, // store the walletToken needed to access the account
+            }],
             balance: undefined, // ensure balance is defined
-            walletToken: walletToken // store the walletToken needed to access the account
         };
     });
     return data;
@@ -72,9 +74,11 @@ export async function fetchCardsData(walletToken: string): Promise<BankCard[]> {
     const data: BankCard[] = res.results.map((card: TrueLayerCard) => {
         return {
             ...card,
-            user: res.userID,
+            users: [{
+                id: res.userID,
+                walletToken: walletToken, // store the walletToken needed to access the account
+            }],
             balance: undefined, // ensure balance is defined
-            walletToken: walletToken // store the walletToken needed to access the card
         };
     });
     return data;

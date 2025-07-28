@@ -186,15 +186,28 @@ input[type="text"].invalid {
     border-color: #e42c2c;
 }
 
+.unselected {
+    filter: grayscale(100%);
+}
+
+.unselected:hover {
+    filter: grayscale(0%);
+}
+
 .userButton {
     background-color: #8A9A5B;
     color: white;
     border: none;
-    border-radius: 1rem;
-    padding: 0.5rem 1rem;
+    border-radius: 50%;
+    width: 3rem;
+    height: 3rem;
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
 }
 
 .userSelection p {

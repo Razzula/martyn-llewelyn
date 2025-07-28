@@ -1,9 +1,8 @@
 import { TrueLayerAccount, TrueLayerAccountBalance, TrueLayerCard, TrueLayerCardBalance } from "./TrueLayer";
 
 export interface BankAccount extends TrueLayerAccount {
-    user: string;
+    users: UserSignature[];
 
-    walletToken?: string;
     balance?: TrueLayerAccountBalance;
     lastBalance?: TrueLayerAccountBalance;
     lastRetrieve?: string; // ISO timestamp
@@ -12,9 +11,8 @@ export interface BankAccount extends TrueLayerAccount {
 }
 
 export interface BankCard extends TrueLayerCard {
-    user: string;
+    users: UserSignature[];
 
-    walletToken?: string;
     balance?: TrueLayerCardBalance;
     lastBalance?: TrueLayerCardBalance;
     lastRetrieve?: string; // ISO timestamp
@@ -24,4 +22,10 @@ export interface User {
     id: string;
     name: string;
     email: string;
+    icon: string;
+}
+
+export interface UserSignature {
+    id: string;
+    walletToken: string;
 }
