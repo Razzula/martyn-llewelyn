@@ -177,6 +177,14 @@ impl Wallet {
         self.save(app).await;
     }
 
+    pub async fn remove(&mut self, walletToken: &str, app: AppHandle) {
+        if (self.isEmpty()) {
+            *self = Wallet::load(&app).await;
+        }
+        self.tokens.remove(walletToken);
+        self.save(app).await;
+    }
+
     pub async fn get(&mut self, walletToken: &str, app: &AppHandle) -> Option<&TokenEntry> {
         if (self.isEmpty()) {
             *self = Wallet::load(app).await;

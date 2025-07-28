@@ -254,24 +254,47 @@ function App() {
         }
     }
 
-    function updateOrAddUser(userName: string, userID?: string) {
+    function updateOrAddUser(userName: string, userID: string) {
         if (users !== null) {
-            if (userID) {
-                // update existing user
-                setUsers(prev => prev ? prev.map(user => user.id === userID ? { ...user, name: userName } : user) : []);
-            }
-            else {
-                // add new user
-                setUsers(prev => [...(prev ?? []), { id: crypto.randomUUID(), name: userName }]);
-            }
+            setUsers(prev => {
+                const existingUserIndex = prev ? prev.findIndex(user => user.id === userID) : -1;
+
+                if (existingUserIndex !== -1) {
+                    // update existing user
+                    const updatedUsers = [...(prev || [])];
+                    updatedUsers[existingUserIndex] = { ...updatedUsers[existingUserIndex], name: userName };
+                    return updatedUsers;
+                } else {
+                    // add new user
+                    return [...(prev || []), { id: userID, name: userName }];
+                }
+            });
         }
     }
 
-    function deleteUser(userID: string) {
+    async function deleteUser(userID: string) {
         if (users !== null) {
-            if (userID) {
-                setUsers(prev => (prev ? prev.filter(user => user.id !== userID) : []));
+            // check if user has any linked accounts
+            const hasLinkedAccounts = Object.values(accounts).some(account => account.user === userID);
+            if (hasLinkedAccounts) {
+                // get walletTokens of accounts linked to this user
+                const linkedWalletTokens = Object.values(accounts)
+                    .filter(account => account.user === userID)
+                    .map(account => account.walletToken)
+                    .filter((token, index, self) => self.indexOf(token) === index); // unique tokens
+
+                
+                // confirm with user before unlinking
+                const userConfirmation = await confirm(`This user has linked accounts. Are you sure you want to unlink them?`); // XXX: ugly, but gets the job done
+                if (!userConfirmation) {
+                    return; // user cancelled
+                }
+                await invoke('removeWalletTokens', { walletTokens: linkedWalletTokens });
+                setWalletTokens(prev => prev.filter(token => !linkedWalletTokens.includes(token)));
             }
+
+            // remove user from the list
+            setUsers(prev => (prev ? prev.filter(user => user.id !== userID) : []));
         }
     }
 
@@ -349,7 +372,7 @@ function App() {
             </ResponsiveModal>
 
             {/* USER CREATION MODAL */}
-            <ResponsiveModal title={selectedUser === null ? 'Add a new user' : 'Edit user'}
+            <ResponsiveModal title={selectedUser === null ? 'Add a new profile' : 'Edit profile'}
                 open={openEditUser !== null}
                 onClose={() => {
                     setOpenEditUser(null);
@@ -392,7 +415,7 @@ function App() {
                         className='userButton'
                         onClick={() => setOpenEditUser(() => { })}
                     >
-                        {users && users.length > 0 ? '+' : 'Setup User'}
+                        {users && users.length > 0 ? '+' : 'Setup Profile'}
                     </button>
                 </div>
 
@@ -559,7 +582,7 @@ function App() {
                 ) : (
                     // EMPTY RECORD
                     <div className='column'>
-                        <h4>No accounts found</h4>
+                        <h4>You don't have any linked accounts.</h4>
                     </div>
                 )
             }
@@ -597,7 +620,7 @@ export default App;
 
 type UserEditPanelProps = {
     user: User | null;
-    updateOrAddUser: (userName: string, userID?: string) => void;
+    updateOrAddUser: (userName: string, userID: string) => void;
     deleteUser: (userID: string) => void;
     onClose: ((userID: string) => void) | null;
     close: () => void;
@@ -612,6 +635,7 @@ function UserEditPanel({
     close,
     existingUsers
 }: UserEditPanelProps) {
+
     const [userID, setUserID] = useState(user !== null ? user.id : crypto.randomUUID());
     const [userName, setUserName] = useState('');
 
@@ -642,7 +666,7 @@ function UserEditPanel({
                 <button
                     className='centre'
                     onClick={() => {
-                        updateOrAddUser(userName, user?.id);
+                        updateOrAddUser(userName, userID);
                         close();
                         if (onClose !== null && onClose !== undefined) {
                             onClose(userID);

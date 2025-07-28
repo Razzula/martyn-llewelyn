@@ -53,6 +53,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             // WALLET
             loadWalletTokens,
+            removeWalletTokens,
             // FILE SYSTEM
             loadJSON,
             saveJSON,
@@ -411,4 +412,17 @@ async fn loadWalletTokens(
 ) -> Result<Vec<String>, String> {
     let mut wallet = wallet.lock().await;
     Ok(wallet.tokenList(&app).await?)
+}
+
+#[tauri::command]
+async fn removeWalletTokens(
+    app: tauri::AppHandle,
+    wallet: State<'_, Mutex<Wallet>>,
+    walletTokens: Vec<String>,
+) -> Result<(), String> {
+    let mut wallet = wallet.lock().await;
+    for walletToken in walletTokens {
+        wallet.remove(&walletToken, app.clone()).await;
+    }
+    Ok(())
 }
