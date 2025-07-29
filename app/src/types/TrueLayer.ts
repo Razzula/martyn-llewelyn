@@ -56,3 +56,29 @@ export type TrueLayerCardBalance = {
     payment_due_date: string; // YYYY-MM-DD
     update_timestamp: string; // ISO timestamp
 };
+
+export interface TrueLayerProvider {
+    provider_id: string;
+    display_name: string;
+    country: string;
+    logo_url: string;
+    scopes: string[];
+    availability: {
+        recommended_status: string;
+        updated_at: string; // ISO timestamp
+    };
+    steps?: Array<{
+        title: string;
+        fields: Array<{
+            type: string; // e.g. "SingleChoiceField"
+            values: Array<{
+                value: string;
+                display_name: string;
+            }>;
+            id: string;
+            display_name: string;
+            help_text: string;
+            mandatory: boolean;
+        }>;
+    }>;
+}

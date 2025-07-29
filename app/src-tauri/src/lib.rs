@@ -64,6 +64,7 @@ pub fn run() {
             fetchCardsData,
             fetchAccountBalance,
             fetchCardBalance,
+            fetchProviders,
         ])
         .setup(|app| {
             // setup wallet
@@ -324,6 +325,13 @@ async fn fetchCardBalance(
     fetchFromTrueLayerUsingWallet(app, walletToken, &endpoint, wallet).await
 }
 
+#[tauri::command]
+async fn fetchProviders() -> Result<String, String> {
+    // Fetch providers from TrueLayer
+    let endpoint = format!("api/providers?clientId={}", env!("VITE_TRUELAYER_CLIENT_ID"));
+    fetchFromTrueLayer(None, &endpoint, true).await
+}
+
 async fn fetchFromTrueLayerUsingWallet(
     app: tauri::AppHandle,
     walletToken: &str,
@@ -362,7 +370,7 @@ async fn fetchFromTrueLayerUsingWallet(
     };
 
     // EMBED userID IN RESPONSE
-    let raw = fetchFromTrueLayer(&accessToken, &endpoint).await?;
+    let raw = fetchFromTrueLayer(Some(accessToken.as_str()), &endpoint, false).await?;
 
     let mut json: serde_json::Value = serde_json::from_str(&raw).map_err(|e| e.to_string())?;
     json["userID"] = serde_json::Value::String(userID.to_string());
@@ -370,14 +378,23 @@ async fn fetchFromTrueLayerUsingWallet(
     Ok(json.to_string())
 }
 
-async fn fetchFromTrueLayer(accessToken: &str, endpoint: &str) -> Result<String, String> {
+async fn fetchFromTrueLayer(accessToken: Option<&str>, endpoint: &str, useAuth: bool) -> Result<String, String> {
     // HANDLE REQUEST
-    let url = format!("{}/{}", getTrueLayerApiUrl(), endpoint);
+    let host = if useAuth {
+        getTrueLayerAuthUrl()
+    } else {
+        getTrueLayerApiUrl()
+    };
+    let url = format!("{}/{}", host, endpoint);
     let client = reqwest::Client::new();
 
-    let res = client
-        .get(&url)
-        .bearer_auth(accessToken)
+    let mut req = client.get(&url);
+
+    if let Some(token) = accessToken {
+        req = req.bearer_auth(token);
+    }
+
+    let res = req
         .send()
         .await
         .map_err(|e| e.to_string())?;

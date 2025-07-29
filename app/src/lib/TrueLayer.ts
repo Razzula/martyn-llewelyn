@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 
-import { TrueLayerAccount, TrueLayerAccountBalance, TrueLayerCard, TrueLayerCardBalance, TrueLayerUser } from "../types/TrueLayer.ts";
+import { TrueLayerAccount, TrueLayerAccountBalance, TrueLayerCard, TrueLayerCardBalance, TrueLayerProvider, TrueLayerUser } from "../types/TrueLayer.ts";
 import { generateCodeChallenge, generateCodeVerifier } from "../utils/PKCE.ts";
 import { BankAccount } from "src/types/Bagel.ts";
 import { fromTrueLayerAccount, fromTrueLayerCard } from "../types/TrueLayerAdapters.ts";
@@ -97,4 +97,11 @@ export async function fetchCardBalance(walletToken: string, cardId: string): Pro
         await invoke('fetchCardBalance', { walletToken, cardId })
     );
     return res.results || [];
+}
+
+export async function fetchProviders(): Promise<TrueLayerProvider[]> {
+    const res = JSON.parse(
+        await invoke('fetchProviders')
+    );
+    return res || [];
 }

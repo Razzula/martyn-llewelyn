@@ -1,10 +1,10 @@
-.select-options {
+.selectOptions {
     background-color: var(--colour-button-background);
     border: 1px solid #75747a;
     background: #ffffff;
 }
 
-.select-option {
+.selectOption {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -16,13 +16,13 @@
     cursor: pointer;
 }
 
-/* .select-container {
+/* .selectContainer {
     display: flex;
     justify-content: space-between;
     background-color: var(--colour-button-background);
     border: 1px solid #464c4e;
 } */
 
-.select-option:hover {
+.selectOption:hover {
     background-color: var(--colour-button-surface);
 }

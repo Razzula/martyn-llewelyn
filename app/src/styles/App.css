@@ -23,6 +23,15 @@
     align-items: center;
 }
 
+.formRow {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    width: 90%;
+    padding: 0 1rem;
+}
+
 button {
     display: flex;
     align-items: center;
@@ -51,7 +60,8 @@ button:disabled:hover,
 button:disabled:active {
     /* prevent colour changes */
     background-color: #dadada;
-    transform: none !important; /* prevent animation */
+    transform: none !important;
+    /* prevent animation */
 }
 
 button:hover {
@@ -74,7 +84,8 @@ button:active {
     transform: translateY(0);
 }
 
-button, .clickable {
+button,
+.clickable {
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
 }
@@ -133,11 +144,12 @@ button, .clickable {
     border-radius: 0.5rem;
     padding: 1rem;
     background: #ffffff;
-    box-shadow: 0 0 4px rgba(0,0,0,0.1);
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     margin: 0.5rem;
+    cursor: pointer;
 }
 
 .accountHeader {
@@ -165,7 +177,7 @@ button, .clickable {
 input[type="text"] {
     padding: 0.75rem;
     width: 100%;
-    max-width: 400px;
+    /* max-width: 400px; */
     border-radius: 0.5rem;
     border: 1px solid #dadada;
     font-size: 1rem;
@@ -211,24 +223,24 @@ input[type="text"].invalid {
 }
 
 .userSelection p {
-  margin-bottom: 1rem;
-  color: #555;
-  line-height: 1.4;
+    margin-bottom: 1rem;
+    color: #555;
+    line-height: 1.4;
 }
 
 .userSelection .row {
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
 }
 
-.userSelection .row > button {
-  font-size: 0.95rem;
+.userSelection .row>button {
+    font-size: 0.95rem;
 }
 
 .userSelection .small.centre {
-  margin-top: 1rem;
-  color: #aaa;
+    margin-top: 1rem;
+    color: #aaa;
 }
 
 .bankLogo {
@@ -251,13 +263,15 @@ input[type="text"].invalid {
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: rgba(0, 0, 0, 0.5); /* Optional for dimming */
+    background-color: rgba(0, 0, 0, 0.5);
+    /* Optional for dimming */
     z-index: 9999;
 }
 
 .spinner {
     border: 4px solid rgba(0, 0, 0, 0.1);
-    border-top: 4px solid #8c7ce6aa; /* Spinner color */
+    border-top: 4px solid #8c7ce6aa;
+    /* Spinner color */
     border-radius: 50%;
     width: 40px;
     height: 40px;
@@ -265,6 +279,11 @@ input[type="text"].invalid {
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }

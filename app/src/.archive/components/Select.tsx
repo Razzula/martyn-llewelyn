@@ -50,7 +50,7 @@ export const Select = React.forwardRef<
 
     return (<>
         <span
-            className='select-container'
+            className='selectContainer'
             ref={refs.setReference}
             {...getReferenceProps()}
         >
@@ -63,7 +63,7 @@ export const Select = React.forwardRef<
             <FloatingPortal>
                 <FloatingFocusManager context={context} modal={false}>
                     <div
-                        className='select-options'
+                        className='selectOptions'
                         ref={refs.setFloating}
                         style={{
                             ...floatingStyles,

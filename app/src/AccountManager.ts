@@ -25,7 +25,11 @@ export class AccountManager {
         return [...existing, ...incoming.filter(u => !ids.has(u.id))];
     }
 
-    applyTo(prev: Record<string, BankAccount>) {
+    applyTo(prev: Record<string, BankAccount> | null): Record<string, BankAccount> {
+        if (prev === null) {
+            // if no previous state, return the current map
+            return { ...this.map };
+        }
         // merge the current map with the previous state
         const merged = { ...prev };
         for (const id in this.map) {

@@ -4,14 +4,16 @@ import { openUrl } from '@tauri-apps/plugin-opener';
 import { invoke } from '@tauri-apps/api/core';
 // import { retrieve, store } from "@impierce/tauri-plugin-keystore";
 
-import { fetchAccountBalance, fetchAccountsData, fetchCardBalance, fetchCardsData, getTrueLayerAuthURL, handleTokenExchange } from './lib/TrueLayer.ts';
+import { fetchAccountBalance, fetchAccountsData, fetchCardBalance, fetchCardsData, fetchProviders, getTrueLayerAuthURL, handleTokenExchange } from './lib/TrueLayer.ts';
 
 import './styles/App.css';
-import { BankAccount, BankAccountBalance, emptyBankAccount, User } from './types/Bagel.ts';
+import { BankAccount, BankAccountBalance, BankAccountPatch, emptyBankAccount, generatePatchFromAccount, User } from './types/Bagel.ts';
 import { ResponsiveModal } from './components/common/ResponsiveModal.tsx';
 import { AccountManager } from './AccountManager.ts';
 import { fromTrueLayerAccountBalance, fromTrueLayerCardBalance } from './types/TrueLayerAdapters.ts';
 import { Tooltip, TooltipContent, TooltipTrigger } from './components/common/Tooltip.tsx';
+import { TrueLayerProvider } from './types/TrueLayer.ts';
+import Select from './components/common/Select.tsx';
 
 const isTauri = !!(window as any).__TAURI_INTERNALS__;
 
@@ -24,13 +26,14 @@ enum ResponseState {
 function App() {
 
     const [users, setUsers] = useState<User[] | null>(null);
+    const [providers, setProviders] = useState<Record<string, TrueLayerProvider>>({});
 
     const [accounts, setAccounts] = useState<Record<string, (BankAccount)>>({});
     const [accountsState, setAccountsState] = useState<ResponseState | null>(null);
 
     const [accountsDataLive, setAccountsDataLive] = useState<Record<string, BankAccount>>({});
-    const [accountsDataOffline, setAccountsDataOffline] = useState<Record<string, BankAccount>>({});
-    const [accountsDataPatches, setAccountsDataPatches] = useState<Record<string, BankAccount>>({});
+    const [accountsDataOffline, setAccountsDataOffline] = useState<Record<string, BankAccount> | null>(null);
+    const [accountsDataPatches, setAccountsDataPatches] = useState<Record<string, BankAccountPatch> | null>(null);
 
     const [walletTokens, setWalletTokens] = useState<string[]>([]);
 
@@ -43,6 +46,23 @@ function App() {
 
     useEffect(() => {
         // HANDLE SETUP
+        if (!isTauri) {
+            alert('You are running a browser version of the app. This only supports a limited demo mode, and does not support access to any real accounts.\n\nNothing will be saved, and no data will be fetched from any providers.\n\nPlease refer to https://github.com/Razzula/martyn-llewelyn for more information.');
+            return;
+        }
+
+        // LOAD PROVIDERS
+        fetchProviders(import.meta.env.VITE_CLIENT_ID)
+            .then((providers: TrueLayerProvider[]) => {
+                const providersMap: Record<string, TrueLayerProvider> = {};
+                providers.forEach(provider => {
+                    providersMap[provider.provider_id] = provider;
+                });
+                setProviders(providersMap);
+            })
+            .catch(err => {
+                console.error('Failed to fetch providers:', err);
+            });
 
         // LOAD USERS
         invoke('loadJSON', { filename: 'users.json' })
@@ -52,6 +72,26 @@ function App() {
             })
             .catch(() => {
                 setUsers([]);
+            });
+
+        // LOAD OFFLINE ACCOUNTS
+        invoke('loadJSON', { filename: 'accounts.offline.json' })
+            .then((raw: unknown) => {
+                const data: Record<string, BankAccount> = JSON.parse(raw as string);
+                setAccountsDataOffline(data);
+            })
+            .catch(() => {
+                setAccountsDataOffline({});
+            });
+
+        // LOAD ACCOUNT PATCHES
+        invoke('loadJSON', { filename: 'accounts.patches.json' })
+            .then((raw: unknown) => {
+                const data: Record<string, BankAccount> = JSON.parse(raw as string);
+                setAccountsDataPatches(data);
+            })
+            .catch(() => {
+                setAccountsDataPatches({});
             });
 
         // XXX
@@ -108,9 +148,42 @@ function App() {
     }, [users])
 
     useEffect(() => {
+        // SAVE ACCOUNTS
+        if (accountsDataOffline !== null) {
+            saveOfflineAccounts();
+        }
+    }, [accountsDataOffline]);
+
+    useEffect(() => {
+        // SAVE ACCOUNTS
+        if (accountsDataPatches !== null) {
+            saveAccountPatches();
+        }
+    }, [accountsDataPatches]);
+
+    useEffect(() => {
+        setAccounts(_prev => {
+            // start with offline and live data
+            const merged: Record<string, BankAccount> = {
+                ...(accountsDataOffline || {}),
+                ...(accountsDataLive || {}),
+            };
+            // apply patches if present
+            if (accountsDataPatches !== null) {
+                Object.entries(accountsDataPatches).forEach(([id, patch]) => {
+                    if (merged[id]) {
+                        merged[id] = { ...merged[id], ...patch };
+                    }
+                });
+            }
+            return merged;
+        });
+    }, [accountsDataLive, accountsDataOffline, accountsDataPatches]);
+
+    useEffect(() => {
         // FETCH ACCOUNTS
         if (walletTokens.length > 0) {
-            setAccounts({});
+            setAccountsDataLive({});
             setAccountsState(ResponseState.LOADING); // reset accounts while fetching
 
             const accountManager = new AccountManager();
@@ -128,7 +201,7 @@ function App() {
                         });
 
                         // apply partial update, to not block UI
-                        setAccounts(prev => accountManager.applyTo(prev));
+                        setAccountsDataLive(prev => accountManager.applyTo(prev));
 
                         if (accountsState !== ResponseState.ERROR) {
                             setAccountsState(ResponseState.SUCCESS);
@@ -141,7 +214,7 @@ function App() {
             });
         }
         else {
-            setAccounts({});
+            setAccountsDataLive({});
         }
     }, [walletTokens]);
 
@@ -208,7 +281,7 @@ function App() {
     function updateAccountBalance(accountID: string, balance: BankAccountBalance) {
         if (accounts && accounts[accountID]) {
             const account = accounts[accountID];
-            setAccounts(prev => ({
+            setAccountsDataLive(prev => ({
                 ...prev,
                 [accountID]: {
                     ...account,
@@ -313,14 +386,77 @@ function App() {
         }
     }
 
+    function saveOfflineAccounts() {
+        if (accountsDataOffline !== null) {
+            invoke('saveJSON', { filename: 'accounts.offline.json', json: JSON.stringify(accountsDataOffline) })
+                .catch(err => {
+                    console.error('Failed to save offline accounts:', err);
+                });
+        }
+    }
+
+    function saveAccountPatches() {
+        if (accountsDataPatches !== null) {
+            invoke('saveJSON', { filename: 'accounts.patches.json', json: JSON.stringify(accountsDataPatches) })
+                .catch(err => {
+                    console.error('Failed to save account patches:', err);
+                });
+        }
+    }
+
     function updateOrAddAccount(account: BankAccount) {
-        const accountManager = new AccountManager();
-        accountManager.merge(account);
-        setAccounts(prev => accountManager.applyTo(prev));
+        if (account.source === 'Bagel') {
+            // if it's a manual account, update the offline data
+            setAccountsDataOffline(prev => ({
+                ...(prev || {}),
+                [account.id]: account,
+            }));
+        }
+        else {
+            const patch = generatePatchFromAccount(account, accountsDataLive[account.id] || emptyBankAccount);
+            // if it's a TrueLayer account, patch the live data
+            setAccountsDataPatches(prev => {
+                const prevObj = prev ?? {};
+                return {
+                    ...prevObj,
+                    [account.id]: {
+                        ...prevObj[account.id],
+                        ...patch,
+                    }
+                };
+            });
+        }
     }
 
     function deleteAccount(accountID: string) {
+        const account = accountsDataOffline?.[accountID];
+        if (account) {
+            // if it's an offline account, remove it from the offline data
+            setAccountsDataOffline(prev => {
+                const newData = { ...prev };
+                delete newData[accountID];
+                return newData;
+            });
+        }
+        const patch = accountsDataPatches?.[accountID];
+        if (patch) {
+            // if it's a TrueLayer account, remove the patch
+            setAccountsDataPatches(prev => {
+                const newData = { ...prev };
+                delete newData[accountID];
+                return newData;
+            });
+        }
+        // currently, we ignore trying to delete a linked account
     }
+
+    const accountsSum = Object.values(accounts || {}).reduce((sum, account) => {
+        const isCard = account.cardNetwork !== undefined;
+        const current = account.balance?.current ?? 0;
+        const available = account.balance?.available ?? 0;
+        const balance = isCard ? -current : available; // cards are negative, others are positive
+        return sum + balance;
+    }, 0);
 
     const footend = (
         <div className='column footend mini'>
@@ -422,7 +558,7 @@ function App() {
             </ResponsiveModal>
 
             {/* ACCOUNT CREATION MODAL */}
-            <ResponsiveModal title={selectedUser === null ? 'Create a manual account' : 'Edit account'}
+            <ResponsiveModal title={openEditAccount?.id ? (openEditAccount?.source === 'Bagel' ? 'Edit manual account' : 'Patch TrueLayer account') : 'Create a manual account'}
                 open={openEditAccount !== null}
                 onClose={() => {
                     setOpenEditAccount(null);
@@ -436,6 +572,7 @@ function App() {
                     close={() => setOpenEditAccount(null)}
                     existingAccounts={accounts}
                     users={users || []}
+                    providers={providers}
                 />
             </ResponsiveModal>
 
@@ -481,9 +618,11 @@ function App() {
                                 {users && users.length > 0 ? '+' : 'Setup Profile'}
                             </button>
                         </TooltipTrigger>
-                        <TooltipContent>
-                            {users && users.length > 0 ? 'Create a Profile' : ''}
-                        </TooltipContent>
+                        {users && users.length > 0 &&
+                            <TooltipContent>
+                                Create a profile
+                            </TooltipContent>
+                        }
                     </Tooltip>
                 </div>
 
@@ -535,34 +674,27 @@ function App() {
 
                 {/* USER BUTTONS */}
                 <div className='row right'>
-                    <input
-                        type='checkbox'
-                        id='modestyToggle'
-                        checked={modesty}
-                        onChange={(e) => setModesty(e.target.checked)}
-                        style={{ marginRight: '1rem' }}
-                    />
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <input
+                                type='checkbox'
+                                id='modestyToggle'
+                                checked={modesty}
+                                onChange={(e) => setModesty(e.target.checked)}
+                                style={{ marginRight: '1rem' }}
+                            />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            {modesty ? 'Show balances' : 'Hide balances'}
+                        </TooltipContent>
+                    </Tooltip>
                 </div>
 
             </div>
 
-            {/* { // DEBUG
-                walletTokens.length > 0 ? (
-                    <div>
-                        {
-                            walletTokens.map(token => (
-                                <div key={token}>    
-                                    <h4>{token}</h4>
-                                </div>
-                            ))
-                        }
-                    </div>
-                ) : (
-                    <div>
-                        <p>Wallet is empty!!!</p>
-                    </div>
-                )
-            } */}
+            <div>
+                {!modesty ? `£ ${accountsSum.toFixed(2)}` : '£ ***'}
+            </div>
 
             {
                 Object.keys(accounts).length > 0 ? (
@@ -586,11 +718,12 @@ function App() {
                             const updateDate = new Date(account.updateTimestamp);
                             const now = new Date();
                             const diffInMinutes = (now.getTime() - updateDate.getTime()) / 60000; // in minutes
-                            const isRecent = diffInMinutes <= 60; // consider recent if updated within the last 60 minutes
+                            const isRecent = diffInMinutes <= 15; // consider recent if updated within the last 15 minutes
 
                             return (
                                 <div className='accountCard' key={accountId}
                                     style={{ position: 'relative' }}
+                                    onClick={() => setOpenEditAccount(account)}
                                 >
 
                                     <Tooltip>
@@ -605,17 +738,33 @@ function App() {
                                                     borderRadius: '50%',
                                                     backgroundColor: account.source === 'TrueLayer' ? (isRecent ? '#4CAF50' : '#eea342ff') : '#dadada',
                                                     margin: '0.4rem',
+                                                    cursor: 'help',
                                                 }}
                                             />
                                         </TooltipTrigger>
                                         <TooltipContent>
-                                            {updateDate.toLocaleDateString('en-GB', {
-                                                year: 'numeric',
-                                                month: '2-digit',
-                                                day: '2-digit',
-                                                hour: '2-digit',
-                                                minute: '2-digit',
-                                            })}
+                                            {account.source === 'TrueLayer' &&
+                                                <img
+                                                    className='bankLogo'
+                                                    src='./TrueLayer/TrueLayerLogo/TrueLayer-LOGO-white-transp-horizontal.svg'
+                                                    alt='TrueLayer Logo'
+                                                    style={{
+                                                        width: '80px',
+                                                    }}
+                                                />
+                                            }
+                                            {account.updateTimestamp &&
+                                                updateDate.toLocaleDateString('en-GB', {
+                                                    year: 'numeric',
+                                                    month: '2-digit',
+                                                    day: '2-digit',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit',
+                                                }) + ` (${diffInMinutes.toFixed(0)} min ago)`
+                                            }
+                                            {account.source === 'Bagel' &&
+                                                <span>Manual Entry</span>
+                                            }
                                         </TooltipContent>
                                     </Tooltip>
 
@@ -641,12 +790,12 @@ function App() {
                                                 <TooltipTrigger>
                                                     <img
                                                         className='bankLogo'
-                                                        src={account.provider.logoURI || '/Serenity/unknown.png'}
+                                                        src={providers?.[account.provider.id]?.logo_url || account.provider.logoURI || '/Serenity/unknown.png'}
                                                         alt={`${account.name} Logo`}
                                                     />
                                                 </TooltipTrigger>
                                                 <TooltipContent>
-                                                    {account.provider.name ?? account.provider.id}
+                                                    {providers?.[account.provider.id]?.display_name ?? account.provider.name ?? account.provider.id}
                                                 </TooltipContent>
                                             </Tooltip>
                                             <div className='verticalSeparator' />
@@ -827,24 +976,28 @@ function UserEditPanel({
                 }
             </div>
 
-            <input
-                className={`centre ${invalidName ? 'invalid' : ''}`}
-                type='text'
-                placeholder='User Name'
-                value={ephemeralUser.name}
-                onChange={(e) => setEphemeralUser({ ...ephemeralUser, name: e.target.value })}
-                autoFocus
-            />
-
-            {isTauri &&
+            <div className='formRow'>
                 <input
-                    className={`centre ${invalidEmail ? 'invalid' : ''}`}
+                    className={`${invalidName ? 'invalid' : ''}`}
                     type='text'
-                    placeholder='Email Address'
-                    value={ephemeralUser.email}
-                    onChange={(e) => setEphemeralUser({ ...ephemeralUser, email: e.target.value })}
+                    placeholder='User Name'
+                    value={ephemeralUser.name}
+                    onChange={(e) => setEphemeralUser({ ...ephemeralUser, name: e.target.value })}
                     autoFocus
                 />
+            </div>
+
+            {isTauri &&
+                <div className='formRow'>
+                    <input
+                        className={`${invalidEmail ? 'invalid' : ''}`}
+                        type='text'
+                        placeholder='Email Address'
+                        value={ephemeralUser.email}
+                        onChange={(e) => setEphemeralUser({ ...ephemeralUser, email: e.target.value })}
+                        autoFocus
+                    />
+                </div>
             }
 
             <div className='row'>
@@ -893,6 +1046,7 @@ type AccountEditPanelProps = {
     close: () => void;
     existingAccounts?: Record<string, BankAccount> | null;
     users?: User[];
+    providers?: Record<string, TrueLayerProvider>;
 };
 
 function AccountEditPanel({
@@ -902,12 +1056,15 @@ function AccountEditPanel({
     close,
     existingAccounts,
     users,
+    providers,
 }: AccountEditPanelProps) {
+
     const [ephemeralAccount, setEphemeralAccount] = useState<BankAccount>(constructAccount());
 
     useEffect(() => {
         setEphemeralAccount(constructAccount());
     }, [account]);
+
 
     function constructAccount(): BankAccount {
         return {
@@ -931,16 +1088,27 @@ function AccountEditPanel({
     const invalidNumber = (
         // non-null
         ephemeralAccount?.number?.number?.trim() === ''
+        // unique
+        || (existingAccounts && Object.values(existingAccounts).some(existingAccount =>
+            existingAccount.id !== ephemeralAccount.id
+            && existingAccount.number?.number === ephemeralAccount.number?.number
+        ))
+        // format
+        || !/^\d{8,10}$/.test(ephemeralAccount?.number?.number || '')
     );
     const invalidSortCode = (
         // non-null
         ephemeralAccount?.number?.sortCode === undefined
         || ephemeralAccount?.number?.sortCode?.trim() === ''
+        // format
+        || !/^\d{2}-\d{2}-\d{2}$/.test(ephemeralAccount?.number?.sortCode || '')
     );
 
     const invalidForm = (
         invalidUsers || invalidName || invalidNumber || invalidSortCode
     );
+
+    const selectedBankProviderIndex = providers ? Object.keys(providers).indexOf(ephemeralAccount?.provider?.id || '') : -1;
 
     return (
         <div className='column'>
@@ -989,14 +1157,45 @@ function AccountEditPanel({
                 }
             </div>
 
-            <input
-                className={`centre ${invalidName ? 'invalid' : ''}`}
-                type='text'
-                placeholder='Account Name'
-                value={ephemeralAccount?.name}
-                onChange={(e) => setEphemeralAccount({ ...ephemeralAccount, name: e.target.value })}
-                autoFocus
-            />
+            <div className='formRow' style={{display: 'flex', alignItems: 'stretch' }}>
+                <Select
+                    entries={Object.entries(providers ?? []).map(([id, provider]) => ({
+                        key: id,
+                        name: provider.display_name,
+                        element: (
+                            <div className='row'>
+                                <img
+                                    className='bankLogo'
+                                    src={provider.logo_url || '/Serenity/unknown.png'}
+                                    alt={provider.display_name || id}
+                                />
+                                <span>{provider.display_name || id}</span>
+                            </div>
+                        ),
+                        icon: provider.logo_url || '/Serenity/unknown.png',
+                    }))}
+                    setSelected={(key) => setEphemeralAccount(prev => ({
+                        ...prev,
+                        provider: {
+                            id: key,
+                        }
+                    }))}
+                    forcedIndex={selectedBankProviderIndex}
+                    icon={providers?.[ephemeralAccount?.provider?.id]?.logo_url || '/Serenity/unknown.png'}
+                />
+                <input
+                    className={`centre ${invalidName ? 'invalid' : ''}`}
+                    type='text'
+                    placeholder='Account Name'
+                    value={ephemeralAccount?.name}
+                    onChange={(e) => setEphemeralAccount({ ...ephemeralAccount, name: e.target.value })}
+                    autoFocus
+                    style={{
+                        flex: 1,
+                    }}
+                />
+            </div>
+
 
             <div className='row'>
                 <input
@@ -1023,7 +1222,6 @@ function AccountEditPanel({
                 className='centre'
                 value={ephemeralAccount?.type}
                 onChange={(e) => setEphemeralAccount({ ...ephemeralAccount, type: e.target.value })}
-                defaultValue={''}
                 disabled={isAccountOnline}
             >
                 <option disabled value=''>Select Account Type</option>

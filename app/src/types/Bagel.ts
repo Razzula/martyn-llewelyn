@@ -85,3 +85,30 @@ export const emptyBankAccount: BankAccount = {
     users: [],
     source: 'Bagel',
 };
+
+export function generatePatchFromAccount(account: BankAccount, live: BankAccount): BankAccountPatch | null {
+    const patch: BankAccountPatch = { id: account.id };
+
+    if (account.name !== live.name) {
+        patch.name = account.name;
+    }
+
+    if (account.interestRate !== live.interestRate) {
+        patch.interestRate = account.interestRate;
+    }
+
+    // Compare users (by ID and walletToken)
+    const usersChanged =
+        account.users.length !== live.users.length ||
+        account.users.some((u, i) => u.id !== live.users[i]?.id || u.walletToken !== live.users[i]?.walletToken);
+
+    if (usersChanged) {
+        patch.users = [
+            // do not include walletToken in the patch, for security reasons
+            ...account.users.map(u => ({ id: u.id })),
+        ]
+    }
+
+    // if no fields were added to patch, return null
+    return Object.keys(patch).length > 1 ? patch : null;
+}
