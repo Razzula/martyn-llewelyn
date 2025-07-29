@@ -3,11 +3,12 @@
     align-items: center;
     justify-content: center;
     align-self: stretch;
-    aspect-ratio: 1 / 1;
     padding: 0.25rem;
     border: 1px solid #dadada;
     border-radius: 0.5rem;
     max-height: 36px;
+    min-height: 36px;
+    cursor: pointer;
 }
 
 .selectContainer:hover {
@@ -23,11 +24,21 @@
 }
 
 .selectContainer img {
-    max-height: 100%;
-    max-width: 100%;
-    height: auto;
-    width: auto;
+    /* max-height: 2rem; */
+    max-width: 5rem;
+    max-height: 2.2rem;
+    /* aspect-ratio: 1 / 1; */
+    width: 100%;
+    height: 100%;
     object-fit: contain;
+    padding: 0rem;
+}
+
+.selectContainer.disabled {
+    background-color: #f0f0f0;
+    /* color: #585858; */
+    opacity: 0.7;
+    cursor: not-allowed;
 }
 
 .selectOptions {
@@ -37,6 +48,13 @@
     padding: 0.25rem 0;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     z-index: 1000;
+    max-width: 500px;
+}
+
+.selectOptions.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(5rem, 1fr));
+    gap: 0.5rem;
 }
 
 .selectOption {
@@ -46,9 +64,13 @@
     font-size: 1rem;
     border-radius: 0.5rem;
     transition: background-color 0.2s ease;
-    cursor: pointer;
+    cursor: pointer !important;
 }
 
 .selectOption:hover {
     background-color: #f0f0f0;
+}
+
+.empty {
+    color: #acacac;
 }

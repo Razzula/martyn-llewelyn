@@ -9,9 +9,12 @@ interface SelectProps {
     setSelected: (name: string) => void;
     forcedIndex?: number;
     icon?: string;
+    emptyText?: string;
+    disabled?: boolean;
+    mode?: 'list' | 'grid';
 }
 
-function Select({ className, entries, setSelected, icon, forcedIndex }: SelectProps): JSX.Element {
+function Select({ className, entries, setSelected, icon, forcedIndex, emptyText, disabled, mode = 'list' }: SelectProps): JSX.Element {
 
     const [isOpen, setIsOpen] = React.useState(false);
     const [activeIndex, setActiveIndex] = React.useState<number | null>(null);
@@ -30,8 +33,10 @@ function Select({ className, entries, setSelected, icon, forcedIndex }: SelectPr
                 <img
                     src={entries[selectedIndex].icon} alt={entries[selectedIndex].name}
                     style={{
-                        height: '100%',
-                        width: '100%',
+                        // height: '100%',
+                        // width: '100%',
+                        height: '1.5rem',
+                        width: '1.5rem',
                     }}
                 />
             );
@@ -80,10 +85,12 @@ function Select({ className, entries, setSelected, icon, forcedIndex }: SelectPr
     // });
 
     const { getReferenceProps, getFloatingProps, getItemProps } = useInteractions(
-        [dismiss, role, listNav, click /*, typeahead */]
+        [dismiss, role, listNav, disabled ? undefined : click].filter(Boolean)
     );
 
     const handleSelect = (index: number) => {
+        if (disabled) return;
+
         setSelectedIndex(index);
         setIsOpen(false);
         setSelected(entries[index].key);
@@ -91,11 +98,11 @@ function Select({ className, entries, setSelected, icon, forcedIndex }: SelectPr
 
     return (<>
         <span
-            className={`${className} selectContainer ${isOpen ? 'open' : ''}`}
+            className={`${className} selectContainer ${isOpen ? 'open' : ''} ${disabled ? 'disabled' : ''}`}
             ref={refs.setReference}
             {...getReferenceProps()}
         >
-            {selectedIcon}
+            { selectedIcon ?? ((selectedIndex !== null && selectedIndex >= 0) ? entries[selectedIndex]?.name : <span className='empty'>{emptyText ?? '...'}</span>)}
             {/* {(selectedIndex !== null && selectedIndex >= 0) ? entries[selectedIndex]?.name : '...'} */}
             {/* <img src='/bible-app/icons/drop.svg' alt='Arrow Down'/> */}
         </span>
@@ -104,7 +111,7 @@ function Select({ className, entries, setSelected, icon, forcedIndex }: SelectPr
             <FloatingPortal>
                 <FloatingFocusManager context={context} modal={false}>
                     <div
-                        className='selectOptions'
+                        className={`selectOptions ${mode}`}
                         ref={refs.setFloating}
                         style={{
                             ...floatingStyles,

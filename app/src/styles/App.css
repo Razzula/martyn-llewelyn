@@ -174,7 +174,8 @@ button,
     margin-top: 0.25rem;
 }
 
-input[type="text"] {
+input[type="text"],
+input[type="number"] {
     padding: 0.75rem;
     width: 100%;
     /* max-width: 400px; */
@@ -185,17 +186,44 @@ input[type="text"] {
     transition: border-color 0.3s ease;
 }
 
-input[type="text"]:focus {
+input[type="text"]:focus,
+input[type="number"]:focus {
     outline: none;
     border-color: #8A9A5B;
 }
 
-input[type="text"]:disabled {
+input[type="text"]:disabled,
+input[type="number"]:disabled {
     background-color: #f0f0f0;
+    cursor: not-allowed;
 }
 
-input[type="text"].invalid {
+input[type="text"].invalid,
+input[type="number"].invalid {
     border-color: #e42c2c;
+}
+
+.ghostInputWrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    font-family: monospace;
+}
+
+.ghostPrefix {
+    position: absolute;
+    top: 25%;
+    left: 0.5rem;
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+.ghostInput {
+    padding-left: 8rem !important;
+    padding-right: 0rem !important;
+    width: 3rem !important;
+    /* max-width: 3rem; */
+    /* font-family: inherit; */
 }
 
 .unselected {
@@ -249,6 +277,12 @@ input[type="text"].invalid {
     object-fit: contain;
 }
 
+.bankLogoLarge {
+    width: 5rem;
+    height: 3rem;
+    object-fit: contain;
+}
+
 .providerLogo {
     width: 128px;
     height: auto;
@@ -286,4 +320,8 @@ input[type="text"].invalid {
     100% {
         transform: rotate(360deg);
     }
+}
+
+h1 {
+    margin: 0;
 }

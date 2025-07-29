@@ -7,13 +7,14 @@ import { invoke } from '@tauri-apps/api/core';
 import { fetchAccountBalance, fetchAccountsData, fetchCardBalance, fetchCardsData, fetchProviders, getTrueLayerAuthURL, handleTokenExchange } from './lib/TrueLayer.ts';
 
 import './styles/App.css';
-import { BankAccount, BankAccountBalance, BankAccountPatch, emptyBankAccount, generatePatchFromAccount, User } from './types/Bagel.ts';
+import { BankAccount, BankAccountBalance, BankAccountPatch, BankAccountType, CardNetwork, emptyBankAccount, generatePatchFromAccount, User } from './types/Bagel.ts';
 import { ResponsiveModal } from './components/common/ResponsiveModal.tsx';
 import { AccountManager } from './AccountManager.ts';
 import { fromTrueLayerAccountBalance, fromTrueLayerCardBalance } from './types/TrueLayerAdapters.ts';
 import { Tooltip, TooltipContent, TooltipTrigger } from './components/common/Tooltip.tsx';
 import { TrueLayerProvider } from './types/TrueLayer.ts';
 import Select from './components/common/Select.tsx';
+import { closedProviders } from './data/providers.ts';
 
 const isTauri = !!(window as any).__TAURI_INTERNALS__;
 
@@ -52,12 +53,15 @@ function App() {
         }
 
         // LOAD PROVIDERS
-        fetchProviders(import.meta.env.VITE_CLIENT_ID)
+        fetchProviders()
             .then((providers: TrueLayerProvider[]) => {
                 const providersMap: Record<string, TrueLayerProvider> = {};
-                providers.forEach(provider => {
-                    providersMap[provider.provider_id] = provider;
-                });
+                [...providers, ...closedProviders]
+                    .filter(provider => provider.provider_id !== 'mock' && provider.country === 'uk') // XXX: restrict to UK for now
+                    .sort((a, b) => a.display_name.localeCompare(b.display_name))
+                    .forEach(provider => {
+                        providersMap[provider.provider_id] = provider;
+                    });
                 setProviders(providersMap);
             })
             .catch(err => {
@@ -179,6 +183,28 @@ function App() {
             return merged;
         });
     }, [accountsDataLive, accountsDataOffline, accountsDataPatches]);
+
+    useEffect(() => {
+        if (accountsDataLive) {
+            setProviders(prev => {
+                // cache account logos for providers
+                const newAccounts = { ...accountsDataLive };
+                Object.values(newAccounts).forEach(account => {
+                    const providerID = account.provider?.id || undefined;
+                    if (providerID && account.provider?.logoURI !== undefined) {
+                        if (
+                            prev?.[providerID]
+                            && prev?.[providerID].accountLogo === undefined
+                        ) {
+                            // if provider has no account logo, set it to the default
+                            prev[providerID].accountLogo = account.provider.logoURI;
+                        }
+                    }
+                });
+                return prev;
+            })
+        }
+    }, [accountsDataLive]);
 
     useEffect(() => {
         // FETCH ACCOUNTS
@@ -693,147 +719,172 @@ function App() {
             </div>
 
             <div>
-                {!modesty ? `£ ${accountsSum.toFixed(2)}` : '£ ***'}
+                <h1>
+                    {!modesty ? `£ ${toFinancialString(accountsSum)}` : '£ ***'}
+                </h1>
             </div>
 
             {
                 Object.keys(accounts).length > 0 ? (
                     // POPULATED RECORD
                     <div className='accountsGrid'>
-                        {Object.entries(accounts).sort().map(([accountId, account]) => {
+                        {Object.entries(accounts)
+                            .sort(([, a], [, b]) => {
+                                // order accounts in descending order by balance
+                                const aIsCard = a.cardNetwork !== undefined;
+                                const aValue = (aIsCard ? a.balance?.current : a.balance?.available) || 0;
+                                const bIsCard = b.cardNetwork !== undefined;
+                                const bValue = (bIsCard ? b.balance?.current : b.balance?.available) || 0;
+                                if (aValue > bValue) return -1;
+                                if (aValue < bValue) return 1;
+                                return 0;
+                            })
+                            .map(([accountId, account]) => {
 
-                            const isCard = account.cardNetwork !== undefined;
+                                const isCard = account.cardNetwork !== undefined;
 
-                            const balance = 'balance' in account ? account.balance : null;
+                                const balance = 'balance' in account ? account.balance : null;
 
-                            const available = balance?.available?.toFixed(2) ?? null;
-                            const current = balance?.current?.toFixed(2) ?? null;
+                                const available = balance ? toFinancialString(balance?.available) : null;
+                                const current = balance ? toFinancialString(balance?.current) : null;
 
-                            const currency = balance?.currency === 'GBP' ? '£' : balance?.currency;
-                            const displayBalance = current ? `${currency}\u00A0${isCard ? '-' : ''}${modesty ? '***' : current}` : null;
-                            const displayAvailable = available ? `${currency}\u00A0${modesty ? '***' : available}` : null;
+                                const currency = balance?.currency === 'GBP' ? '£' : balance?.currency;
+                                const displayBalance = current ? `${currency}\u00A0${isCard ? '-' : ''}${modesty ? '***' : current}` : null;
+                                const displayAvailable = available ? `${currency}\u00A0${modesty ? '***' : available}` : null;
 
-                            const accountUsers = users?.filter(user => account.users.some(u => u.id === user.id));
+                                const accountUsers = users?.filter(user => account.users.some(u => u.id === user.id));
 
-                            const updateDate = new Date(account.updateTimestamp);
-                            const now = new Date();
-                            const diffInMinutes = (now.getTime() - updateDate.getTime()) / 60000; // in minutes
-                            const isRecent = diffInMinutes <= 15; // consider recent if updated within the last 15 minutes
+                                const updateDate = new Date(account.updateTimestamp);
+                                const now = new Date();
+                                const diffInMinutes = (now.getTime() - updateDate.getTime()) / 60000; // in minutes
+                                const isRecent = diffInMinutes <= 15; // consider recent if updated within the last 15 minutes
 
-                            return (
-                                <div className='accountCard' key={accountId}
-                                    style={{ position: 'relative' }}
-                                    onClick={() => setOpenEditAccount(account)}
-                                >
+                                return (
+                                    <div className='accountCard' key={accountId}
+                                        style={{ position: 'relative' }}
+                                        onClick={() => setOpenEditAccount(account)}
+                                    >
 
-                                    <Tooltip>
-                                        <TooltipTrigger>
-                                            <div
-                                                style={{
-                                                    position: 'absolute',
-                                                    top: 0,
-                                                    left: 0,
-                                                    width: '8px',
-                                                    height: '8px',
-                                                    borderRadius: '50%',
-                                                    backgroundColor: account.source === 'TrueLayer' ? (isRecent ? '#4CAF50' : '#eea342ff') : '#dadada',
-                                                    margin: '0.4rem',
-                                                    cursor: 'help',
-                                                }}
-                                            />
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            {account.source === 'TrueLayer' &&
-                                                <img
-                                                    className='bankLogo'
-                                                    src='./TrueLayer/TrueLayerLogo/TrueLayer-LOGO-white-transp-horizontal.svg'
-                                                    alt='TrueLayer Logo'
+                                        <Tooltip>
+                                            <TooltipTrigger>
+                                                <div
                                                     style={{
-                                                        width: '80px',
+                                                        position: 'absolute',
+                                                        top: 0,
+                                                        left: 0,
+                                                        width: '8px',
+                                                        height: '8px',
+                                                        borderRadius: '50%',
+                                                        backgroundColor: account.source === 'TrueLayer' ? (isRecent ? '#4CAF50' : '#eea342ff') : '#dadada',
+                                                        margin: '0.4rem',
+                                                        cursor: 'help',
                                                     }}
                                                 />
-                                            }
-                                            {account.updateTimestamp &&
-                                                updateDate.toLocaleDateString('en-GB', {
-                                                    year: 'numeric',
-                                                    month: '2-digit',
-                                                    day: '2-digit',
-                                                    hour: '2-digit',
-                                                    minute: '2-digit',
-                                                }) + ` (${diffInMinutes.toFixed(0)} min ago)`
-                                            }
-                                            {account.source === 'Bagel' &&
-                                                <span>Manual Entry</span>
-                                            }
-                                        </TooltipContent>
-                                    </Tooltip>
-
-                                    <div className='accountHeader'>
-                                        <div className='row'>
-                                            {
-                                                accountUsers?.map(user => (
-                                                    <Tooltip key={user.id}>
-                                                        <TooltipTrigger>
-                                                            <img
-                                                                key={user.id}
-                                                                className='bankLogo'
-                                                                src={user.icon}
-                                                            />
-                                                        </TooltipTrigger>
-                                                        <TooltipContent>
-                                                            {user.name}
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                ))
-                                            }
-                                            <Tooltip>
-                                                <TooltipTrigger>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                {account.source === 'TrueLayer' &&
                                                     <img
                                                         className='bankLogo'
-                                                        src={providers?.[account.provider.id]?.logo_url || account.provider.logoURI || '/Serenity/unknown.png'}
-                                                        alt={`${account.name} Logo`}
+                                                        src='./TrueLayer/TrueLayerLogo/TrueLayer-LOGO-white-transp-horizontal.svg'
+                                                        alt='TrueLayer Logo'
+                                                        style={{
+                                                            width: '80px',
+                                                        }}
                                                     />
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    {providers?.[account.provider.id]?.display_name ?? account.provider.name ?? account.provider.id}
-                                                </TooltipContent>
-                                            </Tooltip>
-                                            <div className='verticalSeparator' />
+                                                }
+                                                {account.updateTimestamp &&
+                                                    updateDate.toLocaleDateString('en-GB', {
+                                                        year: 'numeric',
+                                                        month: '2-digit',
+                                                        day: '2-digit',
+                                                        hour: '2-digit',
+                                                        minute: '2-digit',
+                                                    }) + ` (${diffInMinutes.toFixed(0)} min ago)`
+                                                }
+                                                {account.source === 'Bagel' &&
+                                                    <span>Manual Entry</span>
+                                                }
+                                            </TooltipContent>
+                                        </Tooltip>
+
+                                        <div className='accountHeader'>
+                                            <div className='row'>
+                                                {
+                                                    accountUsers?.map(user => (
+                                                        <Tooltip key={user.id}>
+                                                            <TooltipTrigger>
+                                                                <img
+                                                                    key={user.id}
+                                                                    className='bankLogo'
+                                                                    src={user.icon}
+                                                                />
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                                {user.name}
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    ))
+                                                }
+                                                <Tooltip>
+                                                    <TooltipTrigger>
+                                                        <img
+                                                            className='bankLogo'
+                                                            src={
+                                                                account.provider.logoURI
+                                                                || providers?.[account.provider.id]?.accountLogo
+                                                                || providers?.[account.provider.id]?.logo_url
+                                                                || '/Serenity/unknown.png'
+                                                            }
+                                                            alt={`${account.name} Logo`}
+                                                        />
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        {providers?.[account.provider.id]?.display_name ?? account.provider.name ?? account.provider.id}
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                                <div className='verticalSeparator' />
+                                            </div>
                                             <div className='name'>{account.name}</div>
+                                            <div className='row'>
+                                                <div className='verticalSeparator' />
+                                                <div className='balance'>
+                                                    {
+                                                        (!isCard ? displayAvailable : displayBalance)
+                                                        || <div className='spinner' />
+                                                    }
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className='balance'>
-                                            {
-                                                (!isCard ? displayAvailable : displayBalance)
-                                                || <div className='spinner' />
-                                            }
+                                        <div className='body'>
+                                            <div className='type'>
+                                                {account.type}
+                                            </div>
+                                            <div className='row'>
+                                                { !isCard ? account.number.number : `${account?.cardNetwork ==='MASTERCARD' ? 5 : 4}*** **** **** ${account.number.number}` }
+                                                { !isCard &&
+                                                    <>
+                                                        <div className='verticalSeparator' />
+                                                        {account.number.sortCode}
+                                                    </>
+                                                }
+                                            </div>
+                                            {displayAvailable && (
+                                                <div className='available'>({!isCard ? displayBalance : displayAvailable})</div>
+                                            )}
+
+                                            {!isCard && account.interestRate && (
+                                                <div className='interestRate'>TODO: Interest Rate</div>
+                                            )}
+
+                                            {account.lastBalance && (
+                                                <div className='delta'>TODO: Delta</div>
+                                            )}
+
                                         </div>
                                     </div>
-                                    <div className='body'>
-                                        <div className='type'>
-                                            {account.type}
-                                        </div>
-                                        <div className='number'>
-                                            {account.number.number}
-                                        </div>
-                                        <div className='number'>
-                                            {account.number.sortCode}
-                                        </div>
-                                        {displayAvailable && (
-                                            <div className='available'>({!isCard ? displayBalance : displayAvailable})</div>
-                                        )}
-
-                                        {!isCard && account.interestRate && (
-                                            <div className='interestRate'>TODO: Interest Rate</div>
-                                        )}
-
-                                        {account.lastBalance && (
-                                            <div className='delta'>TODO: Delta</div>
-                                        )}
-
-                                    </div>
-                                </div>
-                            );
-                        })}
+                                );
+                            })
+                        }
                     </div>
                 ) : (
                     // EMPTY RECORD
@@ -1065,7 +1116,6 @@ function AccountEditPanel({
         setEphemeralAccount(constructAccount());
     }, [account]);
 
-
     function constructAccount(): BankAccount {
         return {
             ...emptyBankAccount,
@@ -1075,7 +1125,7 @@ function AccountEditPanel({
     }
 
     const isAccountOnline = ephemeralAccount?.source === 'TrueLayer';
-    const isCard = ephemeralAccount?.cardNetwork !== undefined;
+    const isCard = ephemeralAccount?.type === BankAccountType.CREDIT;
 
     const invalidUsers = (
         // non-null
@@ -1084,6 +1134,11 @@ function AccountEditPanel({
     const invalidName = (
         // non-null
         ephemeralAccount?.name?.trim() === ''
+    );
+    const invalidType = (
+        // non-null
+        ephemeralAccount?.type === undefined
+        || ephemeralAccount?.type.trim() === ''
     );
     const invalidNumber = (
         // non-null
@@ -1094,24 +1149,69 @@ function AccountEditPanel({
             && existingAccount.number?.number === ephemeralAccount.number?.number
         ))
         // format
-        || !/^\d{8,10}$/.test(ephemeralAccount?.number?.number || '')
+        || ( !isCard ?
+            !/^\d{8,10}$/.test(ephemeralAccount?.number?.number || '')
+            : !/^\d{4}$/.test(ephemeralAccount?.number?.number || '')
+        )
     );
-    const invalidSortCode = (
+    const invalidSortCode = !isCard && (
         // non-null
         ephemeralAccount?.number?.sortCode === undefined
         || ephemeralAccount?.number?.sortCode?.trim() === ''
         // format
         || !/^\d{2}-\d{2}-\d{2}$/.test(ephemeralAccount?.number?.sortCode || '')
     );
-
-    const invalidForm = (
-        invalidUsers || invalidName || invalidNumber || invalidSortCode
+    const invalidCardNetwork = isCard && (
+        // non-null
+        ephemeralAccount?.cardNetwork === undefined
+        || ephemeralAccount?.cardNetwork.trim() === ''
     );
 
+    const invalidForm = (
+        invalidUsers || invalidName || invalidType || invalidNumber || invalidSortCode || invalidCardNetwork
+    );
+
+
+    const providerList = Object.entries(providers ?? []);
+    const providerEntries = (providerList.map(([id, provider]) => ({
+        key: id,
+        name: provider.display_name,
+        element: (
+            <Tooltip>
+                <TooltipTrigger>
+                    <div className='row'>
+                        <img
+                            className='bankLogoLarge'
+                            src={provider.logo_url || '/Serenity/unknown.png'}
+                            alt={provider.display_name || id}
+                        />
+                        {providerList.length < 10 &&
+                            <span>{provider.display_name || id}</span>
+                        }
+                    </div>
+                </TooltipTrigger>
+                <TooltipContent>{provider.display_name}</TooltipContent>
+            </Tooltip>
+        )
+    })));
     const selectedBankProviderIndex = providers ? Object.keys(providers).indexOf(ephemeralAccount?.provider?.id || '') : -1;
+
+    const selectedCardNetworkIndex = isCard ? Object.keys(CardNetwork).findIndex(key => key === ephemeralAccount?.cardNetwork) : -1;
+    const selectedCardNetwork = isCard ? Object.values(CardNetwork)[selectedCardNetworkIndex] : null;
+    const cardPrefix = selectedCardNetwork ? (selectedCardNetwork.name === CardNetwork.VISA.name ? '4' : '5') : '*';
 
     return (
         <div className='column'>
+
+            {isAccountOnline &&
+                <div className='small'>
+                    <p>
+                        This account is served directly by your bank.
+                        Some details can be edited, but doing so will only affect what Bagel displays:
+                        <b> no changes are made to your bank account.</b>
+                    </p>
+                </div>
+            }
 
             {/* INPUTS */}
             <div className='row'>
@@ -1157,32 +1257,25 @@ function AccountEditPanel({
                 }
             </div>
 
-            <div className='formRow' style={{display: 'flex', alignItems: 'stretch' }}>
-                <Select
-                    entries={Object.entries(providers ?? []).map(([id, provider]) => ({
-                        key: id,
-                        name: provider.display_name,
-                        element: (
-                            <div className='row'>
-                                <img
-                                    className='bankLogo'
-                                    src={provider.logo_url || '/Serenity/unknown.png'}
-                                    alt={provider.display_name || id}
-                                />
-                                <span>{provider.display_name || id}</span>
-                            </div>
-                        ),
-                        icon: provider.logo_url || '/Serenity/unknown.png',
-                    }))}
-                    setSelected={(key) => setEphemeralAccount(prev => ({
-                        ...prev,
-                        provider: {
-                            id: key,
-                        }
-                    }))}
-                    forcedIndex={selectedBankProviderIndex}
-                    icon={providers?.[ephemeralAccount?.provider?.id]?.logo_url || '/Serenity/unknown.png'}
-                />
+            <div className='formRow' style={{ display: 'flex', alignItems: 'stretch' }}>
+                <Tooltip>
+                    <TooltipTrigger>
+                        <Select
+                            entries={providerEntries}
+                            setSelected={(key) => setEphemeralAccount(prev => ({
+                                ...prev,
+                                provider: {
+                                    id: key,
+                                }
+                            }))}
+                            forcedIndex={selectedBankProviderIndex}
+                            icon={providers?.[ephemeralAccount?.provider?.id]?.logo_url || '/Serenity/unknown.png'}
+                            disabled={isAccountOnline}
+                            mode={providerList.length <= 10 ? 'list' : 'grid'}
+                        />
+                    </TooltipTrigger>
+                    <TooltipContent>{providers?.[ephemeralAccount?.provider?.id]?.display_name || 'Unknown Provider'}</TooltipContent>
+                </Tooltip>
                 <input
                     className={`centre ${invalidName ? 'invalid' : ''}`}
                     type='text'
@@ -1194,41 +1287,99 @@ function AccountEditPanel({
                         flex: 1,
                     }}
                 />
+                <Select
+                    className={invalidType ? 'invalid' : ''}
+                    entries={Object.values(BankAccountType).map((name) => ({
+                        key: name, name, element:
+                            <span>{name.charAt(0).toUpperCase() + name.slice(1)}</span>
+                    }))}
+                    forcedIndex={ephemeralAccount?.type ? Object.values(BankAccountType).indexOf(ephemeralAccount.type) : -1}
+                    setSelected={(key) => setEphemeralAccount({ ...ephemeralAccount, type: key as BankAccountType })}
+                    emptyText='Select Type'
+                    disabled={isAccountOnline}
+                />
             </div>
-
 
             <div className='row'>
-                <input
-                    className={`centre ${invalidNumber ? 'invalid' : ''}`}
-                    type='text'
-                    placeholder='Account Number'
-                    value={ephemeralAccount?.number?.number}
-                    onChange={(e) => setEphemeralAccount({ ...ephemeralAccount, number: { ...ephemeralAccount.number, number: e.target.value } })}
-                    autoFocus
-                    disabled={isAccountOnline}
-                />
-                <input
-                    className={`centre ${invalidSortCode ? 'invalid' : ''}`}
-                    type='text'
-                    placeholder='Sort Code'
-                    value={ephemeralAccount?.number?.sortCode}
-                    onChange={(e) => setEphemeralAccount({ ...ephemeralAccount, number: { ...ephemeralAccount.number, sortCode: e.target.value } })}
-                    autoFocus
-                    disabled={isAccountOnline}
-                />
+                { isCard && 
+                    <>
+                        <Select
+                            className={invalidCardNetwork ? 'invalid' : ''}
+                            entries={Object.entries(CardNetwork).map(([key, network]) => ({
+                                key,
+                                name: network.name,
+                                element:
+                                    <span>
+                                        <img
+                                            src={network.logo}
+                                            alt={network.name}
+                                            style={{ width: '1.5rem', height: '1.5rem', marginRight: '0.5rem' }}
+                                        />
+                                        <span style={{ textTransform: 'capitalize' }}>
+                                            {network.name}
+                                        </span>
+                                    </span>
+                            }))}
+                            forcedIndex={selectedCardNetworkIndex}
+                            icon={selectedCardNetwork?.logo}
+                            setSelected={(key) => setEphemeralAccount({ ...ephemeralAccount, cardNetwork: key })}
+                            emptyText='Card Network'
+                            disabled={isAccountOnline}
+                        />
+                    </>
+                }
+
+                <div className='ghostInputWrapper'>
+                    { isCard &&
+                        <span className='ghostPrefix'>{cardPrefix}*** **** **** </span>
+                    }
+                    <input
+                        className={`centre ${isCard ? 'ghostInput' : ''} ${invalidNumber ? 'invalid' : ''}`}
+                        type='text'
+                        placeholder={`${isCard ? 'Card' : 'Account Number'}`}
+                        value={ephemeralAccount?.number?.number}
+                        onChange={(e) => setEphemeralAccount({ ...ephemeralAccount, number: { ...ephemeralAccount.number, number: e.target.value } })}
+                        autoFocus
+                        disabled={isAccountOnline}
+                    />
+                </div>
+
+                { !isCard &&
+                    <input
+                        className={`centre ${invalidSortCode ? 'invalid' : ''}`}
+                        type='text'
+                        placeholder='Sort Code'
+                        value={ephemeralAccount?.number?.sortCode}
+                        onChange={(e) => setEphemeralAccount({ ...ephemeralAccount, number: { ...ephemeralAccount.number, sortCode: asSortCode(e.target.value) } })}
+                        autoFocus
+                        disabled={isAccountOnline}
+                    />
+                }
             </div>
 
-            <select
-                className='centre'
-                value={ephemeralAccount?.type}
-                onChange={(e) => setEphemeralAccount({ ...ephemeralAccount, type: e.target.value })}
-                disabled={isAccountOnline}
-            >
-                <option disabled value=''>Select Account Type</option>
-                <option value='savings'>Savings</option>
-                <option value='checking'>Checking</option>
-                <option value='business'>Business</option>
-            </select>
+            { !isAccountOnline &&
+                <div className='row'>
+                    <span>£</span>
+                    <input
+                        className='centre'
+                        type='number'
+                        placeholder='Balance'
+                        value={ephemeralAccount?.balance?.current || 0}
+                        onChange={(e) => setEphemeralAccount({
+                            ...ephemeralAccount,
+                            balance: {
+                                ...ephemeralAccount.balance,
+                                current: parseFloat(e.target.value) || 0,
+                                available: parseFloat(e.target.value) || 0,
+                                currency: 'GBP',
+                                updateTimestamp: new Date().toISOString(),
+                            }
+                        })}
+                        autoFocus
+                        disabled={isAccountOnline}
+                    />
+                </div>
+            }
 
             {/* BUTTONS */}
             <div className='row'>
@@ -1257,4 +1408,20 @@ function AccountEditPanel({
 
         </div>
     );
+}
+
+function asSortCode(input: string): string {
+    return input
+        .replace(/[^\d-]/g, '') // remove anything that's not digit or hyphen
+        .replace(/-/g, '') // remove existing hyphens
+        .slice(0, 6) // limit to 6 digits
+        .replace(/(.{2})/g, '$1-') // insert hyphen after every 2 digits
+        .replace(/-$/, ''); // remove trailing hyphen
+}
+
+function toFinancialString(value: number): string {
+    return value.toLocaleString('en-GB', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
 }

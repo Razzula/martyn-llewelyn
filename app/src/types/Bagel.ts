@@ -3,7 +3,7 @@ export interface BankAccount {
     // unified TrueLayerAccount | TrueLayerCard
     id: string;
     name: string;
-    type: 'TRANSACTION' | 'SAVINGS' | 'CREDIT' | 'CHARGE' | string;
+    type: BankAccountType;
     number: {
         number: string;
         // TrueLayerAccount
@@ -32,12 +32,30 @@ export interface BankAccount {
     interestRate?: number;
 }
 
+export enum BankAccountType {
+    TRANSACTION = 'TRANSACTION',
+    SAVINGS = 'SAVINGS',
+    CREDIT = 'CREDIT',
+    // CHARGE = 'CHARGE',
+}
+
+export const CardNetwork = {
+    VISA: {
+        name: 'Visa',
+        logo: '/CardNetworks/VisaLogo_Blue.svg',
+    },
+    MASTERCARD: {
+        name: 'Mastercard',
+        logo: '/CardNetworks/MastercardLogo.svg',
+    },
+} as const;
+
 export interface BankAccountBalance {
     current: number;
     available: number;
     currency: string;
     updateTimestamp: string; // ISO timestamp
-    
+
     // TrueLayerAccountBalance
     overdraft?: number;
     // TrueLayerCardBalance

@@ -4,8 +4,8 @@ import { BankAccount, BankAccountBalance } from '../types/Bagel';
 export function fromTrueLayerAccount(input: TrueLayerAccount): BankAccount {
     return {
         id: input.account_id,
-        name: input.display_name,
-        type: input.account_type,
+        name: input.display_name.trim(),
+        type: input.account_type as BankAccount['type'],
         number: {
             number: input.account_number.number,
             iban: input.account_number.iban,
@@ -26,8 +26,8 @@ export function fromTrueLayerAccount(input: TrueLayerAccount): BankAccount {
 export function fromTrueLayerCard(input: TrueLayerCard): BankAccount {
     return {
         id: input.account_id,
-        name: input.display_name,
-        type: input.card_type,
+        name: input.display_name.trim(),
+        type: input.card_type as BankAccount['type'],
         number: {
             number: input.partial_card_number,
         },

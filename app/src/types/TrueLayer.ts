@@ -81,4 +81,6 @@ export interface TrueLayerProvider {
             mandatory: boolean;
         }>;
     }>;
+
+    accountLogo?: string;
 }
