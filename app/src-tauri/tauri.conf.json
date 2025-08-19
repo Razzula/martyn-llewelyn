@@ -1,64 +1,68 @@
 {
-  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "Master Bagel",
-  "version": "0.1.0",
-  "identifier": "io.github.razzula.martyn-llewelyn",
-  "build": {
-    "frontendDist": "../dist",
-    "devUrl": "http://localhost:3180/",
-    "beforeDevCommand": "bun run dev:vite",
-    "beforeBuildCommand": "bun run build:vite"
-  },
-  "app": {
-    "windows": [
-      {
-        "title": "Master Bagel",
-        "width": 800,
-        "height": 800,
-        "resizable": true,
-        "fullscreen": false,
-        "devtools": true
-      }
-    ],
-    "security": {
-      "csp": null,
-      "capabilities": [
-        "shell-perms",
-        "devtools",
-        "main-capability",
-        "opener-perms",
-        "mobile-capability"
-      ]
-    }
-  },
-  "bundle": {
-    "active": true,
-    "targets": "all",
-    "icon": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.icns",
-      "icons/icon.ico"
-    ],
-    "android": {
-      "minSdkVersion": 28
-    }
-  },
-  "plugins": {
-    "deep-link": {
-      "mobile": [
-        {
-          "scheme": ["bagel"],
-          "host": "callback"
-        }
-      ],
-      "desktop": {
-        "schemes": ["bagel"]
-      }
+    "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+    "productName": "Master Bagel",
+    "version": "0.1.0",
+    "identifier": "io.github.razzula.martyn-llewelyn",
+    "build": {
+        "frontendDist": "../dist",
+        "devUrl": "http://localhost:3180/",
+        "beforeDevCommand": "bun run dev:vite",
+        "beforeBuildCommand": "bun run build:vite"
     },
-    "shell": {
-      "open": "^((mailto:\\w+)|(tel:\\w+)|(https?://\\S+)|(bagel://.+))$"
+    "app": {
+        "windows": [
+            {
+                "title": "Master Bagel",
+                "width": 800,
+                "height": 800,
+                "resizable": true,
+                "fullscreen": false,
+                "devtools": true
+            }
+        ],
+        "security": {
+            "csp": null,
+            "capabilities": [
+                "shell-perms",
+                "devtools",
+                "main-capability",
+                "opener-perms",
+                "mobile-capability"
+            ]
+        }
+    },
+    "bundle": {
+        "active": true,
+        "targets": "all",
+        "icon": [
+            "icons/32x32.png",
+            "icons/128x128.png",
+            "icons/128x128@2x.png",
+            "icons/icon.icns",
+            "icons/icon.ico"
+        ],
+        "android": {
+            "minSdkVersion": 28
+        }
+    },
+    "plugins": {
+        "deep-link": {
+            "mobile": [
+                {
+                    "scheme": [
+                        "bagel"
+                    ],
+                    "host": "callback"
+                }
+            ],
+            "desktop": {
+                "schemes": [
+                    "bagel"
+                ]
+            }
+        },
+        "shell": {
+            "open": "^((mailto:\\w+)|(tel:\\w+)|(https?://\\S+)|(bagel://.+))$"
+        }
     }
-  }
 }

@@ -84,7 +84,7 @@ function Select({ className, entries, setSelected, icon, forcedIndex, emptyText,
     //     },
     // });
 
-    const { getReferenceProps, getFloatingProps, getItemProps } = useInteractions(
+    const { getReferenceProps, getFloatingProps } = useInteractions(
         [dismiss, role, listNav, disabled ? undefined : click].filter(Boolean)
     );
 

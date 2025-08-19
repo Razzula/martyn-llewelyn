@@ -13,6 +13,17 @@ val tauriProperties = Properties().apply {
     }
 }
 
+// load .env from repo root
+val repoRoot = file("../../../../../")
+val env = Properties().apply {
+    val envFile = File(repoRoot, ".env")
+    if (envFile.exists()) envFile.inputStream().use { load(it) }
+}
+fun secret(key: String): String =
+    (env.getProperty(key) ?: System.getenv(key))
+        ?: throw GradleException("Missing secret: $key (set it in ${File(repoRoot, ".env").path} or env vars)")
+
+
 android {
     compileSdk = 36
     namespace = "io.github.razzula.martyn_llewelyn"
@@ -24,12 +35,24 @@ android {
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()
         versionName = tauriProperties.getProperty("tauri.android.versionName", "1.0")
     }
+    signingConfigs {
+        create("release") {
+            storeFile = File(repoRoot, secret("SIGNING_STORE"))
+            storePassword = secret("SIGNING_STORE_PASSWORD")
+            keyAlias = secret("SIGNING_KEY_ALIAS")
+            keyPassword = secret("SIGNING_KEY_PASSWORD")
+        }
+    }
     buildTypes {
         getByName("debug") {
             manifestPlaceholders["usesCleartextTraffic"] = "true"
             isDebuggable = true
             isJniDebuggable = true
             isMinifyEnabled = false
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = "-dev"
+            resValue("string", "app_name", "Master Bagel DEV")
+            resValue("string", "main_activity_title", "Martyn Llewelyn")
             packaging {                jniLibs.keepDebugSymbols.add("*/arm64-v8a/*.so")
                 jniLibs.keepDebugSymbols.add("*/armeabi-v7a/*.so")
                 jniLibs.keepDebugSymbols.add("*/x86/*.so")
@@ -37,6 +60,7 @@ android {
             }
         }
         getByName("release") {
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             proguardFiles(
                 *fileTree(".") { include("**/*.pro") }

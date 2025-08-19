@@ -7,7 +7,7 @@
     "scripts": {
         "dev:vite": "vite",
         "dev-apk": "bun tauri android dev",
-        "dev": "bun tauri dev",
+        "dev": "bun tauri dev --config src-tauri/tauri.dev.conf.json",
         "build:vite": "tsc -b && vite build",
         "build": "bun tauri build",
         "build-apk": "bun tauri android build",

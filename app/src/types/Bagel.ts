@@ -33,6 +33,7 @@ export interface BankAccount {
 }
 
 export enum BankAccountType {
+    NULL = '',
     TRANSACTION = 'TRANSACTION',
     SAVINGS = 'SAVINGS',
     CREDIT = 'CREDIT',
@@ -92,7 +93,7 @@ export interface UserSignature {
 export const emptyBankAccount: BankAccount = {
     id: '',
     name: '',
-    type: '',
+    type: BankAccountType.NULL,
     number: {
         number: '',
     },
