@@ -10,7 +10,7 @@
 # exposed to frontend
 VITE_TRUELAYER_ENV=... # 'sandbox' for DEV, any other non-null for PROD
 VITE_TRUELAYER_CLIENT_ID=...
-VITE_TRUELAYER_REDIRECT_URI=bagel://callback
+VITE_TRUELAYER_REDIRECT_URI=bagel://callback # or bagel-dev://callback
 
 # not exposed to frontend
 TRUELAYER_CLIENT_SECRET=...

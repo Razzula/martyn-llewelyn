@@ -50,14 +50,14 @@
             "mobile": [
                 {
                     "scheme": [
-                        "bagel"
+                        "bagel", "bagel-dev"
                     ],
                     "host": "callback"
                 }
             ],
             "desktop": {
                 "schemes": [
-                    "bagel"
+                    "bagel", "bagel-dev"
                 ]
             }
         },
