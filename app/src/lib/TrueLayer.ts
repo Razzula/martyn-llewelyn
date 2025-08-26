@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 
-import { TrueLayerAccount, TrueLayerAccountBalance, TrueLayerCard, TrueLayerCardBalance, TrueLayerProvider, TrueLayerUser } from "../types/TrueLayer.ts";
+import { TrueLayerAccount, TrueLayerAccountBalance, TrueLayerCard, TrueLayerCardBalance, TrueLayerProvider } from "../types/TrueLayer.ts";
 import { generateCodeChallenge, generateCodeVerifier } from "../utils/PKCE.ts";
 import { BankAccount } from "../types/Bagel.ts";
 import { fromTrueLayerAccount, fromTrueLayerCard } from "../types/TrueLayerAdapters.ts";
@@ -44,12 +44,12 @@ export async function handleTokenExchange(code: string, state: string) {
     return walletToken;
 }
 
-export async function fetchUserData(walletToken: string): Promise<TrueLayerUser | null> {
-    const res = JSON.parse(
-        await invoke('fetchUserData', { walletToken })
-    );
-    return res.results || null;
-}
+// export async function fetchUserData(walletToken: string): Promise<TrueLayerUser | null> {
+//     const res = JSON.parse(
+//         await invoke('fetchUserData', { walletToken })
+//     );
+//     return res.results || null;
+// }
 
 export async function fetchAccountsData(walletToken: string): Promise<BankAccount[]> {
     const res = JSON.parse(
@@ -104,4 +104,18 @@ export async function fetchProviders(): Promise<TrueLayerProvider[]> {
         await invoke('fetchProviders')
     );
     return res || [];
+}
+
+export async function fetchAccountTransactions(walletToken: string, accountId: string): Promise<any[]> {
+    const res = JSON.parse(
+        await invoke('fetchAccountTransactions', { walletToken, accountId })
+    );
+    return res.results || [];
+}
+
+export async function fetchCardTransactions(walletToken: string, cardId: string): Promise<any[]> {
+    const res = JSON.parse(
+        await invoke('fetchCardTransactions', { walletToken, cardId })
+    );
+    return res.results || [];
 }

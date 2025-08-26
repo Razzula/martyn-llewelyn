@@ -1,5 +1,5 @@
-import { TrueLayerAccount, TrueLayerAccountBalance, TrueLayerCard, TrueLayerCardBalance } from '../types/TrueLayer';
-import { BankAccount, BankAccountBalance } from '../types/Bagel';
+import { TrueLayerAccount, TrueLayerAccountBalance, TrueLayerAccountTransaction, TrueLayerCard, TrueLayerCardBalance, TrueLayerCardTransaction } from '../types/TrueLayer';
+import { BankAccount, BankAccountBalance, Transaction } from '../types/Bagel';
 
 export function fromTrueLayerAccount(input: TrueLayerAccount): BankAccount {
     return {
@@ -67,5 +67,43 @@ export function fromTrueLayerCardBalance(input: TrueLayerCardBalance): BankAccou
         lastStatementDate: input.last_statement_date,
         paymentDue: input.payment_due,
         paymentDueDate: input.payment_due_date,
+    };
+}
+
+export function fromTrueLayerAccountTransaction(input: TrueLayerAccountTransaction, accountID?: string): Transaction {
+    return {
+        transactionID: input.transaction_id,
+        normalisedProviderTransactionID: input.normalised_provider_transaction_id,
+        providerTransactionID: input.provider_transaction_id,
+        timestamp: input.timestamp,
+        description: input.description?.trim() ?? '',
+        amount: input.amount,
+        currency: input.currency,
+        transactionType: input.transaction_type,
+        transactionCategory: input.transaction_category,
+        transactionClassification: input.transaction_classification ?? [],
+        merchantName: input.merchant_name,
+        meta: input.meta,
+
+        accountID,
+    };
+}
+
+export function fromTrueLayerCardTransaction(input: TrueLayerCardTransaction, accountID?: string): Transaction {
+    return {
+        transactionID: input.transaction_id,
+        normalisedProviderTransactionID: input.normalised_provider_transaction_id,
+        providerTransactionID: input.provider_transaction_id,
+        timestamp: input.timestamp,
+        description: input.description?.trim() ?? '',
+        amount: input.amount,
+        currency: input.currency,
+        transactionType: input.transaction_type,
+        transactionCategory: input.transaction_category,
+        transactionClassification: input.transaction_classification ?? [],
+        merchantName: input.merchant_name,
+        meta: input.meta,
+
+        accountID,
     };
 }

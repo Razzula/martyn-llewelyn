@@ -1,5 +1,6 @@
-import { useRef, useState, useEffect, RefObject } from "react";
-import "../styles/styles.css";
+import { useRef, useState, useEffect, RefObject } from 'react';
+
+import './SegmentedControl.css';
 
 interface Segment {
     value: string;
@@ -25,7 +26,7 @@ const SegmentedControl: React.FC<SegmentedControlProps> = ({
     const [activeIndex, setActiveIndex] = useState<number>(defaultIndex);
     const componentReady = useRef<boolean>(false);
 
-    // Determine when the component is "ready"
+    // Determine when the component is 'ready'
     useEffect(() => {
         componentReady.current = true;
     }, []);
@@ -39,8 +40,8 @@ const SegmentedControl: React.FC<SegmentedControlProps> = ({
         const { offsetWidth, offsetLeft } = activeSegmentRef.current;
         const { style } = controlRef.current;
 
-        style.setProperty("--highlight-width", `${offsetWidth}px`);
-        style.setProperty("--highlight-x-pos", `${offsetLeft}px`);
+        style.setProperty('--highlight-width', `${offsetWidth}px`);
+        style.setProperty('--highlight-x-pos', `${offsetLeft}px`);
     }, [activeIndex, callback, controlRef, segments]);
 
     const onInputChange = (value: string, index: number) => {
@@ -49,16 +50,16 @@ const SegmentedControl: React.FC<SegmentedControlProps> = ({
     };
 
     return (
-        <div className="controls-container" ref={controlRef}>
-            <div className={`controls ${componentReady.current ? "ready" : "idle"}`}>
+        <div className='controls-container' ref={controlRef}>
+            <div className={`controls ${componentReady.current ? 'ready' : 'idle'}`}>
                 {segments?.map((item, i) => (
                     <div
                         key={item.value}
-                        className={`segment ${i === activeIndex ? "active" : "inactive"}`}
+                        className={`segment ${i === activeIndex ? 'active' : 'inactive'}`}
                         ref={item.ref}
                     >
                         <input
-                            type="radio"
+                            type='radio'
                             value={item.value}
                             id={item.label}
                             name={name}

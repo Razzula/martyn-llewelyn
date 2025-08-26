@@ -1,23 +1,25 @@
-import { useEffect, useState } from 'react';
+import { RefObject, useEffect, useRef, useState } from 'react';
 import { onOpenUrl } from '@tauri-apps/plugin-deep-link';
 import { invoke } from '@tauri-apps/api/core';
 
-import { fetchAccountBalance, fetchAccountsData, fetchCardBalance, fetchCardsData, fetchProviders, getTrueLayerAuthURL, handleTokenExchange } from './lib/TrueLayer.ts';
+import { fetchAccountBalance, fetchAccountsData, fetchAccountTransactions, fetchCardBalance, fetchCardsData, fetchCardTransactions, fetchProviders, getTrueLayerAuthURL, handleTokenExchange } from './lib/TrueLayer.ts';
 
-import { BankAccount, BankAccountBalance, BankAccountPatch, generatePatchFromAccount, User } from './types/Bagel.ts';
+import { BankAccount, BankAccountBalance, BankAccountPatch, generatePatchFromAccount, Transaction, User } from './types/Bagel.ts';
 import { ResponsiveModal } from './components/common/ResponsiveModal.tsx';
 import { AccountManager } from './AccountManager.ts';
-import { fromTrueLayerAccountBalance, fromTrueLayerCardBalance } from './types/TrueLayerAdapters.ts';
+import { fromTrueLayerAccountBalance, fromTrueLayerAccountTransaction, fromTrueLayerCardBalance, fromTrueLayerCardTransaction } from './types/TrueLayerAdapters.ts';
 import { Tooltip, TooltipContent, TooltipTrigger } from './components/common/Tooltip.tsx';
-import { TrueLayerProvider } from './types/TrueLayer.ts';
+import { TrueLayerAccountTransaction, TrueLayerCardTransaction, TrueLayerProvider } from './types/TrueLayer.ts';
 import { closedProviders } from './data/providers.ts';
-import { isTauri, openInBrowser, toFinancialString } from './utils/utils.ts';
-import AccountCard from './components/AccountCard.tsx';
+import { isTauri, openInBrowser } from './utils/utils.ts';
 import AccountEditPanel from './components/AccountEditPanel.tsx';
 
 import './styles/App.css';
 import { emptyBankAccount } from './data/stubs.ts';
 import UserEditPanel from './components/UserEditPanel.tsx';
+import SegmentedControl from './components/common/SegmentedControl.tsx';
+import AccountsPanel from './components/AccountsPanel.tsx';
+import TransactionsPanel from './components/TransactionsPanel.tsx';
 
 enum ResponseState {
     LOADING = 'LOADING',
@@ -26,6 +28,8 @@ enum ResponseState {
 }
 
 function App() {
+
+    const [panel, setPanel] = useState<'accounts' | 'transactions'>('accounts');
 
     const [users, setUsers] = useState<User[] | null>(null);
     const [providers, setProviders] = useState<Record<string, TrueLayerProvider>>({});
@@ -36,6 +40,9 @@ function App() {
     const [accountsDataLive, setAccountsDataLive] = useState<Record<string, BankAccount>>({});
     const [accountsDataOffline, setAccountsDataOffline] = useState<Record<string, BankAccount> | null>(null);
     const [accountsDataPatches, setAccountsDataPatches] = useState<Record<string, BankAccountPatch> | null>(null);
+
+    const [transactions, setTransactions] = useState<Record<string, Transaction>>({});
+    const [transactionsArray, setTransactionsArray] = useState<Transaction[]>([]); // for sorted display
 
     const [walletTokens, setWalletTokens] = useState<string[]>([]);
 
@@ -134,7 +141,6 @@ function App() {
                         console.error('Token exchange failed:', err);
                     });
             }
-
         }).then((off) => {
             unlisten = off;
         });
@@ -252,10 +258,6 @@ function App() {
         if (Object.keys(accounts).length > 0) {
 
             Object.entries(accounts).forEach(([accountID, account]: [string, BankAccount]) => {
-                if (account.balance) {
-                    // already has balance, skip fetching
-                    return;
-                }
                 if (account.source !== 'TrueLayer') {
                     // only fetch balances for TrueLayer accounts
                     return;
@@ -264,33 +266,89 @@ function App() {
                 const isCard = account.cardNetwork !== undefined;
                 const walletToken = account.users?.[0]?.walletToken || walletTokens[0]; // XXX: use the first token if not specified
 
-                if (!isCard) {
-                    fetchAccountBalance(walletToken, accountID)
-                        .then(data => {
-                            if (data) {
-                                updateAccountBalance(accountID, fromTrueLayerAccountBalance(data[0]));
-                            }
-                        })
-                        .catch(err => {
-                            console.error(`Failed to fetch balance for account ${accountID}:`, err);
-                            setAccountsState(ResponseState.ERROR);
-                        });
+                // FETCH ACCOUNT BALANCE
+                if (account.balance === undefined) {
+                    if (!isCard) {
+                        fetchAccountBalance(walletToken, accountID)
+                            .then(data => {
+                                if (data) {
+                                    updateAccountBalance(accountID, fromTrueLayerAccountBalance(data[0]));
+                                }
+                            })
+                            .catch(err => {
+                                console.error(`Failed to fetch balance for account ${accountID}:`, err);
+                                setAccountsState(ResponseState.ERROR);
+                            });
+                    }
+                    else {
+                        fetchCardBalance(walletToken, accountID)
+                            .then(data => {
+                                if (data) {
+                                    updateAccountBalance(accountID, fromTrueLayerCardBalance(data[0]));
+                                }
+                            })
+                            .catch(err => {
+                                console.error(`Failed to fetch balance for card ${accountID}:`, err);
+                                setAccountsState(ResponseState.ERROR);
+                            });
+                    }
                 }
-                else {
-                    fetchCardBalance(walletToken, accountID)
-                        .then(data => {
-                            if (data) {
-                                updateAccountBalance(accountID, fromTrueLayerCardBalance(data[0]));
-                            }
-                        })
-                        .catch(err => {
-                            console.error(`Failed to fetch balance for card ${accountID}:`, err);
-                            setAccountsState(ResponseState.ERROR);
-                        });
+
+                // FETCH ACCOUNT TRANSACTIONS
+                if (account.transactions === undefined) {
+                        if (!isCard) {
+                            fetchAccountTransactions(walletToken, accountID)
+                                .then(data => {
+                                    if (data) {
+                                        updateAccountTransactions(
+                                            accountID,
+                                            Object.fromEntries(
+                                                data.map(tx =>
+                                                    [tx.transaction_id, fromTrueLayerAccountTransaction(tx as TrueLayerAccountTransaction, accountID)]
+                                                )
+                                            )
+                                        );
+                                    }
+                                })
+                                .catch(err => {
+                                    console.error(`Failed to fetch transactions for account ${accountID}:`, err);
+                                    setAccountsState(ResponseState.ERROR);
+                                });
+                        }
+                        else {
+                            fetchCardTransactions(walletToken, accountID)
+                                .then(data => {
+                                    if (data) {
+                                        updateAccountTransactions(
+                                            accountID,
+                                            Object.fromEntries(
+                                                data.map(tx =>
+                                                    [tx.transaction_id, fromTrueLayerAccountTransaction(tx as TrueLayerAccountTransaction, accountID)]
+                                                )
+                                            )
+                                        );
+                                    }
+                                })
+                                .catch(err => {
+                                    console.error(`Failed to fetch transactions for card ${accountID}:`, err);
+                                    setAccountsState(ResponseState.ERROR);
+                                });
+                        }
                 }
+
             });
         }
     }, [accounts, walletTokens]);
+
+    useEffect(() => {
+        // keep transactions array sorted
+        if (transactions) {
+            setTransactionsArray(
+                Object.values(transactions)
+                    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+            );
+        }
+    }, [transactions]);
 
     function redirectToTrueLayer(userID: string, userEmail: string) {
         if (userID !== null) {
@@ -311,6 +369,29 @@ function App() {
                 },
             }));
         }
+    }
+
+    function updateAccountTransactions(accountID: string, transactions: Record<string, Transaction>) {
+        if (accounts && accounts[accountID]) {
+            setAccountsDataLive(prev => ({
+                ...prev,
+                [accountID]: {
+                    ...prev[accountID],
+                    transactions: {
+                        ...(prev[accountID]?.transactions ?? {}),
+                        ...transactions,
+                    }
+                },
+            }));
+            updateTransactions(transactions);
+        }
+    }
+
+    function updateTransactions(transactions: Record<string, Transaction>) {
+        setTransactions(prev => ({
+            ...prev,
+            ...transactions,
+        }));
     }
 
     function startLinkAccount() {
@@ -470,6 +551,17 @@ function App() {
         }
         // currently, we ignore trying to delete a linked account
     }
+
+    // refs for SegmentedControl segments
+    const segmentRefs: RefObject<HTMLDivElement>[] = [
+        useRef<HTMLDivElement>(null),
+        useRef<HTMLDivElement>(null),
+        useRef<HTMLDivElement>(null),
+        useRef<HTMLDivElement>(null),
+    ];
+
+    // ref for the SegmentedControl container
+    const controlRef = useRef<HTMLDivElement>(null);
 
     const accountsSum = Object.values(accounts || {}).reduce((sum, account) => {
         const isCard = account.cardNetwork !== undefined;
@@ -691,6 +783,26 @@ function App() {
                             />
                         </div>
                     }
+
+                    <div>
+                        <SegmentedControl
+                            name='primary-group'
+                            callback={(val: string) => setPanel(val as 'accounts' | 'transactions')}
+                            controlRef={controlRef}
+                            segments={[
+                                {
+                                    label: 'Accounts',
+                                    value: 'accounts',
+                                    ref: segmentRefs[0]
+                                },
+                                {
+                                    label: 'Transactions',
+                                    value: 'transactions',
+                                    ref: segmentRefs[1]
+                                },
+                            ]}
+                        />
+                    </div>
                 </div>
 
                 {/* USER BUTTONS */}
@@ -713,81 +825,31 @@ function App() {
 
             </div>
 
-            <div>
-                <h1>
-                    {!modesty ? `£ ${toFinancialString(accountsSum)}` : '£ ***'}
-                </h1>
-            </div>
-
-            {
-                Object.keys(accounts).length > 0 ? (
-                    // POPULATED RECORD
-                    <div className='accountsGrid'>
-                        {Object.entries(accounts)
-                            .sort(([, a], [, b]) => {
-                                // order accounts in descending order by balance
-                                const aIsCard = a.cardNetwork !== undefined;
-                                const aValue = (aIsCard ? a.balance?.current : a.balance?.available) || 0;
-                                const bIsCard = b.cardNetwork !== undefined;
-                                const bValue = (bIsCard ? b.balance?.current : b.balance?.available) || 0;
-                                if (aValue > bValue) return -1;
-                                if (aValue < bValue) return 1;
-                                return 0;
-                            })
-                            .map(([accountID, account]) => (
-                                <AccountCard
-                                    key={accountID}
-                                    accountID={accountID} account={account}
-                                    users={users} providers={providers}
-                                    modesty={modesty}
-                                    setOpenEditAccount={setOpenEditAccount} />
-                            ))
-                    }
-                </div>
-                ) : (
-                    // EMPTY RECORD
-                    <div className='column'>
-                        <h4>You don't have any linked accounts.</h4>
-                    </div>
-                )
+            { panel === 'accounts' &&
+                <AccountsPanel
+                    accounts={accounts}
+                    users={users}
+                    providers={providers}
+                    accountsSum={accountsSum}
+                    modesty={modesty}
+                    setOpenEditAccount={setOpenEditAccount}
+                    startLinkAccount={startLinkAccount}
+                    startCreateAccount={startCreateAccount}
+                    footend={footend}
+                />
             }
 
-            {/* CONNECT ACCOUNT */}
-            {/* TrueLayer */}
-            <div className='column' style={{ paddingBottom: '2rem' }}>
-                <div className='row'
-                    style={{
-                        gap: '1rem',
-                        alignItems: 'stretch',
-                    }}
-                >
-                    <button
-                        className='column'
-                        onClick={() => startLinkAccount()}
-                        disabled={!isTauri}
-                    >
-                        <img
-                            src='./TrueLayer/Banks/BankLogos_UnitedKingdom_5icons.svg'
-                            alt='All Major UK Banks Supported'
-                            height={24}
-                        />
-                        <span>Connect with {Object.values(accounts)?.length === 0 ? 'your' : 'another'} Bank</span>
-                    </button>
-                    <button
-                        className='column'
-                        onClick={startCreateAccount}
-                    >
-                        <img
-                            src='./Serenity/dir.png'
-                            alt='Add a Manual Entry'
-                            height={24}
-                        />
-                        <span>Manual Entry</span>
-                    </button>
-                </div>
-
-                {footend}
-            </div>
+            { panel === 'transactions' &&
+                <TransactionsPanel
+                    transactions={transactionsArray}
+                    accounts={accounts}
+                    users={users}
+                    providers={providers}
+                    modesty={modesty}
+                    setOpenEditAccount={setOpenEditAccount}
+                    footend={footend}
+                />
+            }
 
         </div>
     );

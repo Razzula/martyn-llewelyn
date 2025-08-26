@@ -1,7 +1,3 @@
-export type TrueLayerUser = {
-    // TODO
-};
-
 export type TrueLayerAccount = {
     update_timestamp: string;
     account_id: string;
@@ -29,6 +25,22 @@ export type TrueLayerAccountBalance = {
     update_timestamp: string;
 }
 
+export type TrueLayerAccountTransaction = {
+    transaction_id: string;
+    normalised_provider_transaction_id?: string;
+    provider_transaction_id?: string;
+    timestamp: string; // ISO timestamp
+    description: string;
+    amount: number;
+    currency: string;
+    transaction_type: TrueLayerTransactionType;
+    transaction_category: TrueLayerTransactionCategory;
+    transaction_classification: string[];
+    merchant_name?: string;
+    running_balance?: TrueLayerAccountBalance;
+    meta?: Record<string, unknown>;
+};
+
 export type TrueLayerCard = {
     account_id: string;
     card_network: 'VISA' | 'MASTERCARD' | string;
@@ -55,6 +67,22 @@ export type TrueLayerCardBalance = {
     payment_due: number;
     payment_due_date: string; // YYYY-MM-DD
     update_timestamp: string; // ISO timestamp
+};
+
+export type TrueLayerCardTransaction = {
+    transaction_id: string;
+    normalised_provider_transaction_id?: string;
+    provider_transaction_id?: string;
+    timestamp: string; // ISO timestamp
+    description: string;
+    amount: number;
+    currency: string;
+    transaction_type: TrueLayerTransactionType;
+    transaction_category: TrueLayerTransactionCategory;
+    transaction_classification: string[];
+    merchant_name?: string;
+    running_balance?: TrueLayerCardTransactionRunningBalance;
+    meta?: Record<string, unknown>;
 };
 
 export interface TrueLayerProvider {
@@ -85,3 +113,30 @@ export interface TrueLayerProvider {
     // BAGEL
     accountLogo?: string;
 }
+
+export type TrueLayerCardTransactionRunningBalance = {
+    amount: number;
+    currency: string;
+};
+
+export type TrueLayerTransactionType = 'DEBIT' | 'CREDIT' | string;
+
+export type TrueLayerTransactionCategory =
+  | 'ATM'
+  | 'BILL_PAYMENT'
+  | 'CASH'
+  | 'CASHBACK'
+  | 'CHEQUE'
+  | 'CORRECTION'
+  | 'CREDIT'
+  | 'DIRECT_DEBIT'
+  | 'DIVIDEND'
+  | 'FEE_CHARGE'
+  | 'INTEREST'
+  | 'OTHER'
+  | 'PURCHASE'
+  | 'STANDING_ORDER'
+  | 'TRANSFER'
+  | 'DEBIT'
+  | 'UNKNOWN'
+  | string;

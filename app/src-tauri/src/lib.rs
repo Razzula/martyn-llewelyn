@@ -64,6 +64,8 @@ pub fn run() {
             fetchCardsData,
             fetchAccountBalance,
             fetchCardBalance,
+            fetchAccountTransactions,
+            fetchCardTransactions,
             fetchProviders,
         ])
         .setup(|app| {
@@ -322,6 +324,28 @@ async fn fetchCardBalance(
     cardID: &str,
 ) -> Result<String, String> {
     let endpoint = format!("data/v1/cards/{}/balance", cardID);
+    fetchFromTrueLayerUsingWallet(app, walletToken, &endpoint, wallet).await
+}
+
+#[tauri::command]
+async fn fetchAccountTransactions(
+    app: tauri::AppHandle,
+    wallet: tauri::State<'_, Mutex<Wallet>>,
+    walletToken: &str,
+    accountID: &str,
+) -> Result<String, String> {
+    let endpoint = format!("data/v1/accounts/{}/transactions", accountID);
+    fetchFromTrueLayerUsingWallet(app, walletToken, &endpoint, wallet).await
+}
+
+#[tauri::command]
+async fn fetchCardTransactions(
+    app: tauri::AppHandle,
+    wallet: tauri::State<'_, Mutex<Wallet>>,
+    walletToken: &str,
+    cardID: &str,
+) -> Result<String, String> {
+    let endpoint = format!("data/v1/cards/{}/transactions", cardID);
     fetchFromTrueLayerUsingWallet(app, walletToken, &endpoint, wallet).await
 }
 

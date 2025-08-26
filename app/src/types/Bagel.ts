@@ -1,3 +1,5 @@
+import { TrueLayerTransactionCategory, TrueLayerTransactionType } from "./TrueLayer";
+
 export interface BankAccount {
     // unified TrueLayerAccount | TrueLayerCard
     id: string;
@@ -25,6 +27,8 @@ export interface BankAccount {
     source: 'TrueLayer' | 'Bagel';
 
     balance?: BankAccountBalance;
+    transactions?: Record<string, Transaction>;
+
     last?: { // the true last known balance
         // this essentially ensures the data is stored,
         // but without overwriting the cached data instantly
@@ -130,4 +134,22 @@ export function generatePatchFromAccount(account: BankAccount, live: BankAccount
 
     // if no fields were added to patch, return null
     return Object.keys(patch).length > 1 ? patch : null;
+}
+
+export interface Transaction {
+    transactionID: string;
+    normalisedProviderTransactionID?: string;
+    providerTransactionID?: string;
+    timestamp: string; // ISO timestamp
+    description: string;
+    amount: number;
+    currency: string;
+    transactionType: TrueLayerTransactionType;
+    transactionCategory: TrueLayerTransactionCategory;
+    transactionClassification: string[];
+    merchantName?: string;
+    meta?: Record<string, unknown>;
+
+    // BAGEL
+    accountID?: string; // the BankAccount.id this transaction belongs to
 }
