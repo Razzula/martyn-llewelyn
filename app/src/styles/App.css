@@ -175,9 +175,10 @@ button,
 }
 
 input[type="text"],
-input[type="number"] {
+input[type="number"],
+input[type="date"] {
     padding: 0.75rem;
-    width: 100%;
+    /* width: 100%; */
     /* max-width: 400px; */
     border-radius: 0.5rem;
     border: 1px solid #dadada;
@@ -186,20 +187,17 @@ input[type="number"] {
     transition: border-color 0.3s ease;
 }
 
-input[type="text"]:focus,
-input[type="number"]:focus {
+input:focus {
     outline: none;
     border-color: #8A9A5B;
 }
 
-input[type="text"]:disabled,
-input[type="number"]:disabled {
+input:disabled {
     background-color: #f0f0f0;
     cursor: not-allowed;
 }
 
-input[type="text"].invalid,
-input[type="number"].invalid {
+input.invalid {
     border-color: #e42c2c;
 }
 
@@ -228,6 +226,7 @@ input[type="number"].invalid {
 
 .unselected {
     filter: grayscale(100%);
+    transition: filter 0.2s ease;
 }
 
 .unselected:hover {
@@ -275,6 +274,7 @@ input[type="number"].invalid {
     width: 2rem;
     height: 2rem;
     object-fit: contain;
+    border-radius: 25%;
 }
 
 .bankLogoLarge {
@@ -322,6 +322,6 @@ input[type="number"].invalid {
     }
 }
 
-h1 {
+h1, h4 {
     margin: 0;
 }

@@ -82,5 +82,6 @@ export interface TrueLayerProvider {
         }>;
     }>;
 
+    // BAGEL
     accountLogo?: string;
 }

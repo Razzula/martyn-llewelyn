@@ -20,6 +20,11 @@ export function fromTrueLayerAccount(input: TrueLayerAccount): BankAccount {
         updateTimestamp: input.update_timestamp,
         users: [],
         source: 'TrueLayer',
+
+        interest: {
+            // currently, TrueLayer doesn't provide interest rate info
+            rate: 0, // most Open Banking accounts are current accounts, ergo assume 0%
+        },
     };
 }
 

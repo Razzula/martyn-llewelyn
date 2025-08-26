@@ -1,4 +1,3 @@
-
 export interface BankAccount {
     // unified TrueLayerAccount | TrueLayerCard
     id: string;
@@ -21,15 +20,30 @@ export interface BankAccount {
 
     updateTimestamp: string; // ISO timestamp
 
-    // Bagel
+    // BAGEL
     users: UserSignature[];
     source: 'TrueLayer' | 'Bagel';
 
     balance?: BankAccountBalance;
-    lastBalance?: BankAccountBalance;
-    lastRetrieve?: string; // ISO timestamp
+    last?: { // the true last known balance
+        // this essentially ensures the data is stored,
+        // but without overwriting the cached data instantly
+        balance: BankAccountBalance;
+        retrievedAt?: string; // ISO timestamp
+    }
+    cached?: { // the last value, for display purposes
+        balance: BankAccountBalance;
+        retrievedAt?: string; // ISO timestamp
+    }
 
-    interestRate?: number;
+    interest?: {
+        rate?: number;
+        type?: InterestType;
+        interval?: number; // months
+        lastApplied?: string; // YYYY-MM-DD
+    };
+
+    url?: string; // URL to the bank's website or app
 }
 
 export enum BankAccountType {
@@ -38,6 +52,11 @@ export enum BankAccountType {
     SAVINGS = 'SAVINGS',
     CREDIT = 'CREDIT',
     // CHARGE = 'CHARGE',
+}
+
+export enum InterestType {
+    FIXED = 'FIXED',
+    VARIABLE = 'VARIABLE',
 }
 
 export const CardNetwork = {
@@ -110,10 +129,6 @@ export function generatePatchFromAccount(account: BankAccount, live: BankAccount
 
     if (account.name !== live.name) {
         patch.name = account.name;
-    }
-
-    if (account.interestRate !== live.interestRate) {
-        patch.interestRate = account.interestRate;
     }
 
     // Compare users (by ID and walletToken)

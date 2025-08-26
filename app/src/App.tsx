@@ -7,7 +7,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { fetchAccountBalance, fetchAccountsData, fetchCardBalance, fetchCardsData, fetchProviders, getTrueLayerAuthURL, handleTokenExchange } from './lib/TrueLayer.ts';
 
 import './styles/App.css';
-import { BankAccount, BankAccountBalance, BankAccountPatch, BankAccountType, CardNetwork, emptyBankAccount, generatePatchFromAccount, User } from './types/Bagel.ts';
+import { BankAccount, BankAccountBalance, BankAccountPatch, BankAccountType, CardNetwork, emptyBankAccount, generatePatchFromAccount, InterestType, User } from './types/Bagel.ts';
 import { ResponsiveModal } from './components/common/ResponsiveModal.tsx';
 import { AccountManager } from './AccountManager.ts';
 import { fromTrueLayerAccountBalance, fromTrueLayerCardBalance } from './types/TrueLayerAdapters.ts';
@@ -765,6 +765,7 @@ function App() {
                                         onClick={() => setOpenEditAccount(account)}
                                     >
 
+                                        {/* STATUS INDICATOR */}
                                         <Tooltip>
                                             <TooltipTrigger>
                                                 <div
@@ -807,8 +808,10 @@ function App() {
                                             </TooltipContent>
                                         </Tooltip>
 
+                                        { /* HEADER */ }
                                         <div className='accountHeader'>
                                             <div className='row'>
+                                                {/* USERS */}
                                                 {
                                                     accountUsers?.map(user => (
                                                         <Tooltip key={user.id}>
@@ -825,10 +828,11 @@ function App() {
                                                         </Tooltip>
                                                     ))
                                                 }
+                                                {/* BANK */}
                                                 <Tooltip>
                                                     <TooltipTrigger>
                                                         <img
-                                                            className='bankLogo'
+                                                            className={`bankLogo ${account.url ? 'clickable' : ''}`}
                                                             src={
                                                                 account.provider.logoURI
                                                                 || providers?.[account.provider.id]?.accountLogo
@@ -836,6 +840,12 @@ function App() {
                                                                 || '/Serenity/unknown.png'
                                                             }
                                                             alt={`${account.name} Logo`}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (account.url) {
+                                                                    openInBrowser(account.url);
+                                                                }
+                                                            }}
                                                         />
                                                     </TooltipTrigger>
                                                     <TooltipContent>
@@ -844,8 +854,10 @@ function App() {
                                                 </Tooltip>
                                                 <div className='verticalSeparator' />
                                             </div>
+                                            {/* ACCOUNT NAME */}
                                             <div className='name'>{account.name}</div>
                                             <div className='row'>
+                                                {/* BALANCE */}
                                                 <div className='verticalSeparator' />
                                                 <div className='balance'>
                                                     {
@@ -856,10 +868,12 @@ function App() {
                                             </div>
                                         </div>
                                         <div className='body'>
+                                            {/* ACCOUNT TYPE */}
                                             <div className='type'>
                                                 {account.type}
                                             </div>
                                             <div className='row'>
+                                                {/* ACCOUNT / CARD NUMBERS */}
                                                 { !isCard ? account.number.number : `${account?.cardNetwork ==='MASTERCARD' ? 5 : 4}*** **** **** ${account.number.number}` }
                                                 { !isCard &&
                                                     <>
@@ -872,11 +886,28 @@ function App() {
                                                 <div className='available'>({!isCard ? displayBalance : displayAvailable})</div>
                                             )}
 
-                                            {!isCard && account.interestRate && (
-                                                <div className='interestRate'>TODO: Interest Rate</div>
+                                            {!isCard && (
+                                                <div className='interestRate'>
+                                                    {account.interest?.rate?.toFixed(2) || '0.00'}
+                                                    <span>%</span>
+                                                    { account.interest?.type === InterestType.VARIABLE &&
+                                                        <Tooltip>
+                                                            <TooltipTrigger>
+                                                                <span
+                                                                    style={{ cursor: 'help' }}
+                                                                >
+                                                                    *
+                                                                </span>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                                Variable Interest Rate
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    }
+                                                </div>
                                             )}
 
-                                            {account.lastBalance && (
+                                            {account.last && (
                                                 <div className='delta'>TODO: Delta</div>
                                             )}
 
@@ -1046,7 +1077,6 @@ function UserEditPanel({
                         placeholder='Email Address'
                         value={ephemeralUser.email}
                         onChange={(e) => setEphemeralUser({ ...ephemeralUser, email: e.target.value })}
-                        autoFocus
                     />
                 </div>
             }
@@ -1167,8 +1197,42 @@ function AccountEditPanel({
         || ephemeralAccount?.cardNetwork.trim() === ''
     );
 
+    const invalidInterestRate = (
+        // if not empty, must be a number between 0 and 100
+        ephemeralAccount?.interest?.rate === undefined
+        || ephemeralAccount?.interest?.rate === null
+        || isNaN(ephemeralAccount.interest?.rate)
+        || ephemeralAccount.interest?.rate < 0
+        || ephemeralAccount.interest?.rate > 10
+    );
+    const invalidInterestType = (
+        ephemeralAccount?.interest?.type === undefined
+        || ephemeralAccount?.interest?.type?.trim() === ''
+    );
+    const invalidInterestInterval = (
+        ephemeralAccount?.interest?.interval === undefined
+        || ephemeralAccount?.interest?.interval === null
+        || isNaN(ephemeralAccount.interest?.interval)
+        || ephemeralAccount.interest?.interval < 0
+    );
+    const invalidInterestDate = (
+        ephemeralAccount?.interest?.lastApplied === undefined
+        || ephemeralAccount?.interest?.lastApplied === null
+        || isNaN(Date.parse(ephemeralAccount.interest?.lastApplied))
+        // cannot be in the future
+        || new Date(ephemeralAccount.interest?.lastApplied) > new Date()
+    );
+    const invalidInterest = (
+        invalidInterestRate
+        || (!invalidInterestRate && (ephemeralAccount?.interest?.rate !== undefined && ephemeralAccount?.interest?.rate > 0)
+            // only validate if we care about interest
+            && (invalidInterestType || invalidInterestInterval || invalidInterestDate)
+        )
+    )
+
     const invalidForm = (
         invalidUsers || invalidName || invalidType || invalidNumber || invalidSortCode || invalidCardNetwork
+        || !isCard && (invalidInterest)
     );
 
 
@@ -1214,7 +1278,11 @@ function AccountEditPanel({
             }
 
             {/* INPUTS */}
-            <div className='row'>
+            <div className='row'
+                style={{
+                    borderBottom: invalidUsers ? '1px solid #ff0000' : 'none',
+                }}
+            >
                 {/* User(s) */}
                 {
                     users && users.length > 0 ? (
@@ -1339,7 +1407,6 @@ function AccountEditPanel({
                         placeholder={`${isCard ? 'Card' : 'Account Number'}`}
                         value={ephemeralAccount?.number?.number}
                         onChange={(e) => setEphemeralAccount({ ...ephemeralAccount, number: { ...ephemeralAccount.number, number: e.target.value } })}
-                        autoFocus
                         disabled={isAccountOnline}
                     />
                 </div>
@@ -1351,8 +1418,7 @@ function AccountEditPanel({
                         placeholder='Sort Code'
                         value={ephemeralAccount?.number?.sortCode}
                         onChange={(e) => setEphemeralAccount({ ...ephemeralAccount, number: { ...ephemeralAccount.number, sortCode: asSortCode(e.target.value) } })}
-                        autoFocus
-                        disabled={isAccountOnline}
+                                                disabled={isAccountOnline}
                     />
                 }
             </div>
@@ -1375,11 +1441,107 @@ function AccountEditPanel({
                                 updateTimestamp: new Date().toISOString(),
                             }
                         })}
-                        autoFocus
-                        disabled={isAccountOnline}
+                                                disabled={isAccountOnline}
                     />
                 </div>
             }
+
+            {/* INTEREST */}
+            { !isCard &&
+                <>
+                    <div style={{ width: '100%' }}>
+                        <hr />
+                        <h4>Interest</h4>
+                    </div>
+
+                    {/* INTEREST RATE */}
+                    <div className='row'>
+                        <input
+                            className={`centre ${invalidInterestRate ? 'invalid' : ''}`}
+                            type='number'
+                            placeholder='Interest Rate'
+                            value={ephemeralAccount?.interest?.rate}
+                            onChange={(e) => setEphemeralAccount({
+                                ...ephemeralAccount,
+                                interest: {
+                                    ...ephemeralAccount.interest,
+                                    rate: parseFloat(e.target.value) || 0,
+                                },
+                            })}
+                                                        style={{
+                                flex: 1,
+                            }}
+                        />
+                        <span>% (gross rate p.a.)</span>
+                    </div>
+
+                    { ephemeralAccount?.interest?.rate !== undefined && ephemeralAccount?.interest?.rate > 0 &&
+                        <>
+                            <div className='row'>
+                                {/* INTEREST TYPE */}
+                                <Select
+                                    className={invalidInterestType ? 'invalid' : ''}
+                                    entries={Object.values(InterestType).map((name) => ({
+                                        key: name, name, element:
+                                            <span>{name.charAt(0).toUpperCase() + name.slice(1)}</span>
+                                    }))}
+                                    forcedIndex={ephemeralAccount?.interest?.type ? Object.values(InterestType).indexOf(ephemeralAccount.interest.type) : -1}
+                                    setSelected={(key) => setEphemeralAccount({ ...ephemeralAccount, interest: { ...ephemeralAccount.interest, type: key as InterestType } })}
+                                    emptyText='Interest Type'
+                                    disabled={isAccountOnline}
+                                />
+
+                                {/* INTEREST INTERVAL */}
+                                <input
+                                    className={`centre ${invalidInterestInterval ? 'invalid' : ''}`}
+                                    type='number'
+                                    placeholder='Interest Interval'
+                                    value={ephemeralAccount?.interest?.interval}
+                                    onChange={(e) => setEphemeralAccount({
+                                        ...ephemeralAccount,
+                                        interest: {
+                                            ...ephemeralAccount.interest,
+                                            interval: parseFloat(e.target.value) || 0,
+                                        },
+                                    })}
+                                    style={{
+                                        flex: 1,
+                                    }}
+                                />
+
+                                {/* INTEREST OFFSET */}
+                                <input
+                                    className={`centre ${invalidInterestDate ? 'invalid' : ''}`}
+                                    type='date'
+                                    placeholder='Last Interest Date'
+                                    value={ephemeralAccount?.interest?.lastApplied}
+                                    onChange={(e) => setEphemeralAccount({
+                                        ...ephemeralAccount,
+                                        interest: {
+                                            ...ephemeralAccount.interest,
+                                            lastApplied: e.target.value,
+                                        },
+                                    })}
+                                />
+                            </div>
+                        </>
+                    }
+                </>
+            }
+
+            <div style={{ width: '100%' }}>
+                <hr />
+                {/* URL */}
+            </div>
+            <div className='row'>
+                <input
+                    className='centre'
+                    type='text'
+                    placeholder='Website URL'
+                    value={ephemeralAccount?.url || ''}
+                    onChange={(e) => setEphemeralAccount({ ...ephemeralAccount, url: e.target.value })}
+                />
+            </div>
 
             {/* BUTTONS */}
             <div className='row'>

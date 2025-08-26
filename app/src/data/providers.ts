@@ -12,4 +12,15 @@ export const closedProviders: TrueLayerProvider[] = [
             updated_at: ""
         }
     },
+    {
+        provider_id: "bagel-ns&i",
+        display_name: "National Savings and Investments",
+        country: "uk",
+        logo_url: "/Banks/NS&I.png",
+        scopes: [],
+        availability: {
+            recommended_status: "",
+            updated_at: ""
+        }
+    },
 ];
