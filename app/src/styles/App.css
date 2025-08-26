@@ -128,6 +128,10 @@ button,
     margin: 0 0.5rem;
 }
 
+hr {
+    border-top: #dadada;
+}
+
 .accounts {
     margin: 1rem;
 }

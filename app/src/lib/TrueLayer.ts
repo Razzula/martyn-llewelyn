@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 
 import { TrueLayerAccount, TrueLayerAccountBalance, TrueLayerCard, TrueLayerCardBalance, TrueLayerProvider, TrueLayerUser } from "../types/TrueLayer.ts";
 import { generateCodeChallenge, generateCodeVerifier } from "../utils/PKCE.ts";
-import { BankAccount } from "src/types/Bagel.ts";
+import { BankAccount } from "../types/Bagel.ts";
 import { fromTrueLayerAccount, fromTrueLayerCard } from "../types/TrueLayerAdapters.ts";
 
 export async function getTrueLayerAuthURL(userID: string, userEmail: string): Promise<string> {

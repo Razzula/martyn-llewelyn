@@ -109,21 +109,6 @@ export interface UserSignature {
     walletToken?: string;
 }
 
-export const emptyBankAccount: BankAccount = {
-    id: '',
-    name: '',
-    type: BankAccountType.NULL,
-    number: {
-        number: '',
-    },
-    provider: {
-        id: 'Unknown',
-    },
-    updateTimestamp: '',
-    users: [],
-    source: 'Bagel',
-};
-
 export function generatePatchFromAccount(account: BankAccount, live: BankAccount): BankAccountPatch | null {
     const patch: BankAccountPatch = { id: account.id };
 

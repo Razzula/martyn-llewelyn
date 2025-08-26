@@ -1,4 +1,4 @@
-import { TrueLayerProvider } from "src/types/TrueLayer";
+import { TrueLayerProvider } from "../types/TrueLayer";
 
 export const closedProviders: TrueLayerProvider[] = [
     {

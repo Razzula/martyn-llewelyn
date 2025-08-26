@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
 import { platform } from '@tauri-apps/plugin-os';
 import { authenticate } from '@tauri-apps/plugin-biometric';
-
-import './styles/App.css';
+import { isTauri } from './utils/utils.ts';
 import App from './App.tsx';
 
-const isTauri = !!(window as any).__TAURI_INTERNALS__;
+import './styles/App.css';
 
 function AppGate() {
 
