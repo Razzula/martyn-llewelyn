@@ -156,6 +156,17 @@ hr {
     cursor: pointer;
 }
 
+.transactionCard {
+    border-radius: 0.5rem;
+    padding: 1rem;
+    background: #ffffff;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    margin: 0.5rem;
+}
+
 .accountHeader {
     display: flex;
     justify-content: space-between;
@@ -316,6 +327,18 @@ input.invalid {
     animation: spin 1s linear infinite;
 }
 
+.positive {
+    color: #34a853;
+}
+
+.negative {
+    color: #ea4335;
+}
+
+.hidden {
+    color: #dadada;
+}
+
 @keyframes spin {
     0% {
         transform: rotate(0deg);
@@ -326,6 +349,10 @@ input.invalid {
     }
 }
 
-h1, h4 {
+h1, h2, h3, h4 {
     margin: 0;
+}
+
+h3 {
+    margin-bottom: 0.3rem;
 }

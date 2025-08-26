@@ -1,3 +1,4 @@
+import { OrderedDateTree } from "./OrderedDateTree";
 import { TrueLayerTransactionCategory, TrueLayerTransactionType } from "./TrueLayer";
 
 export interface BankAccount {
@@ -27,7 +28,7 @@ export interface BankAccount {
     source: 'TrueLayer' | 'Bagel';
 
     balance?: BankAccountBalance;
-    transactions?: Record<string, Transaction>;
+    transactions?: OrderedDateTree<Transaction>;
 
     last?: { // the true last known balance
         // this essentially ensures the data is stored,

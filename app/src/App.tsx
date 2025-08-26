@@ -9,7 +9,7 @@ import { ResponsiveModal } from './components/common/ResponsiveModal.tsx';
 import { AccountManager } from './AccountManager.ts';
 import { fromTrueLayerAccountBalance, fromTrueLayerAccountTransaction, fromTrueLayerCardBalance, fromTrueLayerCardTransaction } from './types/TrueLayerAdapters.ts';
 import { Tooltip, TooltipContent, TooltipTrigger } from './components/common/Tooltip.tsx';
-import { TrueLayerAccountTransaction, TrueLayerCardTransaction, TrueLayerProvider } from './types/TrueLayer.ts';
+import { TrueLayerProvider } from './types/TrueLayer.ts';
 import { closedProviders } from './data/providers.ts';
 import { isTauri, openInBrowser } from './utils/utils.ts';
 import AccountEditPanel from './components/AccountEditPanel.tsx';
@@ -20,6 +20,7 @@ import UserEditPanel from './components/UserEditPanel.tsx';
 import SegmentedControl from './components/common/SegmentedControl.tsx';
 import AccountsPanel from './components/AccountsPanel.tsx';
 import TransactionsPanel from './components/TransactionsPanel.tsx';
+import { newOrderedDateTreeFromList, OrderedDateTree } from './types/OrderedDateTree.ts';
 
 enum ResponseState {
     LOADING = 'LOADING',
@@ -41,8 +42,7 @@ function App() {
     const [accountsDataOffline, setAccountsDataOffline] = useState<Record<string, BankAccount> | null>(null);
     const [accountsDataPatches, setAccountsDataPatches] = useState<Record<string, BankAccountPatch> | null>(null);
 
-    const [transactions, setTransactions] = useState<Record<string, Transaction>>({});
-    const [transactionsArray, setTransactionsArray] = useState<Transaction[]>([]); // for sorted display
+    const [transactionsTree, setTransactionsTree] = useState<OrderedDateTree<Transaction>>(new OrderedDateTree<Transaction>());
 
     const [walletTokens, setWalletTokens] = useState<string[]>([]);
 
@@ -302,11 +302,10 @@ function App() {
                                     if (data) {
                                         updateAccountTransactions(
                                             accountID,
-                                            Object.fromEntries(
-                                                data.map(tx =>
-                                                    [tx.transaction_id, fromTrueLayerAccountTransaction(tx as TrueLayerAccountTransaction, accountID)]
-                                                )
-                                            )
+                                            newOrderedDateTreeFromList(
+                                                data.map(tx => fromTrueLayerAccountTransaction(tx, accountID)),
+                                                tx => new Date(tx.timestamp)
+                                            ),
                                         );
                                     }
                                 })
@@ -321,11 +320,10 @@ function App() {
                                     if (data) {
                                         updateAccountTransactions(
                                             accountID,
-                                            Object.fromEntries(
-                                                data.map(tx =>
-                                                    [tx.transaction_id, fromTrueLayerAccountTransaction(tx as TrueLayerAccountTransaction, accountID)]
-                                                )
-                                            )
+                                            newOrderedDateTreeFromList(
+                                                data.map(tx => fromTrueLayerCardTransaction(tx, accountID)),
+                                                tx => new Date(tx.timestamp)
+                                            ),
                                         );
                                     }
                                 })
@@ -339,16 +337,6 @@ function App() {
             });
         }
     }, [accounts, walletTokens]);
-
-    useEffect(() => {
-        // keep transactions array sorted
-        if (transactions) {
-            setTransactionsArray(
-                Object.values(transactions)
-                    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-            );
-        }
-    }, [transactions]);
 
     function redirectToTrueLayer(userID: string, userEmail: string) {
         if (userID !== null) {
@@ -371,27 +359,28 @@ function App() {
         }
     }
 
-    function updateAccountTransactions(accountID: string, transactions: Record<string, Transaction>) {
+    function updateAccountTransactions(accountID: string, transactions: OrderedDateTree<Transaction>) {
         if (accounts && accounts[accountID]) {
-            setAccountsDataLive(prev => ({
-                ...prev,
-                [accountID]: {
-                    ...prev[accountID],
-                    transactions: {
-                        ...(prev[accountID]?.transactions ?? {}),
-                        ...transactions,
+            setAccountsDataLive(prev => {
+                const transactionTree = prev[accountID]?.transactions || new OrderedDateTree<Transaction>();
+                transactionTree.graft(transactions);
+
+                return ({
+                    ...prev,
+                    [accountID]: {
+                        ...prev[accountID],
+                        transactions: transactionTree,
                     }
-                },
-            }));
+                })
+            });
             updateTransactions(transactions);
         }
     }
 
-    function updateTransactions(transactions: Record<string, Transaction>) {
-        setTransactions(prev => ({
-            ...prev,
-            ...transactions,
-        }));
+    function updateTransactions(newTransactions: OrderedDateTree<Transaction>) {
+        /// XXX: this certainly breaks some React rules
+        transactionsTree.graft(newTransactions);
+        setTransactionsTree(transactionsTree);
     }
 
     function startLinkAccount() {
@@ -767,7 +756,7 @@ function App() {
                     {accountsState === ResponseState.SUCCESS &&
                         <div className='column'>
                             <img
-                                src='./MasterBagel.png'
+                                src={ modesty ? './MasterBagel-hide.png' : './MasterBagel.png' }
                                 alt='Master Bagel'
                                 style={{ width: '100px', height: '100px' }}
                             />
@@ -841,12 +830,11 @@ function App() {
 
             { panel === 'transactions' &&
                 <TransactionsPanel
-                    transactions={transactionsArray}
+                    transactionsTree={transactionsTree.getTree()}
                     accounts={accounts}
                     users={users}
                     providers={providers}
                     modesty={modesty}
-                    setOpenEditAccount={setOpenEditAccount}
                     footend={footend}
                 />
             }

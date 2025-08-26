@@ -1,4 +1,4 @@
-import { BankAccount, InterestType, Transaction, User } from "../types/Bagel";
+import { BankAccount, Transaction, User } from "../types/Bagel";
 import { openInBrowser, toFinancialString } from "../utils/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./common/Tooltip";
 import { TrueLayerProvider } from "../types/TrueLayer";
@@ -9,7 +9,6 @@ type TransactionCardProps = {
     users: User[] | null;
     providers: Record<string, TrueLayerProvider>;
     modesty: boolean;
-    setOpenEditAccount: (account: BankAccount) => void;
 }
 
 function TransactionCard({
@@ -17,23 +16,44 @@ function TransactionCard({
     account,
     users, providers,
     modesty,
-    setOpenEditAccount,
 }: TransactionCardProps) {
     const isCard = account.cardNetwork !== undefined;
 
     const currency = transaction?.currency === 'GBP' ? '£' : transaction?.currency;
+    const amount = isCard ? -transaction.amount : transaction?.amount; // card transactions are negative amounts
 
     const accountUsers = users?.filter(user => account.users.some(u => u.id === user.id));
 
     return (
-        <div className='accountCard' key={transaction.transactionID}
+        <div className='transactionCard' key={transaction.transactionID}
             style={{ position: 'relative' }}
-            onClick={() => setOpenEditAccount(account)}
         >
 
             { /* HEADER */}
             <div className='accountHeader'>
+
                 <div className='row'>
+                    {/* BALANCE */}
+                    <div className={`balance ${modesty ? 'hidden' : (amount < 0 ? 'negative' : 'positive')}`}>
+                        {currency}&nbsp;
+                        {modesty ? '***' : toFinancialString(amount)}
+                    </div>
+                    <div className='verticalSeparator' />
+                    {/* ACCOUNT NAME */}
+                    <div className='name'>{account.name}</div>
+                </div>
+
+
+                <div className='row'>
+                    {/* ACCOUNT / CARD NUMBERS */}
+                    {!isCard ? account.number.number : `${account?.cardNetwork === 'MASTERCARD' ? 5 : 4}*** **** **** ${account.number.number}`}
+                    {!isCard &&
+                        <>
+                            <div className='verticalSeparator' />
+                            {account.number.sortCode}
+                        </>
+                    }
+                    <div className='verticalSeparator' />
                     {/* USERS */}
                     {
                         accountUsers?.map(user => (
@@ -75,32 +95,19 @@ function TransactionCard({
                             {providers?.[account.provider.id]?.display_name ?? account.provider.name ?? account.provider.id}
                         </TooltipContent>
                     </Tooltip>
-                    <div className='verticalSeparator' />
                 </div>
-                {/* ACCOUNT NAME */}
-                <div className='name'>{account.name}</div>
-                {/* ACCOUNT / CARD NUMBERS */}
-                {!isCard ? account.number.number : `${account?.cardNetwork === 'MASTERCARD' ? 5 : 4}*** **** **** ${account.number.number}`}
-                {!isCard &&
-                    <>
-                        <div className='verticalSeparator' />
-                        {account.number.sortCode}
-                    </>
-                }
-                <div className='row'>
-                    {/* BALANCE */}
-                    <div className='verticalSeparator' />
-                    <div className='balance'>
-                        {currency}&nbsp;
-                        {modesty ? '***' : toFinancialString(Math.abs(transaction.amount))}
-                    </div>
-                </div>
+
             </div>
 
             {/* BODY */}
             <div className='body'>
-                {transaction.timestamp}
-                {transaction.description}
+                <div className='row'>
+                    { transaction.timestamp &&
+                        new Date(transaction.timestamp).toLocaleDateString()
+                    }
+                    <div className='verticalSeparator' />
+                    <span>{transaction.description}</span>
+                </div>
             </div>
         </div>
     );
