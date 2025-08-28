@@ -10,7 +10,7 @@ export const closedProviders: TrueLayerProvider[] = [
         availability: {
             recommended_status: "",
             updated_at: ""
-        }
+        },
     },
     {
         provider_id: "bagel-ns&i",
@@ -21,6 +21,18 @@ export const closedProviders: TrueLayerProvider[] = [
         availability: {
             recommended_status: "",
             updated_at: ""
-        }
+        },
+    },
+    {
+        provider_id: "bagel-cahoot",
+        display_name: "Cahoot",
+        country: "uk",
+        logo_url: "/Banks/Cahoot.png",
+        accountLogo: "/Banks/CahootSquare.png",
+        scopes: [],
+        availability: {
+            recommended_status: "",
+            updated_at: ""
+        },
     },
 ];
