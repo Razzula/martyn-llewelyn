@@ -21,6 +21,8 @@ import SegmentedControl from './components/common/SegmentedControl.tsx';
 import AccountsPanel from './components/AccountsPanel.tsx';
 import TransactionsPanel from './components/TransactionsPanel.tsx';
 import { newOrderedDateTreeFromList, OrderedDateTree } from './types/OrderedDateTree.ts';
+import { ToggleSwitch } from './components/common/ToggleSwitch.tsx';
+import { WiggleWrapper } from './components/common/WiggleWrapper.tsx';
 
 enum ResponseState {
     LOADING = 'LOADING',
@@ -755,11 +757,24 @@ function App() {
                     }
                     {accountsState === ResponseState.SUCCESS &&
                         <div className='column'>
-                            <img
-                                src={ modesty ? './MasterBagel-hide.png' : './MasterBagel.png' }
-                                alt='Master Bagel'
-                                style={{ width: '100px', height: '100px' }}
-                            />
+                            <WiggleWrapper
+                                balloonMs={2000}
+                                balloonElement={<img src='./Serenity/Heart.png' alt='Balloon' style={{ width: '50px', height: '50px' }} />}
+                            >
+                                <div style={{ position: 'relative', width: '100px', height: '100px' }}>
+                                    <img
+                                        className={`hat ${modesty ? 'lowered' : ''}`}
+                                        src='./MasterBagel-Hat.png'
+                                        alt='Master Bagel'
+                                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                                    />
+                                    <img
+                                        src='./MasterBagel-Body.png'
+                                        alt='Master Bagel'
+                                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                                    />
+                                </div>
+                            </WiggleWrapper>
                             {/* <h4>Your Accounts</h4> */}
                         </div>
                     }
@@ -798,12 +813,11 @@ function App() {
                 <div className='row right'>
                     <Tooltip>
                         <TooltipTrigger>
-                            <input
-                                type='checkbox'
-                                id='modestyToggle'
-                                checked={modesty}
-                                onChange={(e) => setModesty(e.target.checked)}
-                                style={{ marginRight: '1rem' }}
+                            <ToggleSwitch
+                                isOn={!modesty}
+                                handleToggle={() => setModesty(!modesty)}
+                                iconOn={<img src='./Icons/Visibility.svg' alt='Show balances' style={{ width: '20px', height: '20px' }} />}
+                                iconOff={<img src='./Icons/VisibilityOff.svg' alt='Hide balances' style={{ width: '20px', height: '20px' }} />}
                             />
                         </TooltipTrigger>
                         <TooltipContent>

@@ -22,8 +22,6 @@ function TransactionsPanel({
     footend
 }: TransactionsPanelProps) {
 
-    console.log('Rendering TransactionsPanel with transactionsTree:', transactionsTree);
-
     return (
         <>
             <div>
@@ -37,13 +35,16 @@ function TransactionsPanel({
                                         Object.keys(transactionsTree[year]).sort((a, b) => b.localeCompare(a)).map(month => (
                                             <div key={month}>
                                                 <h3>{getMonthName(month)}</h3>
-                                                {
-                                                    Object.keys(transactionsTree[year][month]).sort((a, b) => b.localeCompare(a)).map(day => (
+                                                { Object
+                                                    .keys(transactionsTree[year][month])
+                                                    .sort((a, b) => b.localeCompare(a))
+                                                    .map(day => (
                                                         <div key={day}>
                                                             <h4>{parseInt(day)}{getOrdinalSuffix(parseInt(day))}</h4>
                                                             {
-                                                                transactionsTree[year][month][day].map(tx => (
+                                                                transactionsTree[year][month][day].map((tx, txIndex) => (
                                                                     <TransactionCard
+                                                                        className={txIndex > 0 ? 'stacked' : ''}
                                                                         key={tx.transactionID}
                                                                         transaction={tx}
                                                                         account={accounts[tx.accountID ?? ''] ?? null}
@@ -62,6 +63,22 @@ function TransactionsPanel({
                                 </div>
                             ))
                         }
+
+                        <div className='column'>
+                            <button
+                                onClick={() => {
+                                    document.scrollingElement?.scrollTo({ top: 0, behavior: 'smooth'  });
+                                }}
+                            >
+                                Back to Top
+                            </button>
+                            <button
+                                style={{ marginTop: '0.5rem' }}
+                                onClick={() => {}} // TODO
+                            >
+                                Load More... {/* TODO: possibly render what (amount / timespan) is to be loaded */}
+                            </button>
+                        </div>
                     </div>
                 ) : (
                     <p>No recent transactions</p>

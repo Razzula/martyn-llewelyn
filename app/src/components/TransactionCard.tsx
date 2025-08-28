@@ -4,6 +4,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "./common/Tooltip";
 import { TrueLayerProvider } from "../types/TrueLayer";
 
 type TransactionCardProps = {
+    className?: string;
     transaction: Transaction;
     account: BankAccount;
     users: User[] | null;
@@ -12,6 +13,7 @@ type TransactionCardProps = {
 }
 
 function TransactionCard({
+    className,
     transaction,
     account,
     users, providers,
@@ -25,7 +27,9 @@ function TransactionCard({
     const accountUsers = users?.filter(user => account.users.some(u => u.id === user.id));
 
     return (
-        <div className='transactionCard' key={transaction.transactionID}
+        <div
+            className={`transactionCard ${className}`}
+            key={transaction.transactionID}
             style={{ position: 'relative' }}
         >
 

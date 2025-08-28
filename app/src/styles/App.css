@@ -43,8 +43,9 @@ button {
     border-radius: 0.5rem;
     font-weight: 600;
     font-size: 1rem;
-    transition: background-color 0.2s ease, transform 0.1s ease;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+
+    transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
 button.threat {
@@ -66,7 +67,7 @@ button:disabled:active {
 
 button:hover {
     background-color: #708238;
-    transform: translateY(-1px);
+    transform: translateY(-2px);
 }
 
 button:active {
@@ -154,6 +155,13 @@ hr {
     justify-content: space-between;
     margin: 0.5rem;
     cursor: pointer;
+
+    transition: transform 0.4s ease, background-color 0.2s ease;
+}
+
+.accountCard:hover {
+    background-color: #ebf0dd;
+    transform: translateY(-5px);
 }
 
 .transactionCard {
@@ -165,6 +173,11 @@ hr {
     flex-direction: column;
     justify-content: space-between;
     margin: 0.5rem;
+    margin-top: 0rem;
+}
+
+.transactionCard.stacked {
+    margin-top: -1.25rem;
 }
 
 .accountHeader {
@@ -355,4 +368,18 @@ h1, h2, h3, h4 {
 
 h3 {
     margin-bottom: 0.3rem;
+}
+
+.hat {
+    z-index: 5;
+
+    transition: top 0.5s ease;
+}
+
+.hat.lowered {
+    top: 9px !important;
+}
+
+.hat.popped {
+    top: -5px !important;
 }

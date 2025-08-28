@@ -70,6 +70,16 @@
     z-index: 0;
 }
 
+.segment.inactive label {
+    border-radius: 8px;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.segment.inactive:hover label {
+    color: #8A9A5B;
+    transform: translateY(-2px);
+}
+
 .controls.ready::before {
     transition: transform 0.3s ease, width 0.3s ease;
 }

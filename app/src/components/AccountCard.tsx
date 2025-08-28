@@ -2,6 +2,7 @@ import { BankAccount, InterestType, User } from "../types/Bagel";
 import { openInBrowser, toFinancialString } from "../utils/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./common/Tooltip";
 import { TrueLayerProvider } from "../types/TrueLayer";
+import { calculateAER } from "../utils/finance";
 
 type AccountCardProps = {
     accountID: string;
@@ -35,6 +36,9 @@ function AccountCard({
     const now = new Date();
     const diffInMinutes = (now.getTime() - updateDate.getTime()) / 60000; // in minutes
     const isRecent = diffInMinutes <= 15; // consider recent if updated within the last 15 minutes
+
+    const accountGross = account.interest?.rate?.toFixed(2) || '0.00';
+    const accountAER = calculateAER(account.interest?.rate || 0, account.interest?.interval || 12).toFixed(2);
 
     return (
         <div className='accountCard' key={accountID}
@@ -159,14 +163,16 @@ function AccountCard({
                         </>
                     }
                 </div>
-                {displayAvailable && (
+                {/* {displayAvailable && (
                     <div className='available'>({!isCard ? displayBalance : displayAvailable})</div>
-                )}
+                )} */}
 
-                {!isCard && (
+                {!isCard && account.interest?.rate !== undefined && (
                     <div className='interestRate'>
-                        {account.interest?.rate?.toFixed(2) || '0.00'}
-                        <span>%</span>
+                        {/* AER */}
+                        <span>
+                            {accountAER}%
+                        </span>
                         {account.interest?.type === InterestType.VARIABLE &&
                             <Tooltip>
                                 <TooltipTrigger>
@@ -180,6 +186,21 @@ function AccountCard({
                                     Variable Interest Rate
                                 </TooltipContent>
                             </Tooltip>
+                        }
+                        {/* AER LABEL */}
+                        <span> AER </span>
+                        {/* GROSS */}
+                        { account.interest?.rate !== undefined && account.interest?.rate > 0 && accountGross !== accountAER &&
+                            // unique gross
+                            <span>
+                                ({accountGross}% gross)
+                            </span>
+                        }
+                        { account.interest?.rate !== undefined && account.interest?.rate > 0 && accountGross === accountAER &&
+                            // gross is same as AER
+                            <span>
+                                / gross
+                            </span>
                         }
                     </div>
                 )}

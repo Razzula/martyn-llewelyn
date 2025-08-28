@@ -1,0 +1,52 @@
+@keyframes wiggle {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(1.5deg); }
+    75% { transform: rotate(-1.5deg); }
+}
+
+.wiggleWrapper {
+    position: relative;
+    display: inline-block;
+    overflow: visible;
+
+    cursor: grab;
+}
+
+.wiggleContent {
+    display: inline-block;
+}
+
+.wiggleActive {
+    display: inline-block;
+    animation: wiggle 0.2s ease-in-out infinite;
+    will-change: transform;
+}
+
+.wiggleOverlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: visible;
+}
+
+.floatingBalloon {
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    transform: translateX(-50%);
+    animation: floatUp 1.5s ease-out forwards;
+    font-size: 1.5rem;
+    pointer-events: none;
+    z-index: 10;
+}
+
+@keyframes floatUp {
+    0% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-80px) scale(1.2);
+    }
+}

@@ -26,7 +26,7 @@ const SegmentedControl: React.FC<SegmentedControlProps> = ({
     const [activeIndex, setActiveIndex] = useState<number>(defaultIndex);
     const componentReady = useRef<boolean>(false);
 
-    // Determine when the component is 'ready'
+    // determine when the component is 'ready'
     useEffect(() => {
         componentReady.current = true;
     }, []);
