@@ -1,8 +1,8 @@
 import { BankAccount, InterestType, User } from "../types/Bagel";
-import { openInBrowser, toFinancialString } from "../utils/utils";
+import { openInBrowser } from "../utils/tauri";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./common/Tooltip";
 import { TrueLayerProvider } from "../types/TrueLayer";
-import { calculateAER } from "../utils/finance";
+import { calculateAER, toFinancialString } from "../utils/finance";
 
 type AccountCardProps = {
     accountID: string;

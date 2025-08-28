@@ -1,5 +1,6 @@
 import { BankAccount, Transaction, User } from "../types/Bagel";
-import { openInBrowser, toFinancialString } from "../utils/utils";
+import { openInBrowser } from "../utils/tauri";
+import { toFinancialString } from "../utils/finance";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./common/Tooltip";
 import { TrueLayerProvider } from "../types/TrueLayer";
 

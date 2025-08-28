@@ -4,7 +4,7 @@ import { BankAccount, BankAccountType, CardNetwork, InterestType, User } from ".
 import { TrueLayerProvider } from "../types/TrueLayer";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./common/Tooltip";
 import Select from "./common/Select";
-import { asSortCode } from "../utils/utils";
+import { asSortCode } from "../utils/finance";
 import { emptyBankAccount } from "../data/stubs";
 
 type AccountEditPanelProps = {

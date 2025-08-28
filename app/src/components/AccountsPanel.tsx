@@ -1,6 +1,7 @@
 import { BankAccount, User } from "../types/Bagel";
 import { TrueLayerProvider } from "../types/TrueLayer";
-import { isTauri, toFinancialString } from "../utils/utils";
+import { isTauri } from "../utils/tauri";
+import { toFinancialString } from "../utils/finance";
 import AccountCard from "./AccountCard";
 
 type AccountsPanelProps = {

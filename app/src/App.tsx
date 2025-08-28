@@ -11,7 +11,7 @@ import { fromTrueLayerAccountBalance, fromTrueLayerAccountTransaction, fromTrueL
 import { Tooltip, TooltipContent, TooltipTrigger } from './components/common/Tooltip.tsx';
 import { TrueLayerProvider } from './types/TrueLayer.ts';
 import { closedProviders } from './data/providers.ts';
-import { isTauri, openInBrowser } from './utils/utils.ts';
+import { isTauri, openInBrowser } from './utils/tauri.ts';
 import AccountEditPanel from './components/AccountEditPanel.tsx';
 
 import './styles/App.css';

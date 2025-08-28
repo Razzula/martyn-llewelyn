@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { User } from "../types/Bagel";
-import { isTauri } from "../utils/utils";
+import { isTauri } from "../utils/tauri";
 
 type UserEditPanelProps = {
     user: User | null;
