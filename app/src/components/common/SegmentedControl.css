@@ -59,7 +59,7 @@
 
 .controls::before {
     content: "";
-    background: #8A9A5B;
+    background: #8a9a5b;
     border-radius: 8px;
     width: var(--highlight-width);
     transform: translateX(var(--highlight-x-pos));
@@ -76,7 +76,7 @@
 }
 
 .segment.inactive:hover label {
-    color: #8A9A5B;
+    color: #8a9a5b;
     transform: translateY(-2px);
 }
 

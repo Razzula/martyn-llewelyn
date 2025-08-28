@@ -1,0 +1,21 @@
+.accountHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.accountHeader .name {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.accountBody {
+    font-size: 0.9rem;
+    margin-top: 0.25rem;
+}
+
+.balance {
+    font-weight: bold;
+    font-size: 1.1rem;
+}

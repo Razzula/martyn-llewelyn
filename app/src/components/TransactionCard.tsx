@@ -4,6 +4,9 @@ import { toFinancialString } from "../utils/finance";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./common/Tooltip";
 import { TrueLayerProvider } from "../types/TrueLayer";
 
+import './TransactionCard.css'
+import '../styles/CommonCard.css'
+
 type TransactionCardProps = {
     className?: string;
     transaction: Transaction;
@@ -105,7 +108,7 @@ function TransactionCard({
             </div>
 
             {/* BODY */}
-            <div className='body'>
+            <div className='accountBody'>
                 <div className='row'>
                     { transaction.timestamp &&
                         new Date(transaction.timestamp).toLocaleDateString()

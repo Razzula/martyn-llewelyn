@@ -2,7 +2,7 @@ import { RefObject, useEffect, useRef, useState } from 'react';
 import { onOpenUrl } from '@tauri-apps/plugin-deep-link';
 import { invoke } from '@tauri-apps/api/core';
 
-import { fetchAccountBalance, fetchAccountsData, fetchAccountTransactions, fetchCardBalance, fetchCardsData, fetchCardTransactions, fetchProviders, getTrueLayerAuthURL, handleTokenExchange } from './lib/TrueLayer.ts';
+import { TrueLayerClient } from './lib/TrueLayer.ts';
 
 import { BankAccount, BankAccountBalance, BankAccountPatch, generatePatchFromAccount, Transaction, User } from './types/Bagel.ts';
 import { ResponsiveModal } from './components/common/ResponsiveModal.tsx';
@@ -23,6 +23,7 @@ import TransactionsPanel from './components/TransactionsPanel.tsx';
 import { newOrderedDateTreeFromList, OrderedDateTree } from './types/OrderedDateTree.ts';
 import { ToggleSwitch } from './components/common/ToggleSwitch.tsx';
 import { WiggleWrapper } from './components/common/WiggleWrapper.tsx';
+import Spinner from './components/common/Spinner.tsx';
 
 enum ResponseState {
     LOADING = 'LOADING',
@@ -57,13 +58,9 @@ function App() {
 
     useEffect(() => {
         // HANDLE SETUP
-        if (!isTauri) {
-            alert('You are running a browser version of the app. This only supports a limited demo mode, and does not support access to any real accounts.\n\nNothing will be saved, and no data will be fetched from any providers.\n\nPlease refer to https://github.com/Razzula/martyn-llewelyn for more information.');
-            return;
-        }
 
         // LOAD PROVIDERS
-        fetchProviders()
+        TrueLayerClient.fetchProviders()
             .then((providers: TrueLayerProvider[]) => {
                 const providersMap: Record<string, TrueLayerProvider> = {};
                 [...providers, ...closedProviders]
@@ -78,48 +75,60 @@ function App() {
                 console.error('Failed to fetch providers:', err);
             });
 
-        // LOAD USERS
-        invoke('loadJSON', { filename: 'users.json' })
-            .then((raw: unknown) => {
-                const data: User[] = JSON.parse(raw as string);
-                setUsers(data);
-            })
-            .catch(() => {
-                setUsers([]);
-            });
+        if (isTauri) {
+            // LOAD USERS
+            invoke('loadJSON', { filename: 'users.json' })
+                .then((raw: unknown) => {
+                    const data: User[] = JSON.parse(raw as string);
+                    setUsers(data);
+                })
+                .catch(() => {
+                    setUsers([]);
+                });
+    
+            // LOAD OFFLINE ACCOUNTS
+            invoke('loadJSON', { filename: 'accounts.offline.json' })
+                .then((raw: unknown) => {
+                    const data: Record<string, BankAccount> = JSON.parse(raw as string);
+                    setAccountsDataOffline(data);
+                })
+                .catch(() => {
+                    setAccountsDataOffline({});
+                });
+    
+            // LOAD ACCOUNT PATCHES
+            invoke('loadJSON', { filename: 'accounts.patches.json' })
+                .then((raw: unknown) => {
+                    const data: Record<string, BankAccount> = JSON.parse(raw as string);
+                    setAccountsDataPatches(data);
+                })
+                .catch(() => {
+                    setAccountsDataPatches({});
+                });
 
-        // LOAD OFFLINE ACCOUNTS
-        invoke('loadJSON', { filename: 'accounts.offline.json' })
-            .then((raw: unknown) => {
-                const data: Record<string, BankAccount> = JSON.parse(raw as string);
-                setAccountsDataOffline(data);
-            })
-            .catch(() => {
-                setAccountsDataOffline({});
-            });
-
-        // LOAD ACCOUNT PATCHES
-        invoke('loadJSON', { filename: 'accounts.patches.json' })
-            .then((raw: unknown) => {
-                const data: Record<string, BankAccount> = JSON.parse(raw as string);
-                setAccountsDataPatches(data);
-            })
-            .catch(() => {
-                setAccountsDataPatches({});
-            });
-
-        // XXX
-        invoke('loadWalletTokens')
-            .then((tokens: unknown) => {
-                const walletTokensArr = tokens as string[];
-                if (walletTokensArr.length > 0) {
-                    // use the first token for now
-                    setWalletTokens(walletTokensArr);
-                }
-            })
-            .catch(err => {
-                console.error('Failed to load wallet tokens:', err);
-            });
+            // XXX
+            invoke('loadWalletTokens')
+                .then((tokens: unknown) => {
+                    const walletTokensArr = tokens as string[];
+                    if (walletTokensArr.length > 0) {
+                        // use the first token for now
+                        setWalletTokens(walletTokensArr);
+                    }
+                })
+                .catch(err => {
+                    console.error('Failed to load wallet tokens:', err);
+                });
+        }
+        else {
+            // in browser, use a demo token
+            setUsers([{
+                id: 'mock-user-id',
+                name: 'Demo User',
+                email: '',
+                icon: '/Serenity/hwyaden.png',
+            }]);
+            setWalletTokens(['demo']);
+        }
 
     }, []);
 
@@ -135,7 +144,7 @@ function App() {
 
             // trigger token exchange, navigate, etc.
             if (code && state) {
-                handleTokenExchange(code, state)
+                TrueLayerClient.handleTokenExchange(code, state)
                     .then((walletToken: string) => {
                         setWalletTokens(prev => [...prev, walletToken]);
                     })
@@ -226,8 +235,8 @@ function App() {
             walletTokens.forEach(token => {
                 Promise.all([
                     // fetch accounts and cards data
-                    fetchAccountsData(token),
-                    fetchCardsData(token)
+                    TrueLayerClient.fetchAccountsData(token),
+                    TrueLayerClient.fetchCardsData(token)
                 ])
                     .then(([accounts, cards]) => {
                         [...accounts, ...cards].forEach(account => {
@@ -271,7 +280,7 @@ function App() {
                 // FETCH ACCOUNT BALANCE
                 if (account.balance === undefined) {
                     if (!isCard) {
-                        fetchAccountBalance(walletToken, accountID)
+                        TrueLayerClient.fetchAccountBalance(walletToken, accountID)
                             .then(data => {
                                 if (data) {
                                     updateAccountBalance(accountID, fromTrueLayerAccountBalance(data[0]));
@@ -283,7 +292,7 @@ function App() {
                             });
                     }
                     else {
-                        fetchCardBalance(walletToken, accountID)
+                        TrueLayerClient.fetchCardBalance(walletToken, accountID)
                             .then(data => {
                                 if (data) {
                                     updateAccountBalance(accountID, fromTrueLayerCardBalance(data[0]));
@@ -298,42 +307,42 @@ function App() {
 
                 // FETCH ACCOUNT TRANSACTIONS
                 if (account.transactions === undefined) {
-                        if (!isCard) {
-                            fetchAccountTransactions(walletToken, accountID)
-                                .then(data => {
-                                    if (data) {
-                                        updateAccountTransactions(
-                                            accountID,
-                                            newOrderedDateTreeFromList(
-                                                data.map(tx => fromTrueLayerAccountTransaction(tx, accountID)),
-                                                tx => new Date(tx.timestamp)
-                                            ),
-                                        );
-                                    }
-                                })
-                                .catch(err => {
-                                    console.error(`Failed to fetch transactions for account ${accountID}:`, err);
-                                    setAccountsState(ResponseState.ERROR);
-                                });
-                        }
-                        else {
-                            fetchCardTransactions(walletToken, accountID)
-                                .then(data => {
-                                    if (data) {
-                                        updateAccountTransactions(
-                                            accountID,
-                                            newOrderedDateTreeFromList(
-                                                data.map(tx => fromTrueLayerCardTransaction(tx, accountID)),
-                                                tx => new Date(tx.timestamp)
-                                            ),
-                                        );
-                                    }
-                                })
-                                .catch(err => {
-                                    console.error(`Failed to fetch transactions for card ${accountID}:`, err);
-                                    setAccountsState(ResponseState.ERROR);
-                                });
-                        }
+                    if (!isCard) {
+                        TrueLayerClient.fetchAccountTransactions(walletToken, accountID)
+                            .then(data => {
+                                if (data) {
+                                    updateAccountTransactions(
+                                        accountID,
+                                        newOrderedDateTreeFromList(
+                                            data.map(tx => fromTrueLayerAccountTransaction(tx, accountID)),
+                                            tx => new Date(tx.timestamp)
+                                        ),
+                                    );
+                                }
+                            })
+                            .catch(err => {
+                                console.error(`Failed to fetch transactions for account ${accountID}:`, err);
+                                setAccountsState(ResponseState.ERROR);
+                            });
+                    }
+                    else {
+                        TrueLayerClient.fetchCardTransactions(walletToken, accountID)
+                            .then(data => {
+                                if (data) {
+                                    updateAccountTransactions(
+                                        accountID,
+                                        newOrderedDateTreeFromList(
+                                            data.map(tx => fromTrueLayerCardTransaction(tx, accountID)),
+                                            tx => new Date(tx.timestamp)
+                                        ),
+                                    );
+                                }
+                            })
+                            .catch(err => {
+                                console.error(`Failed to fetch transactions for card ${accountID}:`, err);
+                                setAccountsState(ResponseState.ERROR);
+                            });
+                    }
                 }
 
             });
@@ -342,7 +351,7 @@ function App() {
 
     function redirectToTrueLayer(userID: string, userEmail: string) {
         if (userID !== null) {
-            getTrueLayerAuthURL(userID, userEmail)
+            TrueLayerClient.getTrueLayerAuthURL(userID, userEmail)
                 .then(redirectURI => openInBrowser(redirectURI));
         }
     }
@@ -680,155 +689,170 @@ function App() {
                 />
             </ResponsiveModal>
 
-            <div className='header row'>
+            <div className='header'>
 
-                {/* USER BUTTONS */}
-                <div className='row left'>
-                    {users &&
-                        users.map((user, index) => (
-                            <Tooltip key={user.id}>
-                                <TooltipTrigger>
-                                    <button
-                                        key={index}
-                                        className='userButton'
-                                        onClick={() => {
-                                            setOpenEditUser(() => { });
-                                            setSelectedUser(user);
-                                        }}
-                                    >
-                                        {user.icon ?
-                                            <img
-                                                className='userIcon'
-                                                src={user.icon}
-                                                alt={user.name}
-                                                style={{ width: '32px', height: '32px' }}
-                                            /> : <span>{user.name.charAt(0).toUpperCase()}</span>
-                                        }
-                                    </button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    {user.name}
-                                </TooltipContent>
-                            </Tooltip>
-                        ))
-                    }
-
-                    <Tooltip>
-                        <TooltipTrigger>
-                            <button
-                                className={users && users.length > 0 ? 'userButton' : ''}
-                                onClick={() => setOpenEditUser(() => { })}
-                            >
-                                {users && users.length > 0 ? '+' : 'Setup Profile'}
-                            </button>
-                        </TooltipTrigger>
-                        {users && users.length > 0 &&
-                            <TooltipContent>
-                                Create a profile
-                            </TooltipContent>
-                        }
-                    </Tooltip>
-                </div>
-
-                {/* BAGEL ICON */}
-                <div className='centre'>
-                    {accountsState === ResponseState.ERROR &&
-                        <div className='column'>
-                            <img
-                                src='./ConfusedBagel-alt.png'
-                                alt='Master Bagel is confused...'
-                                style={{ width: '100px', height: '100px' }}
-                            />
-                            <h4>An error occurred!</h4>
-                        </div>
-                    }
-                    {accountsState === ResponseState.LOADING &&
-                        <div className='column'>
-                            <img
-                                src='./ConfusedBagel-alt.png'
-                                alt='Master Bagel is confused...'
-                                style={{ width: '100px', height: '100px' }}
-                            />
-                            <h4>Loading...</h4>
-                            <div className='spinnerOverlay'>
-                                <div className='spinner' />
-                            </div>
-                        </div>
-                    }
-                    {accountsState === ResponseState.SUCCESS &&
-                        <div className='column'>
-                            <WiggleWrapper
-                                balloonMs={2000}
-                                balloonElement={<img src='./Serenity/Heart.png' alt='Balloon' style={{ width: '50px', height: '50px' }} />}
-                            >
-                                <div style={{ position: 'relative', width: '100px', height: '100px' }}>
-                                    <img
-                                        className={`hat ${modesty ? 'lowered' : ''}`}
-                                        src='./MasterBagel-Hat.png'
-                                        alt='Master Bagel'
-                                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-                                    />
-                                    <img
-                                        src='./MasterBagel-Body.png'
-                                        alt='Master Bagel'
-                                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-                                    />
-                                </div>
-                            </WiggleWrapper>
-                            {/* <h4>Your Accounts</h4> */}
-                        </div>
-                    }
-                    {accountsState === null &&
-                        <div className='column'>
-                            <img
-                                src='./ConfusedBagel.png'
-                                alt='Master Bagel is confused...'
-                                style={{ width: '100px', height: '100px' }}
-                            />
-                        </div>
-                    }
-
-                    <div>
-                        <SegmentedControl
-                            name='primary-group'
-                            callback={(val: string) => setPanel(val as 'accounts' | 'transactions')}
-                            controlRef={controlRef}
-                            segments={[
-                                {
-                                    label: 'Accounts',
-                                    value: 'accounts',
-                                    ref: segmentRefs[0]
-                                },
-                                {
-                                    label: 'Transactions',
-                                    value: 'transactions',
-                                    ref: segmentRefs[1]
-                                },
-                            ]}
-                        />
+                {!isTauri &&
+                    <div className='banner'>
+                        <p>
+                            You are running a browser version of the app. This only supports a limited demo mode, and does not support access to any real accounts.
+                            Nothing will be saved, and no real data can be fetched from any banks.
+                        </p>
+                        <p className='small'>
+                            Please refer
+                            to <a href='https://github.com/Razzula/martyn-llewelyn'>https://github.com/Razzula/martyn-llewelyn</a> for
+                            more information.
+                        </p>
                     </div>
-                </div>
+                }
 
-                {/* USER BUTTONS */}
-                <div className='row right'>
-                    <Tooltip>
-                        <TooltipTrigger>
-                            <ToggleSwitch
-                                isOn={!modesty}
-                                handleToggle={() => setModesty(!modesty)}
-                                iconOn={<img src='./Icons/Visibility.svg' alt='Show balances' style={{ width: '20px', height: '20px' }} />}
-                                iconOff={<img src='./Icons/VisibilityOff.svg' alt='Hide balances' style={{ width: '20px', height: '20px' }} />}
+                <div className='headerBody'>
+
+                    {/* USER BUTTONS */}
+                    <div className='row left'>
+                        {users &&
+                            users.map((user, index) => (
+                                <Tooltip key={user.id}>
+                                    <TooltipTrigger>
+                                        <button
+                                            key={index}
+                                            className='userButton'
+                                            onClick={() => {
+                                                setOpenEditUser(() => { });
+                                                setSelectedUser(user);
+                                            }}
+                                        >
+                                            {user.icon ?
+                                                <img
+                                                    className='userIcon'
+                                                    src={user.icon}
+                                                    alt={user.name}
+                                                    style={{ width: '32px', height: '32px' }}
+                                                /> : <span>{user.name.charAt(0).toUpperCase()}</span>
+                                            }
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        {user.name}
+                                    </TooltipContent>
+                                </Tooltip>
+                            ))
+                        }
+
+                        <Tooltip>
+                            <TooltipTrigger>
+                                <button
+                                    className={users && users.length > 0 ? 'userButton' : ''}
+                                    onClick={() => setOpenEditUser(() => { })}
+                                >
+                                    {users && users.length > 0 ? '+' : 'Setup Profile'}
+                                </button>
+                            </TooltipTrigger>
+                            {users && users.length > 0 &&
+                                <TooltipContent>
+                                    Create a profile
+                                </TooltipContent>
+                            }
+                        </Tooltip>
+                    </div>
+
+                    {/* BAGEL ICON */}
+                    <div className='centre'>
+                        {accountsState === ResponseState.ERROR &&
+                            <div className='column'>
+                                <img
+                                    src='./ConfusedBagel-alt.png'
+                                    alt='Master Bagel is confused...'
+                                    style={{ width: '100px', height: '100px' }}
+                                />
+                                <h4>An error occurred!</h4>
+                            </div>
+                        }
+                        {accountsState === ResponseState.LOADING &&
+                            <div className='column'>
+                                <img
+                                    src='./ConfusedBagel-alt.png'
+                                    alt='Master Bagel is confused...'
+                                    style={{ width: '100px', height: '100px' }}
+                                />
+                                <h4>Loading...</h4>
+                                <Spinner useOverlay />
+                            </div>
+                        }
+                        {accountsState === ResponseState.SUCCESS &&
+                            <div className='column'>
+                                <WiggleWrapper
+                                    balloonMs={2000}
+                                    balloonElement={<img src='./Serenity/Heart.png' alt='Balloon' style={{ width: '50px', height: '50px' }} />}
+                                >
+                                    <div style={{ position: 'relative', width: '100px', height: '100px' }}>
+                                        <img
+                                            className={`hat ${modesty ? 'lowered' : ''}`}
+                                            src='./MasterBagel-Hat.png'
+                                            alt='Master Bagel'
+                                            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                                        />
+                                        <img
+                                            src='./MasterBagel-Body.png'
+                                            alt='Master Bagel'
+                                            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                                        />
+                                    </div>
+                                </WiggleWrapper>
+                                {/* <h4>Your Accounts</h4> */}
+                            </div>
+                        }
+                        {accountsState === null &&
+                            <div className='column'>
+                                <img
+                                    src='./ConfusedBagel.png'
+                                    alt='Master Bagel is confused...'
+                                    style={{ width: '100px', height: '100px' }}
+                                />
+                            </div>
+                        }
+
+                        <div>
+                            <SegmentedControl
+                                name='primary-group'
+                                callback={(val: string) => setPanel(val as 'accounts' | 'transactions')}
+                                controlRef={controlRef}
+                                segments={[
+                                    {
+                                        label: 'Accounts',
+                                        value: 'accounts',
+                                        ref: segmentRefs[0]
+                                    },
+                                    {
+                                        label: 'Transactions',
+                                        value: 'transactions',
+                                        ref: segmentRefs[1]
+                                    },
+                                ]}
                             />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            {modesty ? 'Show balances' : 'Hide balances'}
-                        </TooltipContent>
-                    </Tooltip>
-                </div>
+                        </div>
+                    </div>
 
+                    {/* USER BUTTONS */}
+                    <div className='row right'>
+                        <Tooltip>
+                            <TooltipTrigger>
+                                <ToggleSwitch
+                                    isOn={!modesty}
+                                    handleToggle={() => setModesty(!modesty)}
+                                    iconOn={<img src='./Icons/Visibility.svg' alt='Show balances' style={{ width: '20px', height: '20px' }} />}
+                                    iconOff={<img src='./Icons/VisibilityOff.svg' alt='Hide balances' style={{ width: '20px', height: '20px' }} />}
+                                />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {modesty ? 'Show balances' : 'Hide balances'}
+                            </TooltipContent>
+                        </Tooltip>
+                    </div>
+
+                </div>
             </div>
 
-            { panel === 'accounts' &&
+            {panel === 'accounts' &&
                 <AccountsPanel
                     accounts={accounts}
                     users={users}
@@ -842,7 +866,7 @@ function App() {
                 />
             }
 
-            { panel === 'transactions' &&
+            {panel === 'transactions' &&
                 <TransactionsPanel
                     transactionsTree={transactionsTree.getTree()}
                     accounts={accounts}

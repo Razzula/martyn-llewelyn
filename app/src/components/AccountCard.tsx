@@ -3,6 +3,10 @@ import { openInBrowser } from "../utils/tauri";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./common/Tooltip";
 import { TrueLayerProvider } from "../types/TrueLayer";
 import { calculateAER, toFinancialString } from "../utils/finance";
+import Spinner from "./common/Spinner";
+
+import './AccountCard.css'
+import '../styles/CommonCard.css'
 
 type AccountCardProps = {
     accountID: string;
@@ -143,12 +147,12 @@ function AccountCard({
                     <div className='balance'>
                         {
                             (!isCard ? displayAvailable : displayBalance)
-                            || <div className='spinner' />
+                            || <Spinner />
                         }
                     </div>
                 </div>
             </div>
-            <div className='body'>
+            <div className='accountBody'>
                 {/* ACCOUNT TYPE */}
                 <div className='type'>
                     {account.type}

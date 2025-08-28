@@ -209,7 +209,7 @@ function AccountEditPanel({
                             );
                         })
                     ) : (
-                        <span className='centre'>No users selected</span>
+                        <span className='centre'>No users found</span>
                     )
                 }
             </div>

@@ -47,14 +47,16 @@ export type TrueLayerCard = {
     card_type: 'CREDIT' | 'CHARGE' | string;
     currency: string;
     display_name: string;
-    partial_card_number: string;
     name_on_card: string;
-    valid_from: string; // YYYY-MM
-    valid_to: string;   // YYYY-MM
-    update_timestamp: string; // ISO timestamp
+    partial_card_number: string;
     provider: {
         provider_id: string;
+        display_name: string;
+        logo_uri: string;
     };
+    valid_from?: string; // YYYY-MM
+    valid_to?: string;   // YYYY-MM
+    update_timestamp: string; // ISO timestamp
 };
 
 export type TrueLayerCardBalance = {

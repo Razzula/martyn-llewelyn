@@ -3,6 +3,7 @@ import TransactionCard from "./TransactionCard";
 import { TrueLayerProvider } from "src/types/TrueLayer";
 import { OrderedDateTreeStruct } from "src/types/OrderedDateTree";
 import { getMonthName, getOrdinalSuffix } from "../utils/utils";
+import { isTauri } from "../utils/tauri";
 
 type TransactionsPanelProps = {
     transactionsTree: OrderedDateTreeStruct<Transaction>;
@@ -75,6 +76,7 @@ function TransactionsPanel({
                             <button
                                 style={{ marginTop: '0.5rem' }}
                                 onClick={() => {}} // TODO
+                                disabled={!isTauri}
                             >
                                 Load More... {/* TODO: possibly render what (amount / timespan) is to be loaded */}
                             </button>

@@ -43,5 +43,5 @@ input:checked + .toggleSlider .toggleBall {
 }
 
 input:checked + .toggleSlider {
-    background-color: #8A9A5B;
+    background-color: #8a9a5b;
 }

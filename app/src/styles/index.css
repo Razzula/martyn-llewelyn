@@ -9,6 +9,10 @@
     -moz-osx-font-smoothing: grayscale;
 }
 
+body {
+    margin: 0 !important;
+}
+
 @font-face {
     font-family: "SerenityOS Emoji";
     src: url('/SerenityOS-Emoji.ttf') format('truetype');

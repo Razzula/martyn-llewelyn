@@ -1,4 +1,5 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { isTauri as isTauriTauri } from "@tauri-apps/api/core";
 
 export async function openInBrowser(uri: string | null) {
     if (uri) {
@@ -6,4 +7,4 @@ export async function openInBrowser(uri: string | null) {
     }
 }
 
-export const isTauri = !!(window as any).__TAURI_INTERNALS__;
+export const isTauri = isTauriTauri();

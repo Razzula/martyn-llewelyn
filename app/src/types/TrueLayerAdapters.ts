@@ -39,6 +39,8 @@ export function fromTrueLayerCard(input: TrueLayerCard): BankAccount {
         cardNetwork: input.card_network,
         provider: {
             id: input.provider.provider_id,
+            name: input.provider.display_name,
+            logoURI: input.provider.logo_uri,
         },
         updateTimestamp: input.update_timestamp,
         users: [],

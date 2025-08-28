@@ -1,0 +1,15 @@
+.transactionCard {
+    border-radius: 0.5rem;
+    padding: 1rem;
+    background: #ffffff;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    margin: 0.5rem;
+    margin-top: 0rem;
+}
+
+.transactionCard.stacked {
+    margin-top: -1.25rem;
+}

@@ -1,0 +1,18 @@
+.accountCard {
+    border-radius: 0.5rem;
+    padding: 1rem;
+    background: #ffffff;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    margin: 0.5rem;
+    cursor: pointer;
+
+    transition: transform 0.4s ease, background-color 0.2s ease;
+}
+
+.accountCard:hover {
+    background-color: #ebf0dd;
+    transform: translateY(-5px);
+}

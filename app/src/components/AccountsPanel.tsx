@@ -4,6 +4,8 @@ import { isTauri } from "../utils/tauri";
 import { toFinancialString } from "../utils/finance";
 import AccountCard from "./AccountCard";
 
+import './AccountsPanel.css'
+
 type AccountsPanelProps = {
     accounts: Record<string, BankAccount>;
     users: User[] | null;
