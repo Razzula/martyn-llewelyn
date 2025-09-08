@@ -5,16 +5,26 @@ interface ToggleSwitchProps {
     handleToggle: () => void;
     iconOn?: React.ReactNode;
     iconOff?: React.ReactNode;
+    iconOnColour?: string;
+    iconOffColour?: string;
 }
 
-export function ToggleSwitch({ isOn, handleToggle, iconOn, iconOff }: ToggleSwitchProps) {
+const defaultIconOnColour = '#e3e3e3';
+
+export function ToggleSwitch({ isOn, handleToggle, iconOn, iconOff, iconOnColour, iconOffColour, }: ToggleSwitchProps) {
 
     // if only one icon is provided, use it for both states
     const iconOnElement = iconOn || iconOff || null;
     const iconOffElement = iconOff || iconOn || null;
 
+    const onColour = iconOnColour || defaultIconOnColour;
+    const offColour = iconOffColour || defaultIconOnColour;
+
     return (
-        <label className='toggleSwitch'>
+        <label
+            className='toggleSwitch'
+            style={{ ['--iconColor' as any]: isOn ? onColour : offColour }}
+        >
             
             <input
                 type='checkbox'
@@ -22,7 +32,7 @@ export function ToggleSwitch({ isOn, handleToggle, iconOn, iconOff }: ToggleSwit
                 onChange={handleToggle}
             />
             <span className='toggleSlider'>
-                <span className='toggleBall'>
+                <span className='toggleBall' style={{ color: 'var(--iconColor)' }}>
                     {isOn ? iconOnElement : iconOffElement}
                 </span>
             </span>

@@ -37,9 +37,15 @@
     transition: transform 0.4s;
 }
 
+.toggleBall svg,
+.toggleBall svg * {
+  fill: currentColor !important;
+  stroke: currentColor !important;
+}
+
 input:checked + .toggleSlider .toggleBall {
     transform: translateX(26px);
-    /* background-color: #ebf0dd; */
+    background-color: #ebf0dd;
 }
 
 input:checked + .toggleSlider {

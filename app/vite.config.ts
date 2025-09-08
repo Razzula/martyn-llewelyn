@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react-swc'
 import path from 'path';
+import svgr from 'vite-plugin-svgr';
 
 const host = process.env.TAURI_DEV_HOST;
 const isTauri = process.env.TAURI_ENV_PLATFORM !== undefined;
@@ -8,7 +9,10 @@ const isTauri = process.env.TAURI_ENV_PLATFORM !== undefined;
 // https://vitejs.dev/config/
 export default defineConfig({
     root: __dirname,
-    plugins: [react()],
+    plugins: [
+        react(),
+        svgr(),
+    ],
     resolve: {
         alias: {
             '@': path.resolve(__dirname, 'src'),

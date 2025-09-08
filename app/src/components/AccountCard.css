@@ -8,6 +8,7 @@
     justify-content: space-between;
     margin: 0.5rem;
     cursor: pointer;
+    max-height: 200px;
 
     transition: transform 0.4s ease, background-color 0.2s ease;
 }

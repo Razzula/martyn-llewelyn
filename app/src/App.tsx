@@ -25,6 +25,10 @@ import { ToggleSwitch } from './components/common/ToggleSwitch.tsx';
 import { WiggleWrapper } from './components/common/WiggleWrapper.tsx';
 import Spinner from './components/common/Spinner.tsx';
 
+import VisibilityIcon from './assets/icons/Visibility.svg?react';
+import VisibilityOffIcon from './assets/icons/VisibilityOff.svg?react';
+import { isMobile } from './utils/utils.ts';
+
 enum ResponseState {
     LOADING = 'LOADING',
     SUCCESS = 'SUCCESS',
@@ -85,7 +89,7 @@ function App() {
                 .catch(() => {
                     setUsers([]);
                 });
-    
+
             // LOAD OFFLINE ACCOUNTS
             invoke('loadJSON', { filename: 'accounts.offline.json' })
                 .then((raw: unknown) => {
@@ -95,7 +99,7 @@ function App() {
                 .catch(() => {
                     setAccountsDataOffline({});
                 });
-    
+
             // LOAD ACCOUNT PATCHES
             invoke('loadJSON', { filename: 'accounts.patches.json' })
                 .then((raw: unknown) => {
@@ -593,7 +597,12 @@ function App() {
     );
 
     return (
-        <div id='app'>
+        <div
+            id='app'
+            style={{
+                marginTop: isMobile() ? '2.2rem' : 0,
+            }}
+        >
 
             {/* USER SELECTION MODAL */}
             <ResponsiveModal title='Whose bank do you want to link with?'
@@ -705,10 +714,10 @@ function App() {
                     </div>
                 }
 
-                <div className='headerBody'>
+                <div className='headerGrid'>
 
                     {/* USER BUTTONS */}
-                    <div className='row left'>
+                    <div className='headerLeft'>
                         {users &&
                             users.map((user, index) => (
                                 <Tooltip key={user.id}>
@@ -756,7 +765,7 @@ function App() {
                     </div>
 
                     {/* BAGEL ICON */}
-                    <div className='centre'>
+                    <div className='headerCentre'>
                         {accountsState === ResponseState.ERROR &&
                             <div className='column'>
                                 <img
@@ -780,24 +789,31 @@ function App() {
                         }
                         {accountsState === ResponseState.SUCCESS &&
                             <div className='column'>
-                                <WiggleWrapper
-                                    balloonMs={2000}
-                                    balloonElement={<img src='./Serenity/Heart.png' alt='Balloon' style={{ width: '50px', height: '50px' }} />}
+                                <div
+                                    className='floatBubble'
+                                    style={{
+                                        paddingTop: isMobile() ? '-10px' : 0,
+                                    }}
                                 >
-                                    <div style={{ position: 'relative', width: '100px', height: '100px' }}>
-                                        <img
-                                            className={`hat ${modesty ? 'lowered' : ''}`}
-                                            src='./MasterBagel-Hat.png'
-                                            alt='Master Bagel'
-                                            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-                                        />
-                                        <img
-                                            src='./MasterBagel-Body.png'
-                                            alt='Master Bagel'
-                                            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-                                        />
-                                    </div>
-                                </WiggleWrapper>
+                                    <WiggleWrapper
+                                        balloonMs={2000}
+                                        balloonElement={<img src='./Serenity/Heart.png' alt='Balloon' style={{ width: '50px', height: '50px' }} />}
+                                    >
+                                        <div style={{ position: 'relative', width: '100px', height: '100px' }}>
+                                            <img
+                                                className={`hat ${modesty ? 'lowered' : ''}`}
+                                                src='./MasterBagel-Hat.png'
+                                                alt='Master Bagel'
+                                                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                                            />
+                                            <img
+                                                src='./MasterBagel-Body.png'
+                                                alt='Master Bagel'
+                                                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                                            />
+                                        </div>
+                                    </WiggleWrapper>
+                                </div>
                                 {/* <h4>Your Accounts</h4> */}
                             </div>
                         }
@@ -810,37 +826,18 @@ function App() {
                                 />
                             </div>
                         }
-
-                        <div>
-                            <SegmentedControl
-                                name='primary-group'
-                                callback={(val: string) => setPanel(val as 'accounts' | 'transactions')}
-                                controlRef={controlRef}
-                                segments={[
-                                    {
-                                        label: 'Accounts',
-                                        value: 'accounts',
-                                        ref: segmentRefs[0]
-                                    },
-                                    {
-                                        label: 'Transactions',
-                                        value: 'transactions',
-                                        ref: segmentRefs[1]
-                                    },
-                                ]}
-                            />
-                        </div>
                     </div>
 
                     {/* USER BUTTONS */}
-                    <div className='row right'>
+                    <div className='headerRight'>
                         <Tooltip>
                             <TooltipTrigger>
                                 <ToggleSwitch
                                     isOn={!modesty}
                                     handleToggle={() => setModesty(!modesty)}
-                                    iconOn={<img src='./Icons/Visibility.svg' alt='Show balances' style={{ width: '20px', height: '20px' }} />}
-                                    iconOff={<img src='./Icons/VisibilityOff.svg' alt='Hide balances' style={{ width: '20px', height: '20px' }} />}
+                                    iconOn={<VisibilityIcon />}
+                                    iconOnColour='#ea4335'
+                                    iconOff={<VisibilityOffIcon />}
                                 />
                             </TooltipTrigger>
                             <TooltipContent>
@@ -849,34 +846,56 @@ function App() {
                         </Tooltip>
                     </div>
 
+                    {/* PRIMARY CONTROLS */}
+                    <div className='headerControls'>
+                        <SegmentedControl
+                            name='primaryGroup'
+                            callback={(val: string) => setPanel(val as 'accounts' | 'transactions')}
+                            controlRef={controlRef}
+                            segments={[
+                                {
+                                    label: 'Accounts',
+                                    value: 'accounts',
+                                    ref: segmentRefs[0]
+                                },
+                                {
+                                    label: 'Transactions',
+                                    value: 'transactions',
+                                    ref: segmentRefs[1]
+                                },
+                            ]}
+                        />
+                    </div>
+
                 </div>
             </div>
 
-            {panel === 'accounts' &&
-                <AccountsPanel
-                    accounts={accounts}
-                    users={users}
-                    providers={providers}
-                    accountsSum={accountsSum}
-                    modesty={modesty}
-                    setOpenEditAccount={setOpenEditAccount}
-                    startLinkAccount={startLinkAccount}
-                    startCreateAccount={startCreateAccount}
-                    footend={footend}
-                />
-            }
+            <div className='body'>
+                {panel === 'accounts' &&
+                    <AccountsPanel
+                        accounts={accounts}
+                        users={users}
+                        providers={providers}
+                        accountsSum={accountsSum}
+                        modesty={modesty}
+                        setOpenEditAccount={setOpenEditAccount}
+                        startLinkAccount={startLinkAccount}
+                        startCreateAccount={startCreateAccount}
+                        footend={footend}
+                    />
+                }
 
-            {panel === 'transactions' &&
-                <TransactionsPanel
-                    transactionsTree={transactionsTree.getTree()}
-                    accounts={accounts}
-                    users={users}
-                    providers={providers}
-                    modesty={modesty}
-                    footend={footend}
-                />
-            }
-
+                {panel === 'transactions' &&
+                    <TransactionsPanel
+                        transactionsTree={transactionsTree.getTree()}
+                        accounts={accounts}
+                        users={users}
+                        providers={providers}
+                        modesty={modesty}
+                        footend={footend}
+                    />
+                }
+            </div>
         </div>
     );
 }

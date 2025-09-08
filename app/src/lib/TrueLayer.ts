@@ -209,7 +209,6 @@ export class TrueLayerClient {
         return data;
     }
 
-
     static async fetchAccountBalance(walletToken: string, accountId: string): Promise<TrueLayerAccountBalance[]> {
         return TrueLayerClient.api.fetchAccountBalance(walletToken, accountId);
     }

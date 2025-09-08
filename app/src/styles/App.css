@@ -1,12 +1,24 @@
+html,
+body,
+#root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
 #root {
     text-align: center;
+    /* prevent blue mobile tap effect */
+    -webkit-tap-highlight-color: transparent;
 }
 
 #app {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    min-height: 100vh;
+    min-height: 100svh;
+    height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr;
+    overflow: hidden;
 }
 
 .column {
@@ -60,8 +72,8 @@ button:disabled:hover,
 button:disabled:active {
     /* prevent colour changes */
     background-color: #dadada;
-    transform: none !important;
     /* prevent animation */
+    transform: none !important;
 }
 
 button:hover {
@@ -98,15 +110,75 @@ button,
     font-size: 0.6rem;
 }
 
-.header {
+.androidBanner {
+    background-color: #8a9a5b;
+    height: 2.2rem;
     width: 100%;
+
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
 }
 
-.headerBody {
+.header {
+    width: 100%;
+    flex: 0 0 auto;
+}
+
+.headerLeft {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: start;
+    justify-self: stretch;
+
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+    gap: 2px;
+    justify-content: center;
+}
+
+.headerCentre {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: center;
+}
+
+.headerRight {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    align-self: start;
+}
+
+.headerControls {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: center;
+}
+
+.headerGrid {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
     padding: 8px;
+}
+
+.body {
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    min-height: 0;
+}
+
+.body > :not(.footer) {
+    flex: 0 0 auto;
+}
+
+.footer {
+    flex: 0 0 auto;
+    margin-top: auto;
 }
 
 .banner {
@@ -271,7 +343,10 @@ input.invalid {
     color: #dadada;
 }
 
-h1, h2, h3, h4 {
+h1,
+h2,
+h3,
+h4 {
     margin: 0;
 }
 
@@ -291,4 +366,17 @@ h3 {
 
 .hat.popped {
     top: -5px !important;
+}
+
+.floatBubble {
+    background-color: #ffffff;
+    border-radius: 20.5%;
+    z-index: 1111;
+    margin-bottom: -8px;
+}
+
+@media (max-width: 600px) {
+    .headerLeft {
+        grid-template-columns: repeat(auto-fill, minmax(30px, 1fr));
+    }
 }

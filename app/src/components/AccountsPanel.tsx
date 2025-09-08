@@ -73,7 +73,7 @@ function AccountsPanel({
 
             {/* CONNECT ACCOUNT */ }
             {/* TrueLayer */ }
-            <div className='column' style={{ paddingBottom: '2rem' }}>
+            <div className='column footer' style={{ paddingBottom: '2rem' }}>
                 <div className='row'
                     style={{
                         gap: '1rem',

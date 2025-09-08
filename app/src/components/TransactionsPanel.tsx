@@ -26,7 +26,7 @@ function TransactionsPanel({
     return (
         <>
             <div>
-                { transactionsTree ? (
+                { Object.keys(transactionsTree).length > 0 ? (
                     <div>
                         {
                             Object.keys(transactionsTree).sort((a, b) => b.localeCompare(a)).map(year => (
@@ -68,7 +68,7 @@ function TransactionsPanel({
                         <div className='column'>
                             <button
                                 onClick={() => {
-                                    document.scrollingElement?.scrollTo({ top: 0, behavior: 'smooth'  });
+                                    document.querySelector('.body')?.scrollTo({ top: 0, behavior: 'smooth' });
                                 }}
                             >
                                 Back to Top
@@ -83,7 +83,7 @@ function TransactionsPanel({
                         </div>
                     </div>
                 ) : (
-                    <p>No recent transactions</p>
+                    <p>No recent transactions.</p>
                 )
                 }
             </div>
