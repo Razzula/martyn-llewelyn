@@ -27,8 +27,8 @@ interface TrueLayerAPI {
     fetchAccountBalance(walletToken: string, accountId: string): Promise<TrueLayerAccountBalance[]>;
     fetchCardBalance(walletToken: string, cardId: string): Promise<TrueLayerCardBalance[]>;
 
-    fetchAccountTransactions(walletToken: string, accountId: string): Promise<any[]>;
-    fetchCardTransactions(walletToken: string, cardId: string): Promise<any[]>;
+    fetchAccountTransactions(walletToken: string, accountId: string, from?: string, to?: string): Promise<any[]>;
+    fetchCardTransactions(walletToken: string, cardId: string, from?: string, to?: string): Promise<any[]>;
 }
 
 class RealTrueLayerAPI implements TrueLayerAPI {
@@ -107,16 +107,16 @@ class RealTrueLayerAPI implements TrueLayerAPI {
         return res.results || [];
     }
 
-    async fetchAccountTransactions(walletToken: string, accountId: string): Promise<any[]> {
+    async fetchAccountTransactions(walletToken: string, accountId: string, from: string, to: string): Promise<any[]> {
         const res = JSON.parse(
-            await invoke('fetchAccountTransactions', { walletToken, accountId })
+            await invoke('fetchAccountTransactions', { walletToken, accountId, from, to })
         );
         return res.results || [];
     }
 
-    async fetchCardTransactions(walletToken: string, cardId: string): Promise<any[]> {
+    async fetchCardTransactions(walletToken: string, cardId: string, from: string, to: string): Promise<any[]> {
         const res = JSON.parse(
-            await invoke('fetchCardTransactions', { walletToken, cardId })
+            await invoke('fetchCardTransactions', { walletToken, cardId, from, to })
         );
         console.log(cardId, res.results);
         return res.results || [];
@@ -217,12 +217,12 @@ export class TrueLayerClient {
         return TrueLayerClient.api.fetchCardBalance(walletToken, cardId);
     }
 
-    static async fetchAccountTransactions(walletToken: string, accountId: string): Promise<any[]> {
-        return TrueLayerClient.api.fetchAccountTransactions(walletToken, accountId);
+    static async fetchAccountTransactions(walletToken: string, accountId: string, from?: string, to?: string): Promise<any[]> {
+        return TrueLayerClient.api.fetchAccountTransactions(walletToken, accountId, from, to);
     }
 
-    static async fetchCardTransactions(walletToken: string, cardId: string): Promise<any[]> {
-        return TrueLayerClient.api.fetchCardTransactions(walletToken, cardId);
+    static async fetchCardTransactions(walletToken: string, cardId: string, from?: string, to?: string): Promise<any[]> {
+        return TrueLayerClient.api.fetchCardTransactions(walletToken, cardId, from, to);
     }
 
 }

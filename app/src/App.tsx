@@ -9,7 +9,7 @@ import { ResponsiveModal } from './components/common/ResponsiveModal.tsx';
 import { AccountManager } from './AccountManager.ts';
 import { fromTrueLayerAccountBalance, fromTrueLayerAccountTransaction, fromTrueLayerCardBalance, fromTrueLayerCardTransaction } from './types/TrueLayerAdapters.ts';
 import { Tooltip, TooltipContent, TooltipTrigger } from './components/common/Tooltip.tsx';
-import { TrueLayerProvider } from './types/TrueLayer.ts';
+import { TrueLayerAccountBalance, TrueLayerCardBalance, TrueLayerProvider } from './types/TrueLayer.ts';
 import { closedProviders } from './data/providers.ts';
 import { isTauri, openInBrowser } from './utils/tauri.ts';
 import AccountEditPanel from './components/AccountEditPanel.tsx';
@@ -27,7 +27,9 @@ import Spinner from './components/common/Spinner.tsx';
 
 import VisibilityIcon from './assets/icons/Visibility.svg?react';
 import VisibilityOffIcon from './assets/icons/VisibilityOff.svg?react';
-import { isMobile } from './utils/utils.ts';
+import { getMostRecentSunday, isMobile, toYYYYMMDD } from './utils/utils.ts';
+
+import requestGate from './RequestGate.ts';
 
 enum ResponseState {
     LOADING = 'LOADING',
@@ -50,6 +52,7 @@ function App() {
     const [accountsDataPatches, setAccountsDataPatches] = useState<Record<string, BankAccountPatch> | null>(null);
 
     const [transactionsTree, setTransactionsTree] = useState<OrderedDateTree<Transaction>>(new OrderedDateTree<Transaction>());
+    const [transactionLoadedRange, setTransactionsLoadedRange] = useState<Date>(getMostRecentSunday());
 
     const [walletTokens, setWalletTokens] = useState<string[]>([]);
 
@@ -128,7 +131,7 @@ function App() {
             setUsers([{
                 id: 'mock-user-id',
                 name: 'Demo User',
-                email: '',
+                email: 'martyn-llewelyn@razzula.github.io',
                 icon: '/Serenity/hwyaden.png',
             }]);
             setWalletTokens(['demo']);
@@ -283,70 +286,37 @@ function App() {
 
                 // FETCH ACCOUNT BALANCE
                 if (account.balance === undefined) {
-                    if (!isCard) {
-                        TrueLayerClient.fetchAccountBalance(walletToken, accountID)
-                            .then(data => {
-                                if (data) {
-                                    updateAccountBalance(accountID, fromTrueLayerAccountBalance(data[0]));
-                                }
-                            })
-                            .catch(err => {
-                                console.error(`Failed to fetch balance for account ${accountID}:`, err);
-                                setAccountsState(ResponseState.ERROR);
-                            });
-                    }
-                    else {
-                        TrueLayerClient.fetchCardBalance(walletToken, accountID)
-                            .then(data => {
-                                if (data) {
-                                    updateAccountBalance(accountID, fromTrueLayerCardBalance(data[0]));
-                                }
-                            })
-                            .catch(err => {
-                                console.error(`Failed to fetch balance for card ${accountID}:`, err);
-                                setAccountsState(ResponseState.ERROR);
-                            });
-                    }
+                    const request = isCard
+                        ? () => TrueLayerClient.fetchCardBalance(walletToken, accountID)
+                        : () => TrueLayerClient.fetchAccountBalance(walletToken, accountID);
+
+                    requestGate.run(
+                        `bl:${accountID}`,
+                        request,
+                        10 * 60 * 1000,
+                    )
+                    .then((data: TrueLayerCardBalance[] | TrueLayerAccountBalance[]) => {
+                        if (data) {
+                            const entry = data[0];
+                            updateAccountBalance(
+                                accountID,
+                                isCard
+                                    ? fromTrueLayerCardBalance(entry as TrueLayerCardBalance)
+                                    : fromTrueLayerAccountBalance(entry as TrueLayerAccountBalance)
+                            );
+                        }
+                    })
+                    .catch(err => {
+                        console.error(`Failed to fetch balance for ${isCard ? 'card' : 'account'} ${accountID}:`, err);
+                        setAccountsState(ResponseState.ERROR);
+                    });
                 }
 
                 // FETCH ACCOUNT TRANSACTIONS
                 if (account.transactions === undefined) {
-                    if (!isCard) {
-                        TrueLayerClient.fetchAccountTransactions(walletToken, accountID)
-                            .then(data => {
-                                if (data) {
-                                    updateAccountTransactions(
-                                        accountID,
-                                        newOrderedDateTreeFromList(
-                                            data.map(tx => fromTrueLayerAccountTransaction(tx, accountID)),
-                                            tx => new Date(tx.timestamp)
-                                        ),
-                                    );
-                                }
-                            })
-                            .catch(err => {
-                                console.error(`Failed to fetch transactions for account ${accountID}:`, err);
-                                setAccountsState(ResponseState.ERROR);
-                            });
-                    }
-                    else {
-                        TrueLayerClient.fetchCardTransactions(walletToken, accountID)
-                            .then(data => {
-                                if (data) {
-                                    updateAccountTransactions(
-                                        accountID,
-                                        newOrderedDateTreeFromList(
-                                            data.map(tx => fromTrueLayerCardTransaction(tx, accountID)),
-                                            tx => new Date(tx.timestamp)
-                                        ),
-                                    );
-                                }
-                            })
-                            .catch(err => {
-                                console.error(`Failed to fetch transactions for card ${accountID}:`, err);
-                                setAccountsState(ResponseState.ERROR);
-                            });
-                    }
+                    const from = toYYYYMMDD(transactionLoadedRange);
+                    const to = toYYYYMMDD(new Date());
+                    updateAccountTransactions(walletToken, accountID, isCard, from, to);
                 }
 
             });
@@ -374,7 +344,10 @@ function App() {
         }
     }
 
-    function updateAccountTransactions(accountID: string, transactions: OrderedDateTree<Transaction>) {
+    function updateAccountTransactionsTree(accountID: string, transactions: OrderedDateTree<Transaction>) {
+        /**
+         * Given a new set of transactions for an account, graft them into the existing tree.
+         */
         if (accounts && accounts[accountID]) {
             setAccountsDataLive(prev => {
                 const transactionTree = prev[accountID]?.transactions || new OrderedDateTree<Transaction>();
@@ -390,6 +363,48 @@ function App() {
             });
             updateTransactions(transactions);
         }
+    }
+
+    function updateAccountTransactions(walletToken: string, accountID: string, isCard: boolean, from?: string, to?: string) {
+        /**
+         * For a given account (or card), fetch the required transactions.
+         * Make use of RequestGate's request coalescing, to reduce network load.
+         */
+        const request = isCard
+            ? () => TrueLayerClient.fetchCardTransactions(walletToken, accountID, from, to)
+            : () => TrueLayerClient.fetchAccountTransactions(walletToken, accountID, from, to);
+
+        requestGate.run(
+            `tx:${accountID}:${from}:${to}`,
+            request,
+            10 * 60 * 1000,
+        )
+        .then(data => {
+            if (data) {
+                updateAccountTransactionsTree(
+                    accountID,
+                    newOrderedDateTreeFromList(
+                        data.map(tx => fromTrueLayerAccountTransaction(tx, accountID)),
+                        tx => new Date(tx.timestamp)
+                    ),
+                );
+            }
+        })
+        .catch(err => {
+            console.error(`Failed to fetch transactions for ${isCard ? 'card' : 'account'} ${accountID}:`, err);
+            setAccountsState(ResponseState.ERROR);
+        });
+    }
+
+    function updateAccountsTransactions(from?: string, to?: string) {
+        /**
+         * For all accounts and cards, fetch the required transactions.
+         */
+        Object.entries(accounts).forEach(([accountID, account]: [string, BankAccount]) => {
+            const walletToken = account.users?.[0]?.walletToken || walletTokens[0]; // XXX: use the first token if not specified
+            const isCard = account.cardNetwork !== undefined;
+            updateAccountTransactions(walletToken, accountID, isCard, from, to);
+        })
     }
 
     function updateTransactions(newTransactions: OrderedDateTree<Transaction>) {
@@ -830,8 +845,9 @@ function App() {
 
                     {/* USER BUTTONS */}
                     <div className='headerRight'>
-                        <Tooltip>
+                        <Tooltip placement='left'>
                             <TooltipTrigger>
+                                <div>
                                 <ToggleSwitch
                                     isOn={!modesty}
                                     handleToggle={() => setModesty(!modesty)}
@@ -839,6 +855,7 @@ function App() {
                                     iconOnColour='#ea4335'
                                     iconOff={<VisibilityOffIcon />}
                                 />
+                                </div>
                             </TooltipTrigger>
                             <TooltipContent>
                                 {modesty ? 'Show balances' : 'Hide balances'}
@@ -893,6 +910,7 @@ function App() {
                         providers={providers}
                         modesty={modesty}
                         footend={footend}
+                        updateAccountsTransactions={updateAccountsTransactions}
                     />
                 }
             </div>

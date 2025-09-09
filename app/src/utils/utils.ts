@@ -26,3 +26,15 @@ export function getOrdinalSuffix(cardinal: number): string {
         default: return 'th';
     }
 }
+
+export function getMostRecentSunday(): Date {
+    const today = new Date();
+    const day = today.getDay(); // 0 = Sunday
+    today.setDate(today.getDate() - day);
+    today.setHours(0, 0, 0, 0);
+    return today;
+}
+
+export function toYYYYMMDD(date: Date): string {
+    return date.toISOString().slice(0, 10);
+}

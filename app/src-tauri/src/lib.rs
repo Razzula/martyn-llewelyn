@@ -333,8 +333,24 @@ async fn fetchAccountTransactions(
     wallet: tauri::State<'_, Mutex<Wallet>>,
     walletToken: &str,
     accountID: &str,
+    from: Option<&str>,
+    to: Option<&str>,
 ) -> Result<String, String> {
-    let endpoint = format!("data/v1/accounts/{}/transactions", accountID);
+    let mut endpoint = format!("data/v1/accounts/{}/transactions", accountID);
+    let mut query = vec![];
+
+    // query builder
+    if let Some(f) = from {
+    query.push(format!("from={}", f));
+    }
+    if let Some(t) = to {
+        query.push(format!("to={}", t));
+    }
+    if !query.is_empty() {
+        endpoint.push('?');
+        endpoint.push_str(&query.join("&"));
+    }
+
     fetchFromTrueLayerUsingWallet(app, walletToken, &endpoint, wallet).await
 }
 
@@ -344,8 +360,24 @@ async fn fetchCardTransactions(
     wallet: tauri::State<'_, Mutex<Wallet>>,
     walletToken: &str,
     cardID: &str,
+    from: Option<&str>,
+    to: Option<&str>,
 ) -> Result<String, String> {
-    let endpoint = format!("data/v1/cards/{}/transactions", cardID);
+    let mut endpoint = format!("data/v1/cards/{}/transactions", cardID);
+    let mut query = vec![];
+
+    // query builder
+    if let Some(f) = from {
+    query.push(format!("from={}", f));
+    }
+    if let Some(t) = to {
+        query.push(format!("to={}", t));
+    }
+    if !query.is_empty() {
+        endpoint.push('?');
+        endpoint.push_str(&query.join("&"));
+    }
+
     fetchFromTrueLayerUsingWallet(app, walletToken, &endpoint, wallet).await
 }
 

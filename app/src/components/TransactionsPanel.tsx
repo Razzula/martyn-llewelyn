@@ -12,6 +12,7 @@ type TransactionsPanelProps = {
     providers: Record<string, TrueLayerProvider>;
     modesty: boolean;
     footend?: React.ReactNode;
+    updateAccountsTransactions: (from?: string, to?: string) => void;
 }
 
 function TransactionsPanel({
@@ -20,7 +21,8 @@ function TransactionsPanel({
     users,
     providers,
     modesty,
-    footend
+    footend,
+    updateAccountsTransactions,
 }: TransactionsPanelProps) {
 
     return (
@@ -75,7 +77,7 @@ function TransactionsPanel({
                             </button>
                             <button
                                 style={{ marginTop: '0.5rem' }}
-                                onClick={() => {}} // TODO
+                                onClick={() => updateAccountsTransactions()} // TODO
                                 disabled={!isTauri}
                             >
                                 Load More... {/* TODO: possibly render what (amount / timespan) is to be loaded */}
