@@ -123,22 +123,23 @@ export type TrueLayerCardTransactionRunningBalance = {
 
 export type TrueLayerTransactionType = 'DEBIT' | 'CREDIT' | string;
 
-export type TrueLayerTransactionCategory =
-  | 'ATM'
-  | 'BILL_PAYMENT'
-  | 'CASH'
-  | 'CASHBACK'
-  | 'CHEQUE'
-  | 'CORRECTION'
-  | 'CREDIT'
-  | 'DIRECT_DEBIT'
-  | 'DIVIDEND'
-  | 'FEE_CHARGE'
-  | 'INTEREST'
-  | 'OTHER'
-  | 'PURCHASE'
-  | 'STANDING_ORDER'
-  | 'TRANSFER'
-  | 'DEBIT'
-  | 'UNKNOWN'
-  | string;
+export enum TrueLayerTransactionCategory {
+    ATM = 'ATM',
+    BILL_PAYMENT = 'BILL_PAYMENT',
+    CASH = 'CASH',
+    CASHBACK = 'CASHBACK',
+    CHEQUE = 'CHEQUE',
+    CORRECTION = 'CORRECTION',
+    CREDIT = 'CREDIT',
+    DIRECT_DEBIT = 'DIRECT_DEBIT',
+    DIVIDEND = 'DIVIDEND',
+    FEE_CHARGE = 'FEE_CHARGE',
+    INTEREST = 'INTEREST',
+    OTHER = 'OTHER',
+    PURCHASE = 'PURCHASE',
+    STANDING_ORDER = 'STANDING_ORDER',
+    TRANSFER = 'TRANSFER',
+    DEBIT = 'DEBIT',
+    UNKNOWN = 'UNKNOWN',
+}
+

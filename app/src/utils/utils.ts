@@ -27,12 +27,18 @@ export function getOrdinalSuffix(cardinal: number): string {
     }
 }
 
-export function getMostRecentSunday(): Date {
-    const today = new Date();
-    const day = today.getDay(); // 0 = Sunday
-    today.setDate(today.getDate() - day);
-    today.setHours(0, 0, 0, 0);
-    return today;
+/**
+ * Get the most recent Sunday from a given date (or today if not given).
+ * `allowFrom` allows returning the given date if it is a Sunday, else
+ * the previous Sunday will be returned.
+ */
+export function getMostRecentSunday(from?: Date, allowFrom?: boolean ): Date {
+    const date = from ?? new Date();
+    const day = date.getDay(); // 0 = Sunday
+    const diff = allowFrom ? day : (day === 0 ? 7 : day); // if today is Sunday, go back a week
+    date.setDate(date.getDate() - diff);
+    date.setHours(0, 0, 0, 0);
+    return date;
 }
 
 export function toYYYYMMDD(date: Date): string {

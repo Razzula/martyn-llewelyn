@@ -4,7 +4,16 @@
  * cannot be done safely in a browser environment.
  */
 
-import { TrueLayerAccount, TrueLayerAccountBalance, TrueLayerCard, TrueLayerCardBalance, TrueLayerCardTransaction, TrueLayerProvider } from 'src/types/TrueLayer';
+import {
+  TrueLayerAccount,
+  TrueLayerAccountBalance,
+  TrueLayerCard,
+  TrueLayerCardBalance,
+  TrueLayerCardTransaction,
+  TrueLayerProvider,
+  TrueLayerTransactionCategory
+} from '../types/TrueLayer';
+import { toYYYYMMDD } from '../utils/utils';
 
 export const providers = (): TrueLayerProvider[] => [
   {
@@ -221,16 +230,16 @@ export const cardTransactions = (): Record<string, Array<TrueLayerCardTransactio
     {
       amount: 15.86,
       currency: 'GBP',
-      description: 'MS JANE DOE',
+      description: 'MR ANDREAS BEAUX',
       meta: { provider_transaction_category: 'TFR' },
       normalised_provider_transaction_id: 'txn-2df23cef02f5fef92',
       provider_transaction_id: 'd505e768dd2619af10',
       running_balance: { amount: -588.79, currency: 'GBP' },
-      timestamp: '2025-08-27T00:00:00Z',
-      transaction_category: 'TRANSFER',
+      timestamp: toYYYYMMDD(new Date(Date.now() - 86400000)),
+      transaction_category: TrueLayerTransactionCategory.TRANSFER,
       transaction_classification: [],
       transaction_id: '47649351f7db8bbdd3287f088f4e655a',
-      transaction_type: 'CREDIT'
+      transaction_type: 'CREDIT',
     },
     {
       amount: -7.56,
@@ -240,69 +249,69 @@ export const cardTransactions = (): Record<string, Array<TrueLayerCardTransactio
       normalised_provider_transaction_id: 'txn-1f56a713901bae410',
       provider_transaction_id: '5f2975362be3d5a8d1',
       running_balance: { amount: -643.52, currency: 'GBP' },
-      timestamp: '2025-08-27T00:00:00Z',
-      transaction_category: 'PURCHASE',
+      timestamp: toYYYYMMDD(new Date(Date.now() - 86400000)),
+      transaction_category: TrueLayerTransactionCategory.PURCHASE,
       transaction_classification: [],
       transaction_id: '1158331b3496a29fa29d6ac02dd2490a',
-      transaction_type: 'DEBIT'
+      transaction_type: 'DEBIT',
     },
     {
-      amount: 70,
+      amount: -7,
       currency: 'GBP',
-      description: 'CASHBACK',
+      description: 'INTEREST',
       meta: { provider_transaction_category: 'CSH' },
       normalised_provider_transaction_id: 'txn-74d0bca7901c9e1b7',
       provider_transaction_id: '71e6e06ef28711edba',
       running_balance: { amount: -573.52, currency: 'GBP' },
-      timestamp: '2025-08-25T00:00:00Z',
-      transaction_category: 'CASH',
+      timestamp: toYYYYMMDD(new Date(Date.now() - 86400000 * 3)),
+      transaction_category: TrueLayerTransactionCategory.INTEREST,
       transaction_classification: [],
       transaction_id: 'e562140aee2cb65836763df538fe4b17',
-      transaction_type: 'CREDIT'
+      transaction_type: 'CREDIT',
     }
   ],
   '328f557c68aebd532cbbd05ce5bcb6c8': [
     {
       amount: 420,
       currency: 'GBP',
-      description: 'MR JOHN DOE',
-      meta: { provider_transaction_category: 'CSH' },
+      description: 'THE BATTERED HEN INN',
+      meta: { provider_transaction_category: 'CSH' }, 
       normalised_provider_transaction_id: 'txn-8062417e3a4934296',
       provider_transaction_id: '7ad0d85593575df9f9',
       running_balance: { amount: -640.42, currency: 'GBP' },
-      timestamp: '2025-08-28T00:00:00Z',
-      transaction_category: 'CASH',
+      timestamp: toYYYYMMDD(new Date()),
+      transaction_category: TrueLayerTransactionCategory.DIRECT_DEBIT,
       transaction_classification: [],
       transaction_id: '1d7d0e91a257fda71538befc1fecbc67',
-      transaction_type: 'CREDIT'
+      transaction_type: 'CREDIT',
     },
     {
-      amount: -36.59,
+      amount: 36.59,
       currency: 'GBP',
       description: 'BOBLIN & BORG CHEESE DELIVERY SERVICES LTD',
       meta: { provider_transaction_category: 'DEB' },
       normalised_provider_transaction_id: 'txn-c370c77e9b12134f7',
       provider_transaction_id: '4832e65bddacd1d01d',
       running_balance: { amount: -677.01, currency: 'GBP' },
-      timestamp: '2025-08-28T00:00:00Z',
-      transaction_category: 'PURCHASE',
+      timestamp: toYYYYMMDD(new Date()),
+      transaction_category: TrueLayerTransactionCategory.PURCHASE,
       transaction_classification: [],
       transaction_id: 'cbb6ba8db507c27fd544d16233606b1f',
-      transaction_type: 'DEBIT'
+      transaction_type: 'DEBIT',
     },
     {
       amount: 40,
       currency: 'GBP',
-      description: 'RETURNED DD',
+      description: 'ATM WITHDRAWAL',
       meta: { provider_transaction_category: 'DEP' },
       normalised_provider_transaction_id: 'txn-0c4bf57ead82ca43c',
       provider_transaction_id: '3cc118c336d8475f6d',
       running_balance: { amount: -637.01, currency: 'GBP' },
-      timestamp: '2025-08-28T00:00:00Z',
-      transaction_category: 'CREDIT',
+      timestamp: toYYYYMMDD(new Date()),
+      transaction_category: TrueLayerTransactionCategory.CASH,
       transaction_classification: [],
       transaction_id: '8cc4e68b7265cef8db5ced713a425969',
-      transaction_type: 'CREDIT'
+      transaction_type: 'CREDIT',
     }
   ]
 });

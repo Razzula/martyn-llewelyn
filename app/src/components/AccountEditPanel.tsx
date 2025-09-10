@@ -226,7 +226,13 @@ function AccountEditPanel({
                                 }
                             }))}
                             forcedIndex={selectedBankProviderIndex}
-                            icon={providers?.[ephemeralAccount?.provider?.id]?.logo_url || '/Serenity/unknown.png'}
+                            icon={
+                                <img
+                                    src={
+                                        providers?.[ephemeralAccount?.provider?.id]?.logo_url || '/Serenity/unknown.png'
+                                    }
+                                />
+                            }
                             disabled={isAccountOnline}
                             mode={providerList.length <= 10 ? 'list' : 'grid'}
                         />
@@ -278,7 +284,11 @@ function AccountEditPanel({
                                     </span>
                             }))}
                             forcedIndex={selectedCardNetworkIndex}
-                            icon={selectedCardNetwork?.logo}
+                            icon={
+                                selectedCardNetwork?.logo
+                                ? <img src={selectedCardNetwork?.logo} alt={selectedCardNetwork?.name} />
+                                : undefined
+                            }
                             setSelected={(key) => setEphemeralAccount({ ...ephemeralAccount, cardNetwork: key })}
                             emptyText='Card Network'
                             disabled={isAccountOnline}

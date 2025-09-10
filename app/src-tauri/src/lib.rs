@@ -14,6 +14,7 @@ pub fn run() {
 
     // initialise the Tauri application
     let mut builder = tauri::Builder::default()
+        .plugin(tauri_plugin_sql::Builder::new().build())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_opener::init());
 
@@ -83,9 +84,7 @@ pub fn run() {
 
             // setup Android ...
             #[cfg(target_os = "android")]
-            {
-
-            }
+            {}
 
             // general setup
             if cfg!(debug_assertions) {
@@ -341,7 +340,7 @@ async fn fetchAccountTransactions(
 
     // query builder
     if let Some(f) = from {
-    query.push(format!("from={}", f));
+        query.push(format!("from={}", f));
     }
     if let Some(t) = to {
         query.push(format!("to={}", t));
@@ -368,7 +367,7 @@ async fn fetchCardTransactions(
 
     // query builder
     if let Some(f) = from {
-    query.push(format!("from={}", f));
+        query.push(format!("from={}", f));
     }
     if let Some(t) = to {
         query.push(format!("to={}", t));
@@ -384,7 +383,10 @@ async fn fetchCardTransactions(
 #[tauri::command]
 async fn fetchProviders() -> Result<String, String> {
     // Fetch providers from TrueLayer
-    let endpoint = format!("api/providers?clientId={}", env!("VITE_TRUELAYER_CLIENT_ID"));
+    let endpoint = format!(
+        "api/providers?clientId={}",
+        env!("VITE_TRUELAYER_CLIENT_ID")
+    );
     fetchFromTrueLayer(None, &endpoint, true).await
 }
 
@@ -434,7 +436,11 @@ async fn fetchFromTrueLayerUsingWallet(
     Ok(json.to_string())
 }
 
-async fn fetchFromTrueLayer(accessToken: Option<&str>, endpoint: &str, useAuth: bool) -> Result<String, String> {
+async fn fetchFromTrueLayer(
+    accessToken: Option<&str>,
+    endpoint: &str,
+    useAuth: bool,
+) -> Result<String, String> {
     // HANDLE REQUEST
     let host = if useAuth {
         getTrueLayerAuthUrl()
@@ -450,10 +456,7 @@ async fn fetchFromTrueLayer(accessToken: Option<&str>, endpoint: &str, useAuth: 
         req = req.bearer_auth(token);
     }
 
-    let res = req
-        .send()
-        .await
-        .map_err(|e| e.to_string())?;
+    let res = req.send().await.map_err(|e| e.to_string())?;
 
     let status = res.status();
 

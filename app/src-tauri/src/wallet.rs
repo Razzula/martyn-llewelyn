@@ -53,7 +53,7 @@ pub async fn getOrGenerateMasterKey(app: AppHandle) -> Result<[u8; 32], String> 
             let key = hex::decode(&hexKey).map_err(|e| e.to_string())?;
             return Ok(key.try_into().map_err(|_| "invalid key length")?);
         }
-        
+
         // if not found, generate and store one
         let mut key = [0u8; 32];
         rand::rng().fill_bytes(&mut key);
@@ -125,11 +125,8 @@ impl Wallet {
             let encryptedData = fs::read(&walletPath).unwrap_or_default();
             let masterKey = getOrGenerateMasterKey(app.clone()).await.unwrap();
 
-            let data = decryptData(
-                &encryptedData,
-                &masterKey,
-            )
-            .expect("Failed to decrypt wallet data");
+            let data =
+                decryptData(&encryptedData, &masterKey).expect("Failed to decrypt wallet data");
 
             serde_json::from_str::<Wallet>(&data)
                 .unwrap_or_default()

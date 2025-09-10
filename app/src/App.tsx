@@ -6,7 +6,7 @@ import { TrueLayerClient } from './lib/TrueLayer.ts';
 
 import { BankAccount, BankAccountBalance, BankAccountPatch, generatePatchFromAccount, Transaction, User } from './types/Bagel.ts';
 import { ResponsiveModal } from './components/common/ResponsiveModal.tsx';
-import { AccountManager } from './AccountManager.ts';
+import { AccountManager } from './utils/AccountManager.ts';
 import { fromTrueLayerAccountBalance, fromTrueLayerAccountTransaction, fromTrueLayerCardBalance, fromTrueLayerCardTransaction } from './types/TrueLayerAdapters.ts';
 import { Tooltip, TooltipContent, TooltipTrigger } from './components/common/Tooltip.tsx';
 import { TrueLayerAccountBalance, TrueLayerCardBalance, TrueLayerProvider } from './types/TrueLayer.ts';
@@ -29,7 +29,8 @@ import VisibilityIcon from './assets/icons/Visibility.svg?react';
 import VisibilityOffIcon from './assets/icons/VisibilityOff.svg?react';
 import { getMostRecentSunday, isMobile, toYYYYMMDD } from './utils/utils.ts';
 
-import requestGate from './RequestGate.ts';
+import requestGate from './utils/RequestGate.ts';
+import { getDatabaseManager } from './utils/DatabaseManager.ts';
 
 enum ResponseState {
     LOADING = 'LOADING',
@@ -52,7 +53,7 @@ function App() {
     const [accountsDataPatches, setAccountsDataPatches] = useState<Record<string, BankAccountPatch> | null>(null);
 
     const [transactionsTree, setTransactionsTree] = useState<OrderedDateTree<Transaction>>(new OrderedDateTree<Transaction>());
-    const [transactionLoadedRange, setTransactionsLoadedRange] = useState<Date>(getMostRecentSunday());
+    const [transactionsLoadedRange, setTransactionsLoadedRange] = useState<Date>(getMostRecentSunday());
 
     const [walletTokens, setWalletTokens] = useState<string[]>([]);
 
@@ -125,6 +126,13 @@ function App() {
                 .catch(err => {
                     console.error('Failed to load wallet tokens:', err);
                 });
+            
+            // SQLite
+            getDatabaseManager().then(dbm => {
+                dbm.init().catch(err => {
+                    console.error('Failed to initialise database:', err);
+                });
+            });
         }
         else {
             // in browser, use a demo token
@@ -314,7 +322,7 @@ function App() {
 
                 // FETCH ACCOUNT TRANSACTIONS
                 if (account.transactions === undefined) {
-                    const from = toYYYYMMDD(transactionLoadedRange);
+                    const from = toYYYYMMDD(transactionsLoadedRange);
                     const to = toYYYYMMDD(new Date());
                     updateAccountTransactions(walletToken, accountID, isCard, from, to);
                 }
@@ -344,10 +352,10 @@ function App() {
         }
     }
 
+    /**
+     * Given a new set of transactions for an account, graft them into the existing tree.
+     */
     function updateAccountTransactionsTree(accountID: string, transactions: OrderedDateTree<Transaction>) {
-        /**
-         * Given a new set of transactions for an account, graft them into the existing tree.
-         */
         if (accounts && accounts[accountID]) {
             setAccountsDataLive(prev => {
                 const transactionTree = prev[accountID]?.transactions || new OrderedDateTree<Transaction>();
@@ -365,46 +373,49 @@ function App() {
         }
     }
 
-    function updateAccountTransactions(walletToken: string, accountID: string, isCard: boolean, from?: string, to?: string) {
-        /**
-         * For a given account (or card), fetch the required transactions.
-         * Make use of RequestGate's request coalescing, to reduce network load.
-         */
+    /**
+     * For a given account (or card), fetch the required transactions.
+     * Make use of RequestGate's request coalescing, to reduce network load.
+     */
+    async function updateAccountTransactions(walletToken: string, accountID: string, isCard: boolean, from?: string, to?: string) {
         const request = isCard
             ? () => TrueLayerClient.fetchCardTransactions(walletToken, accountID, from, to)
             : () => TrueLayerClient.fetchAccountTransactions(walletToken, accountID, from, to);
 
-        requestGate.run(
-            `tx:${accountID}:${from}:${to}`,
-            request,
-            10 * 60 * 1000,
-        )
-        .then(data => {
-            if (data) {
-                updateAccountTransactionsTree(
-                    accountID,
-                    newOrderedDateTreeFromList(
-                        data.map(tx => fromTrueLayerAccountTransaction(tx, accountID)),
-                        tx => new Date(tx.timestamp)
-                    ),
-                );
+        try {
+            const data = await requestGate.run(
+                `tx:${accountID}:${from}:${to}`,
+                request,
+                10 * 60 * 1000,
+            );
+
+            if (!data) {
+                return null;
             }
-        })
-        .catch(err => {
+            const tree = newOrderedDateTreeFromList(
+                data.map(tx => fromTrueLayerAccountTransaction(tx, accountID)),
+                tx => new Date(tx.timestamp)
+            );
+
+            updateAccountTransactionsTree(accountID, tree);
+            return tree;
+        }
+        catch (err) {
             console.error(`Failed to fetch transactions for ${isCard ? 'card' : 'account'} ${accountID}:`, err);
             setAccountsState(ResponseState.ERROR);
-        });
+            return null;
+        }
     }
 
-    function updateAccountsTransactions(from?: string, to?: string) {
-        /**
-         * For all accounts and cards, fetch the required transactions.
-         */
-        Object.entries(accounts).forEach(([accountID, account]: [string, BankAccount]) => {
+    /**
+     * For all accounts and cards, fetch the required transactions.
+     */
+    async function updateAccountsTransactions(from?: string, to?: string) {
+        await Promise.all(Object.entries(accounts).map(([accountID, account]: [string, BankAccount]) => {
             const walletToken = account.users?.[0]?.walletToken || walletTokens[0]; // XXX: use the first token if not specified
             const isCard = account.cardNetwork !== undefined;
-            updateAccountTransactions(walletToken, accountID, isCard, from, to);
-        })
+            return updateAccountTransactions(walletToken, accountID, isCard, from, to);
+        }));
     }
 
     function updateTransactions(newTransactions: OrderedDateTree<Transaction>) {
@@ -603,7 +614,7 @@ function App() {
                 <div className='verticalSeparator' />
                 <img
                     className='providerLogo clickable'
-                    src='./OpenBanking-Logo.svg'
+                    src='./Finance/OpenBanking-Logo.svg'
                     alt='Open Banking'
                     onClick={() => openInBrowser('https://www.openbanking.org.uk')}
                 />
@@ -911,6 +922,7 @@ function App() {
                         modesty={modesty}
                         footend={footend}
                         updateAccountsTransactions={updateAccountsTransactions}
+                        transactionsLoadedRange={transactionsLoadedRange} setTransactionsLoadedRange={setTransactionsLoadedRange}
                     />
                 }
             </div>

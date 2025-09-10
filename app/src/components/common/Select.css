@@ -47,13 +47,13 @@
     border-radius: 0.5rem;
     padding: 0.25rem 0;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    z-index: 8888;
+    z-index: 7777;
     max-width: 500px;
 }
 
 .selectOptions.grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(5rem, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(2rem, 1fr)); /* XXX */
     gap: 0.5rem;
 }
 

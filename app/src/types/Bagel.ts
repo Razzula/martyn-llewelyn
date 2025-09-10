@@ -1,3 +1,4 @@
+import { FunctionComponent, SVGProps } from "react";
 import { OrderedDateTree } from "./OrderedDateTree";
 import { TrueLayerTransactionCategory, TrueLayerTransactionType } from "./TrueLayer";
 
@@ -67,11 +68,11 @@ export enum InterestType {
 export const CardNetwork = {
     VISA: {
         name: 'Visa',
-        logo: '/CardNetworks/VisaLogo_Blue.svg',
+        logo: '/Finance/CardNetworks/VisaLogo_Blue.svg',
     },
     MASTERCARD: {
         name: 'Mastercard',
-        logo: '/CardNetworks/MastercardLogo.svg',
+        logo: '/Finance/CardNetworks/MastercardLogo.svg',
     },
 } as const;
 
@@ -153,4 +154,11 @@ export interface Transaction {
 
     // BAGEL
     accountID?: string; // the BankAccount.id this transaction belongs to
+    annotation?: TransactionCategory;
+}
+
+export interface TransactionCategory {
+    name: string;
+    icon: JSX.Element;
+    channel: 'ESSENTIAL' | 'NON-ESSENTIAL' | 'GIVING' | 'SAVINGS' | 'INCOME';
 }

@@ -1,4 +1,4 @@
-import { BankAccount, UserSignature } from "./types/Bagel";
+import { BankAccount, UserSignature } from "../types/Bagel";
 
 export class AccountManager {
     private map: Record<string, BankAccount > = {};

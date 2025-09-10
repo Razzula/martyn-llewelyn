@@ -13,3 +13,13 @@
 .transactionCard.stacked {
     margin-top: -1.25rem;
 }
+
+.icon {
+    width: 2rem;
+    height: 2rem;
+    object-fit: contain;
+}
+
+.balance {
+    transition: width 0.6s ease;
+}

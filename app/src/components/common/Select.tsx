@@ -5,16 +5,18 @@ import './Select.css';
 
 interface SelectProps {
     className?: string;
-    entries: { name: string; key: string; element: React.ReactNode; icon?: string }[],
+    entries: { name: string; key: string; element: React.ReactNode; icon?: JSX.Element }[],
     setSelected: (name: string) => void;
     forcedIndex?: number;
-    icon?: string;
+    icon?: JSX.Element | string;
     emptyText?: string;
     disabled?: boolean;
     mode?: 'list' | 'grid';
+
+    windowMaxWidth?: number;
 }
 
-function Select({ className, entries, setSelected, icon, forcedIndex, emptyText, disabled, mode = 'list' }: SelectProps): JSX.Element {
+function Select({ className, entries, setSelected, icon, forcedIndex, emptyText, disabled, mode = 'list', windowMaxWidth }: SelectProps): JSX.Element {
 
     const [isOpen, setIsOpen] = React.useState(false);
     const [activeIndex, setActiveIndex] = React.useState<number | null>(null);
@@ -30,21 +32,13 @@ function Select({ className, entries, setSelected, icon, forcedIndex, emptyText,
     useEffect(() => {
         if (selectedIndex !== null && entries[selectedIndex]?.icon) {
             setSelectedIcon(
-                <img
-                    src={entries[selectedIndex].icon} alt={entries[selectedIndex].name}
-                    style={{
-                        // height: '100%',
-                        // width: '100%',
-                        height: '1.5rem',
-                        width: '1.5rem',
-                    }}
-                />
+                entries[selectedIndex].icon
             );
         }
         else if (icon) {
-            setSelectedIcon(<img
-                src={icon} alt='Icon' 
-            />);
+            setSelectedIcon(
+                icon
+            );
         }
         else {
             setSelectedIcon(null);
@@ -119,6 +113,7 @@ function Select({ className, entries, setSelected, icon, forcedIndex, emptyText,
                             minWidth: 100,
                             borderRadius: 8,
                             outline: 0,
+                            maxWidth: windowMaxWidth ?? 500,
                         }}
                         {...getFloatingProps()}
                     >

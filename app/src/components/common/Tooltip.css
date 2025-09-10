@@ -24,7 +24,7 @@
     box-sizing: border-box;
     width: max-content;
     max-width: 450px;
-    z-index: 2222;
+    z-index: 8888;
 
     display: inline-flex;
     justify-content: space-between;

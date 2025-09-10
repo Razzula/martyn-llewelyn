@@ -2,8 +2,9 @@ import { BankAccount, Transaction, User } from "src/types/Bagel";
 import TransactionCard from "./TransactionCard";
 import { TrueLayerProvider } from "src/types/TrueLayer";
 import { OrderedDateTreeStruct } from "src/types/OrderedDateTree";
-import { getMonthName, getOrdinalSuffix } from "../utils/utils";
+import { getMonthName, getMostRecentSunday, getOrdinalSuffix, toYYYYMMDD } from "../utils/utils";
 import { isTauri } from "../utils/tauri";
+import { useEffect, useState } from "react";
 
 type TransactionsPanelProps = {
     transactionsTree: OrderedDateTreeStruct<Transaction>;
@@ -12,7 +13,9 @@ type TransactionsPanelProps = {
     providers: Record<string, TrueLayerProvider>;
     modesty: boolean;
     footend?: React.ReactNode;
-    updateAccountsTransactions: (from?: string, to?: string) => void;
+    updateAccountsTransactions: (from?: string, to?: string) => Promise<void>;
+    transactionsLoadedRange: Date;
+    setTransactionsLoadedRange: (range: Date) => void;
 }
 
 function TransactionsPanel({
@@ -23,7 +26,25 @@ function TransactionsPanel({
     modesty,
     footend,
     updateAccountsTransactions,
+    transactionsLoadedRange, setTransactionsLoadedRange,
 }: TransactionsPanelProps) {
+
+    const [loadingTransactions, setLoadingTransactions] = useState(false);
+
+    function loadMoreTransactions() {
+        // TODO: split this into chunks?
+        const to = toYYYYMMDD(transactionsLoadedRange);
+        const from = getMostRecentSunday(transactionsLoadedRange, false);
+        setLoadingTransactions(true);
+
+        updateAccountsTransactions(toYYYYMMDD(from), to)
+            .then(() => {
+                setTransactionsLoadedRange(from);
+            })
+            .finally(() => {
+                setLoadingTransactions(false);
+            });
+    }
 
     return (
         <>
@@ -77,10 +98,11 @@ function TransactionsPanel({
                             </button>
                             <button
                                 style={{ marginTop: '0.5rem' }}
-                                onClick={() => updateAccountsTransactions()} // TODO
-                                disabled={!isTauri}
+                                onClick={loadMoreTransactions}
+                                disabled={!isTauri || loadingTransactions}
                             >
-                                Load More... {/* TODO: possibly render what (amount / timespan) is to be loaded */}
+                                {/* TODO: possibly render what (amount / timespan) is to be loaded */}
+                                {loadingTransactions ? <div className='spinner' /> : 'Load More...'}
                             </button>
                         </div>
                     </div>
