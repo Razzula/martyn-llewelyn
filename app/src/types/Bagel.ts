@@ -1,4 +1,3 @@
-import { FunctionComponent, SVGProps } from "react";
 import { OrderedDateTree } from "./OrderedDateTree";
 import { TrueLayerTransactionCategory, TrueLayerTransactionType } from "./TrueLayer";
 
@@ -154,11 +153,22 @@ export interface Transaction {
 
     // BAGEL
     accountID?: string; // the BankAccount.id this transaction belongs to
-    annotation?: TransactionCategory;
+    annotation?: string;
 }
 
+export const channels = [
+    'ESSENTIAL',
+    'NON-ESSENTIAL',
+    'GIVING',
+    'SAVINGS',
+    'INCOME',
+] as const;
+export type Channel = typeof channels[number];
+
 export interface TransactionCategory {
+    id: string;
     name: string;
     icon: JSX.Element;
-    channel: 'ESSENTIAL' | 'NON-ESSENTIAL' | 'GIVING' | 'SAVINGS' | 'INCOME';
+    channel: Channel;
+    builtin?: true;
 }

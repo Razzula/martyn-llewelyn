@@ -88,6 +88,7 @@ export function fromTrueLayerAccountTransaction(input: TrueLayerAccountTransacti
         meta: input.meta,
 
         accountID,
+        annotation: input.meta?.bagel_category ?? undefined,
     };
 }
 
@@ -107,5 +108,6 @@ export function fromTrueLayerCardTransaction(input: TrueLayerCardTransaction, ac
         meta: input.meta,
 
         accountID,
+        annotation: input.meta?.bagel_category ?? undefined,
     };
 }

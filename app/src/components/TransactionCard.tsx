@@ -9,6 +9,14 @@ import '../styles/CommonCard.css'
 import Select from "./common/Select";
 import { expenditures, incomes } from "../data/categories";
 
+import Bank from '../assets/icons/Bank.svg?react';
+import Cash from '../assets/icons/Cash.svg?react';
+import Chequebook from '../assets/icons/Checkbook.svg?react';
+import CardCredit from '../assets/icons/CardCredit.svg?react';
+import CardSpending from '../assets/icons/CardSpending.svg?react';
+import Savings from '../assets/icons/Savings.svg?react';
+import EventRepeat from '../assets/icons/EventRepeat.svg?react';
+
 type TransactionCardProps = {
     className?: string;
     transaction: Transaction;
@@ -26,27 +34,31 @@ function TransactionCard({
     modesty,
 }: TransactionCardProps) {
 
-    function getTransactionIcon(category: TrueLayerTransactionCategory, isCard: boolean): string {
+    function getTransactionIcon(category: TrueLayerTransactionCategory, isCard: boolean): JSX.Element {
         switch (category) {
             case TrueLayerTransactionCategory.ATM:
             case TrueLayerTransactionCategory.CASH:
             case TrueLayerTransactionCategory.CASHBACK:
-                return './Icons/Cash.svg';
+                return <Cash />;
             case TrueLayerTransactionCategory.CHEQUE:
-                return './Icons/Checkbook.svg';
+                return <Chequebook />;
             case TrueLayerTransactionCategory.CREDIT:
-                return './Icons/CardCredit.svg';
+                return <CardCredit />;
             case TrueLayerTransactionCategory.DEBIT:
-                return './Icons/CardSpending.svg';
+                return <CardSpending />;
             case TrueLayerTransactionCategory.DIRECT_DEBIT:
-                return './Finance/DirectDebit_Portrait.svg';
+                return <img
+                    src='./Finance/DirectDebit_Portrait.svg'
+                    alt='Direct Debit'
+                    width={24} height={24}
+                />;
             case TrueLayerTransactionCategory.DIVIDEND:
             case TrueLayerTransactionCategory.INTEREST:
-                return './Icons/Savings.svg';
+                return <Savings />;
             case TrueLayerTransactionCategory.STANDING_ORDER:
-                return './Icons/EventRepeat.svg';
+                return <EventRepeat />;
             case TrueLayerTransactionCategory.TRANSFER:
-                return './Icons/Bank.svg';
+                return <Bank />;
             // case TrueLayerTransactionCategory.BILL_PAYMENT:
             // case TrueLayerTransactionCategory.CORRECTION:
             // case TrueLayerTransactionCategory.FEE_CHARGE:
@@ -54,7 +66,7 @@ function TransactionCard({
             case TrueLayerTransactionCategory.OTHER:
             case TrueLayerTransactionCategory.UNKNOWN:
             default:
-                return isCard ? './Icons/CardCredit.svg' : './Icons/Bank.svg';
+                return isCard ? <CardCredit /> : <Bank />;
         }
     }
 
@@ -84,6 +96,9 @@ function TransactionCard({
 
     const isPositive = amount > 0;
 
+    const categories = Object.values(isPositive ? incomes : expenditures);
+    const category = categories.find(c => c.id === transaction.annotation);
+
     return (
         <div
             className={`transactionCard ${className}`}
@@ -96,17 +111,17 @@ function TransactionCard({
 
                 <div className='row'>
                     {/* TRANSACTION TYPE */}
-                    <img
-                        className='icon'
-                        src={getTransactionIcon(transaction.transactionCategory, isCard)}
-                        alt={`${account.name} Logo`}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            if (account.url) {
-                                openInBrowser(account.url);
-                            }
-                        }}
-                    />
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <span className='icon' style={{
+                                width: '24px', height: '24px',
+                                color: '#231f20'
+                            }}>
+                                {getTransactionIcon(transaction.transactionCategory, isCard)}
+                            </span>
+                        </TooltipTrigger>
+                        <TooltipContent>{transaction.transactionCategory}</TooltipContent>
+                    </Tooltip>
                     <div className='verticalSeparator' />
 
                     {/* BALANCE */}
@@ -120,37 +135,41 @@ function TransactionCard({
                     <div className='verticalSeparator' />
                     {/* TRANSACTION CATEGORY */}
                     <div style={{ marginRight: '8px' }}>
-                        <Select
-                            entries={
-                                [
-                                    ...Object.values(isPositive ? incomes : expenditures),
-                                ].map(category => ({
-                                    name: category.name,
-                                    key: `${category.name}-${category.channel}`,
-                                    element: (
-                                        <Tooltip>
-                                            <TooltipTrigger>
-                                                <span
-                                                    style={{
-                                                        width: '100%',
-                                                        color: getChannelColour(category.channel)
-                                                    }}
-                                                >
-                                                    {category.icon}
-                                                </span>
-                                            </TooltipTrigger>
-                                            <TooltipContent><span>{category.name}</span></TooltipContent>
-                                        </Tooltip>
-                                    ),
-                                    icon: <span style={{ color: getChannelColour(category.channel) }}>{category.icon}</span>,
-                                }))
-                            }
-                            setSelected={function (name: string): void {
-                                throw new Error("Function not implemented.");
-                            }}
-                            mode='grid'
-                            windowMaxWidth={340}
-                        />
+                        <Tooltip>
+                            <TooltipTrigger>
+                                <Select
+                                    entries={
+                                        categories.map(category => ({
+                                            name: category.name,
+                                            key: category.id,
+                                            element: (
+                                                <Tooltip>
+                                                    <TooltipTrigger>
+                                                        <span
+                                                            style={{
+                                                                width: '100%',
+                                                                color: getChannelColour(category.channel)
+                                                            }}
+                                                        >
+                                                            {category.icon}
+                                                        </span>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent><span>{category.name}</span></TooltipContent>
+                                                </Tooltip>
+                                            ),
+                                            icon: <span style={{ color: getChannelColour(category.channel) }}>{category.icon}</span>,
+                                        }))
+                                    }
+                                    forcedIndex={categories.findIndex(c => c.id === transaction.annotation)} // XXX!
+                                    setSelected={function (name: string): void {
+                                        throw new Error("Function not implemented.");
+                                    }}
+                                    mode='grid'
+                                    windowMaxWidth={340}
+                                />
+                            </TooltipTrigger>
+                            <TooltipContent>{category ? `(${category.channel}) ${category.name}` : 'Select a category'}</TooltipContent>
+                        </Tooltip>
                     </div>
                     {/* DESCRIPTION */}
                     <span>{transaction.description}</span>

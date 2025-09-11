@@ -24,9 +24,9 @@ export const providers = (): TrueLayerProvider[] => [
     scopes: [],
     availability: {
       recommended_status: '',
-      updated_at: ''
-    }
-  }
+      updated_at: '',
+    },
+  },
 ];
 
 export const accounts = (): TrueLayerAccount[] => [
@@ -36,7 +36,7 @@ export const accounts = (): TrueLayerAccount[] => [
       number: '10000000',
       iban: 'GB08CLRB04066800003435',
       sort_code: '01-21-31',
-      swift_bic: 'CPBKGB00'
+      swift_bic: 'CPBKGB00',
     },
     account_type: 'TRANSACTION',
     currency: 'GBP',
@@ -44,9 +44,9 @@ export const accounts = (): TrueLayerAccount[] => [
     provider: {
       provider_id: 'mock',
       display_name: 'Demo Bank',
-      logo_uri: 'https://truelayer-client-logos.s3-eu-west-1.amazonaws.com/banks/banks-icons/mock-icon.svg'
+      logo_uri: 'https://truelayer-client-logos.s3-eu-west-1.amazonaws.com/banks/banks-icons/mock-icon.svg',
     },
-    update_timestamp: '2025-08-28T18:29:09.1682758Z'
+    update_timestamp: '2025-08-28T18:29:09.1682758Z',
   },
   {
     account_id: '3c6edb9484ecd581dc1cedde8bedb1f1',
@@ -54,7 +54,7 @@ export const accounts = (): TrueLayerAccount[] => [
       number: '20000000',
       iban: 'GB08CLRB04066800003435',
       sort_code: '01-21-31',
-      swift_bic: 'CPBKGB00'
+      swift_bic: 'CPBKGB00',
     },
     account_type: 'SAVINGS',
     currency: 'GBP',
@@ -62,9 +62,9 @@ export const accounts = (): TrueLayerAccount[] => [
     provider: {
       provider_id: 'mock',
       display_name: 'Demo Bank',
-      logo_uri: 'https://truelayer-client-logos.s3-eu-west-1.amazonaws.com/banks/banks-icons/mock-icon.svg'
+      logo_uri: 'https://truelayer-client-logos.s3-eu-west-1.amazonaws.com/banks/banks-icons/mock-icon.svg',
     },
-    update_timestamp: '2025-08-28T18:29:09.1682828Z'
+    update_timestamp: '2025-08-28T18:29:09.1682828Z',
   },
   {
     account_id: '89c3139784a055b9b47998f9dce9122e',
@@ -72,7 +72,7 @@ export const accounts = (): TrueLayerAccount[] => [
       number: '30000000',
       iban: 'GB08CLRB04066800003435',
       sort_code: '01-21-31',
-      swift_bic: 'CPBKGB00'
+      swift_bic: 'CPBKGB00',
     },
     account_type: 'TRANSACTION',
     currency: 'GBP',
@@ -80,9 +80,9 @@ export const accounts = (): TrueLayerAccount[] => [
     provider: {
       provider_id: 'mock',
       display_name: 'Demo Bank',
-      logo_uri: 'https://truelayer-client-logos.s3-eu-west-1.amazonaws.com/banks/banks-icons/mock-icon.svg'
+      logo_uri: 'https://truelayer-client-logos.s3-eu-west-1.amazonaws.com/banks/banks-icons/mock-icon.svg',
     },
-    update_timestamp: '2025-08-28T18:29:09.1682863Z'
+    update_timestamp: '2025-08-28T18:29:09.1682863Z',
   },
   {
     account_id: '328df3a40b828340fa4c3100e17de121',
@@ -90,7 +90,7 @@ export const accounts = (): TrueLayerAccount[] => [
       number: '40000000',
       iban: 'GB08CLRB04066800003435',
       sort_code: '01-21-31',
-      swift_bic: 'CPBKGB00'
+      swift_bic: 'CPBKGB00',
     },
     account_type: 'SAVINGS',
     currency: 'GBP',
@@ -98,9 +98,9 @@ export const accounts = (): TrueLayerAccount[] => [
     provider: {
       provider_id: 'mock',
       display_name: 'Demo Bank',
-      logo_uri: 'https://truelayer-client-logos.s3-eu-west-1.amazonaws.com/banks/banks-icons/mock-icon.svg'
+      logo_uri: 'https://truelayer-client-logos.s3-eu-west-1.amazonaws.com/banks/banks-icons/mock-icon.svg',
     },
-    update_timestamp: '2025-08-28T18:29:09.1682895Z'
+    update_timestamp: '2025-08-28T18:29:09.1682895Z',
   },
   {
     account_id: '8de2de9eab01b935b21abcbed11adf26',
@@ -108,7 +108,7 @@ export const accounts = (): TrueLayerAccount[] => [
       number: '50000000',
       iban: 'GB08CLRB04066800003435',
       sort_code: '01-21-31',
-      swift_bic: 'CPBKGB00'
+      swift_bic: 'CPBKGB00',
     },
     account_type: 'TRANSACTION',
     currency: 'GBP',
@@ -116,10 +116,10 @@ export const accounts = (): TrueLayerAccount[] => [
     provider: {
       provider_id: 'mock',
       display_name: 'Demo Bank',
-      logo_uri: 'https://truelayer-client-logos.s3-eu-west-1.amazonaws.com/banks/banks-icons/mock-icon.svg'
+      logo_uri: 'https://truelayer-client-logos.s3-eu-west-1.amazonaws.com/banks/banks-icons/mock-icon.svg',
     },
-    update_timestamp: '2025-08-28T18:29:09.1682937Z'
-  }
+    update_timestamp: '2025-08-28T18:29:09.1682937Z',
+  },
 ];
 
 export const cards = (): TrueLayerCard[] => [
@@ -134,9 +134,9 @@ export const cards = (): TrueLayerCard[] => [
     provider: {
       provider_id: 'mock',
       display_name: 'Demo Bank',
-      logo_uri: 'https://truelayer-client-logos.s3-eu-west-1.amazonaws.com/banks/banks-icons/mock-icon.svg'
+      logo_uri: 'https://truelayer-client-logos.s3-eu-west-1.amazonaws.com/banks/banks-icons/mock-icon.svg',
     },
-    update_timestamp: '2025-08-28T18:29:09.1663258Z'
+    update_timestamp: '2025-08-28T18:29:09.1663258Z',
   },
   {
     account_id: '328f557c68aebd532cbbd05ce5bcb6c8',
@@ -149,10 +149,10 @@ export const cards = (): TrueLayerCard[] => [
     provider: {
       provider_id: 'mock',
       display_name: 'Demo Bank',
-      logo_uri: 'https://truelayer-client-logos.s3-eu-west-1.amazonaws.com/banks/banks-icons/mock-icon.svg'
+      logo_uri: 'https://truelayer-client-logos.s3-eu-west-1.amazonaws.com/banks/banks-icons/mock-icon.svg',
     },
-    update_timestamp: '2025-08-28T18:29:09.1663319Z'
-  }
+    update_timestamp: '2025-08-28T18:29:09.1663319Z',
+  },
 ];
 
 export const accountBalances = (): Record<string, TrueLayerAccountBalance[]> => ({
@@ -161,42 +161,42 @@ export const accountBalances = (): Record<string, TrueLayerAccountBalance[]> => 
     currency: 'GBP',
     current: 29,
     overdraft: 100,
-    update_timestamp: '2025-08-28T19:32:14.2473658Z'
+    update_timestamp: '2025-08-28T19:32:14.2473658Z',
   }],
   '56c7b029e0f8ec5a2334fb0ffc2fface': [{
     available: 37.26,
     currency: 'GBP',
     current: 29,
     overdraft: 100,
-    update_timestamp: '2025-08-28T19:32:14.2473658Z'
+    update_timestamp: '2025-08-28T19:32:14.2473658Z',
   }],
   '3c6edb9484ecd581dc1cedde8bedb1f1': [{
     available: 166.26,
     currency: 'GBP',
     current: 58,
     overdraft: 200,
-    update_timestamp: '2025-08-28T19:32:14.2455894Z'
+    update_timestamp: '2025-08-28T19:32:14.2455894Z',
   }],
   '89c3139784a055b9b47998f9dce9122e': [{
     available: 295.26,
     currency: 'GBP',
     current: 87,
     overdraft: 300,
-    update_timestamp: '2025-08-28T19:32:14.3066553Z'
+    update_timestamp: '2025-08-28T19:32:14.3066553Z',
   }],
   '328df3a40b828340fa4c3100e17de121': [{
     available: 424.26,
     currency: 'GBP',
     current: 116,
     overdraft: 400,
-    update_timestamp: '2025-08-28T19:32:14.2924166Z'
+    update_timestamp: '2025-08-28T19:32:14.2924166Z',
   }],
   '8de2de9eab01b935b21abcbed11adf26': [{
     available: 553.26,
     currency: 'GBP',
     current: 145,
     overdraft: 500,
-    update_timestamp: '2025-08-28T19:32:14.2565614Z'
+    update_timestamp: '2025-08-28T19:32:14.2565614Z',
   }],
 });
 
@@ -210,7 +210,7 @@ export const cardBalances = (): Record<string, TrueLayerCardBalance[]> => ({
     last_statement_date: '2025-08-06T00:00:00Z',
     payment_due: 8,
     payment_due_date: '2025-09-01T00:00:00Z',
-    update_timestamp: '2025-08-28T19:32:14.32429Z'
+    update_timestamp: '2025-08-28T19:32:14.32429Z',
   }],
   '328f557c68aebd532cbbd05ce5bcb6c8': [{
     available: 172,
@@ -221,7 +221,7 @@ export const cardBalances = (): Record<string, TrueLayerCardBalance[]> => ({
     last_statement_date: '2025-08-06T00:00:00Z',
     payment_due: 16,
     payment_due_date: '2025-09-01T00:00:00Z',
-    update_timestamp: '2025-08-28T19:32:14.3095517Z'
+    update_timestamp: '2025-08-28T19:32:14.3095517Z',
   }],
 });
 
@@ -231,7 +231,10 @@ export const cardTransactions = (): Record<string, Array<TrueLayerCardTransactio
       amount: 15.86,
       currency: 'GBP',
       description: 'MR ANDREAS BEAUX',
-      meta: { provider_transaction_category: 'TFR' },
+      meta: {
+        provider_transaction_category: 'TFR',
+        bagel_category: 'GIVING:GIFTS', // added for categorisation in demo mode
+      },
       normalised_provider_transaction_id: 'txn-2df23cef02f5fef92',
       provider_transaction_id: 'd505e768dd2619af10',
       running_balance: { amount: -588.79, currency: 'GBP' },
@@ -245,12 +248,15 @@ export const cardTransactions = (): Record<string, Array<TrueLayerCardTransactio
       amount: -7.56,
       currency: 'GBP',
       description: 'MASTER BAGEL GILLESPIE',
-      meta: { provider_transaction_category: 'DEB' },
+      meta: {
+        provider_transaction_category: 'DEB',
+        bagel_category: 'INCOME:INVESTMENTYIELD', // added for categorisation in demo mode
+      },
       normalised_provider_transaction_id: 'txn-1f56a713901bae410',
       provider_transaction_id: '5f2975362be3d5a8d1',
       running_balance: { amount: -643.52, currency: 'GBP' },
-      timestamp: toYYYYMMDD(new Date(Date.now() - 86400000)),
-      transaction_category: TrueLayerTransactionCategory.PURCHASE,
+      timestamp: toYYYYMMDD(new Date(Date.now() - 86400000 * 3)),
+      transaction_category: TrueLayerTransactionCategory.STANDING_ORDER,
       transaction_classification: [],
       transaction_id: '1158331b3496a29fa29d6ac02dd2490a',
       transaction_type: 'DEBIT',
@@ -259,23 +265,46 @@ export const cardTransactions = (): Record<string, Array<TrueLayerCardTransactio
       amount: -7,
       currency: 'GBP',
       description: 'INTEREST',
-      meta: { provider_transaction_category: 'CSH' },
+      meta: {
+        provider_transaction_category: 'CSH',
+        bagel_category: 'INCOME:INTEREST', // added for categorisation in demo mode
+      },
       normalised_provider_transaction_id: 'txn-74d0bca7901c9e1b7',
       provider_transaction_id: '71e6e06ef28711edba',
       running_balance: { amount: -573.52, currency: 'GBP' },
-      timestamp: toYYYYMMDD(new Date(Date.now() - 86400000 * 3)),
+      timestamp: toYYYYMMDD(new Date(Date.now() - 86400000)),
       transaction_category: TrueLayerTransactionCategory.INTEREST,
       transaction_classification: [],
       transaction_id: 'e562140aee2cb65836763df538fe4b17',
       transaction_type: 'CREDIT',
-    }
+    },
+    {
+      amount: 150,
+      currency: 'GBP',
+      description: 'DIGITAL REGULAR SAVER',
+      meta: { 
+        provider_transaction_category: 'DEP',
+        bagel_category: 'SAVINGS:SAVINGS' // added for categorisation in demo mode
+      },
+      normalised_provider_transaction_id: 'txn-0c4bf57ead82ca43e',
+      provider_transaction_id: '3cc118c336d8475f6e',
+      running_balance: { amount: -637.01, currency: 'GBP' },
+      timestamp: toYYYYMMDD(new Date()),
+      transaction_category: TrueLayerTransactionCategory.ATM,
+      transaction_classification: [],
+      transaction_id: '8cc4e68b7265cef8db5ced713a42596e',
+      transaction_type: 'CREDIT',
+    },
   ],
   '328f557c68aebd532cbbd05ce5bcb6c8': [
     {
       amount: 420,
       currency: 'GBP',
       description: 'THE BATTERED HEN INN',
-      meta: { provider_transaction_category: 'CSH' }, 
+      meta: {
+        provider_transaction_category: 'CSH',
+        bagel_category: 'ESSENTIAL:RENT', // added for categorisation in demo mode
+      },
       normalised_provider_transaction_id: 'txn-8062417e3a4934296',
       provider_transaction_id: '7ad0d85593575df9f9',
       running_balance: { amount: -640.42, currency: 'GBP' },
@@ -289,7 +318,10 @@ export const cardTransactions = (): Record<string, Array<TrueLayerCardTransactio
       amount: 36.59,
       currency: 'GBP',
       description: 'BOBLIN & BORG CHEESE DELIVERY SERVICES LTD',
-      meta: { provider_transaction_category: 'DEB' },
+      meta: {
+        provider_transaction_category: 'DEB',
+        bagel_category: 'ESSENTIAL:GROCERIES', // added for categorisation in demo mode
+      },
       normalised_provider_transaction_id: 'txn-c370c77e9b12134f7',
       provider_transaction_id: '4832e65bddacd1d01d',
       running_balance: { amount: -677.01, currency: 'GBP' },
@@ -303,15 +335,18 @@ export const cardTransactions = (): Record<string, Array<TrueLayerCardTransactio
       amount: 40,
       currency: 'GBP',
       description: 'ATM WITHDRAWAL',
-      meta: { provider_transaction_category: 'DEP' },
+      meta: { 
+        provider_transaction_category: 'DEP',
+        bagel_category: 'NON-ESSENTIAL:MISC.' // added for categorisation in demo mode
+      },
       normalised_provider_transaction_id: 'txn-0c4bf57ead82ca43c',
       provider_transaction_id: '3cc118c336d8475f6d',
       running_balance: { amount: -637.01, currency: 'GBP' },
       timestamp: toYYYYMMDD(new Date()),
-      transaction_category: TrueLayerTransactionCategory.CASH,
+      transaction_category: TrueLayerTransactionCategory.ATM,
       transaction_classification: [],
       transaction_id: '8cc4e68b7265cef8db5ced713a425969',
       transaction_type: 'CREDIT',
-    }
+    },
   ]
 });

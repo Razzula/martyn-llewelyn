@@ -1,4 +1,4 @@
-import { TransactionCategory } from '../types/Bagel';
+import { Channel, TransactionCategory } from '../types/Bagel';
 
 import Rent from '../assets/icons/Home.svg?react';
 import Utilities from '../assets/icons/ElectricalServices.svg?react';
@@ -21,153 +21,47 @@ import Stocks from '../assets/icons/Stocks.svg?react';
 import MoneyBag from '../assets/icons/MoneyBag.svg?react';
 import Bank from '../assets/icons/Bank.svg?react';
 
+function createCategory(name: string, icon: JSX.Element, channel: Channel, builtin?: true): TransactionCategory {
+    return {
+        id: `${channel}:${name.toUpperCase().replace(/\s+/g, '')}`,
+        name,
+        icon,
+        channel,
+        ...(builtin ? { builtin } : {}),
+    };
+}
+
 export const expenditures: TransactionCategory[] = [
-    {
-        name: 'Rent',
-        icon: <Rent />,
-        channel: 'ESSENTIAL',
-    },
-    {
-        name: 'Utilities',
-        icon: <Utilities />,
-        channel: 'ESSENTIAL',
-    },
-    {
-        name: 'Groceries',
-        icon: <Groceries />,
-        channel: 'ESSENTIAL',
-    },
-    {
-        name: 'Health & Wellbeing',
-        icon: <HealthWellbeing />,
-        channel: 'ESSENTIAL',
-    },
-    {
-        name: 'Work',
-        icon: <Work />,
-        channel: 'ESSENTIAL',
-    },
-    {
-        name: 'Education',
-        icon: <Education />,
-        channel: 'ESSENTIAL',
-    },
-    {
-        name: 'Transport',
-        icon: <Transport />,
-        channel: 'ESSENTIAL',
-    },
-    {
-        name: 'Mobile Phone',
-        icon: <MobilePhone />,
-        channel: 'ESSENTIAL',
-    },
-    {
-        name: 'Misc.',
-        icon: <Miscellaneous />,
-        channel: 'ESSENTIAL',
-    },
-    {
-        name: 'Dining',
-        icon: <Dining />,
-        channel: 'NON-ESSENTIAL',
-    },
-    {
-        name: 'Wedding',
-        icon: <Wedding />,
-        channel: 'NON-ESSENTIAL',
-    },
-    {
-        name: 'Subscriptions',
-        icon: <Subscriptions />,
-        channel: 'NON-ESSENTIAL',
-    },
-    {
-        name: 'Holiday',
-        icon: <Holiday />,
-        channel: 'NON-ESSENTIAL',
-    },
-    {
-        name: 'Misc.',
-        icon: <Miscellaneous />,
-        channel: 'NON-ESSENTIAL',
-    },
-    {
-        name: 'Gifts',
-        icon: <Gifts />,
-        channel: 'GIVING',
-    },
-    {
-        name: 'Charity',
-        icon: <Charity />,
-        channel: 'GIVING',
-    },
-    {
-        name: 'Tithe',
-        icon: <Tithe />,
-        channel: 'GIVING',
-    },
-    {
-        name: 'Savings',
-        icon: <Savings />,
-        channel: 'SAVINGS',
-    },
-    {
-        name: 'Investment',
-        icon: <Stocks />,
-        channel: 'SAVINGS',
-    },
+    createCategory('Rent', <Rent />, 'ESSENTIAL', true),
+    createCategory('Utilities', <Utilities />, 'ESSENTIAL', true),
+    createCategory('Groceries', <Groceries />, 'ESSENTIAL', true),
+    createCategory('Health & Wellbeing', <HealthWellbeing />, 'ESSENTIAL', true),
+    createCategory('Work', <Work />, 'ESSENTIAL', true),
+    createCategory('Education', <Education />, 'ESSENTIAL', true),
+    createCategory('Transport', <Transport />, 'ESSENTIAL', true),
+    createCategory('Mobile Phone', <MobilePhone />, 'ESSENTIAL', true),
+    createCategory('Misc.', <Miscellaneous />, 'ESSENTIAL', true),
+    createCategory('Dining', <Dining />, 'NON-ESSENTIAL', true),
+    createCategory('Wedding', <Wedding />, 'NON-ESSENTIAL', true),
+    createCategory('Subscriptions', <Subscriptions />, 'NON-ESSENTIAL', true),
+    createCategory('Holiday', <Holiday />, 'NON-ESSENTIAL', true),
+    createCategory('Misc.', <Miscellaneous />, 'NON-ESSENTIAL', true),
+    createCategory('Gifts', <Gifts />, 'GIVING', true),
+    createCategory('Charity', <Charity />, 'GIVING', true),
+    createCategory('Tithe', <Tithe />, 'GIVING', true),
+    createCategory('Savings', <Savings />, 'SAVINGS', true),
+    createCategory('Investment', <Stocks />, 'SAVINGS', true),
 ];
 
 export const incomes: TransactionCategory[] = [
-    {
-        name: 'Salary',
-        icon: <Work />,
-        channel: 'INCOME',
-    },
-    {
-        name: 'Student Loan',
-        icon: <Education />,
-        channel: 'INCOME',
-    },
-    {
-        name: 'Student Grant',
-        icon: <Education />,
-        channel: 'INCOME',
-    },
-    {
-        name: 'Bursary',
-        icon: <MoneyBag />,
-        channel: 'INCOME',
-    },
-    {
-        name: 'Loan',
-        icon: <Bank />,
-        channel: 'INCOME',
-    },
-    {
-        name: 'Gifts',
-        icon: <Gifts />,
-        channel: 'INCOME',
-    },
-    {
-        name: 'Interest',
-        icon: <Savings />,
-        channel: 'INCOME',
-    },
-    {
-        name: 'Investment Yield',
-        icon: <Stocks />,
-        channel: 'INCOME',
-    },
-    {
-        name: 'Dividend',
-        icon: <Stocks />,
-        channel: 'INCOME',
-    },
-    {
-        name: 'Misc.',
-        icon: <Miscellaneous />,
-        channel: 'INCOME',
-    },
+    createCategory('Salary', <Work />, 'INCOME', true),
+    createCategory('Student Loan', <Education />, 'INCOME', true),
+    createCategory('Student Grant', <Education />, 'INCOME', true),
+    createCategory('Bursary', <MoneyBag />, 'INCOME', true),
+    createCategory('Loan', <Bank />, 'INCOME', true),
+    createCategory('Gifts', <Gifts />, 'INCOME', true),
+    createCategory('Interest', <Savings />, 'INCOME', true),
+    createCategory('Investment Yield', <Stocks />, 'INCOME', true),
+    createCategory('Dividend', <Stocks />, 'INCOME', true),
+    createCategory('Misc.', <Miscellaneous />, 'INCOME', true),
 ];
