@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test';
 
-import { AccountManager } from '../src/AccountManager.js';
+import { AccountManager } from '../src/utils/AccountManager.js';
 import { BankAccountType, type BankAccount, type UserSignature } from '../src/types/Bagel.js';
 
 const user = (id: string): UserSignature => ({ id });
