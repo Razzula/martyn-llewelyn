@@ -162,7 +162,7 @@ function TransactionCard({
                                     }
                                     forcedIndex={categories.findIndex(c => c.id === transaction.annotation)} // XXX!
                                     setSelected={function (name: string): void {
-                                        throw new Error("Function not implemented.");
+                                        throw new Error(`Function for setSelected(${name}) not implemented.`);
                                     }}
                                     mode='grid'
                                     windowMaxWidth={340}

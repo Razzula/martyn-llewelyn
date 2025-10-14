@@ -21,7 +21,7 @@ function Select({ className, entries, setSelected, icon, forcedIndex, emptyText,
     const [isOpen, setIsOpen] = React.useState(false);
     const [activeIndex, setActiveIndex] = React.useState<number | null>(null);
     const [selectedIndex, setSelectedIndex] = React.useState<number | null>(null);
-    const [selectedIcon, setSelectedIcon] = React.useState<JSX.Element | null>(null);
+    const [selectedIcon, setSelectedIcon] = React.useState<JSX.Element | string | null>(null);
 
     useEffect(() => {
         if (forcedIndex !== undefined && forcedIndex >= 0 && forcedIndex < entries.length) {

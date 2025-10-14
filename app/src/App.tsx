@@ -7,7 +7,7 @@ import { TrueLayerClient } from './lib/TrueLayer.ts';
 import { BankAccount, BankAccountBalance, BankAccountPatch, generatePatchFromAccount, Transaction, User } from './types/Bagel.ts';
 import { ResponsiveModal } from './components/common/ResponsiveModal.tsx';
 import { AccountManager } from './utils/AccountManager.ts';
-import { fromTrueLayerAccountBalance, fromTrueLayerAccountTransaction, fromTrueLayerCardBalance, fromTrueLayerCardTransaction } from './types/TrueLayerAdapters.ts';
+import { fromTrueLayerAccountBalance, fromTrueLayerAccountTransaction, fromTrueLayerCardBalance } from './types/TrueLayerAdapters.ts';
 import { Tooltip, TooltipContent, TooltipTrigger } from './components/common/Tooltip.tsx';
 import { TrueLayerAccountBalance, TrueLayerCardBalance, TrueLayerProvider } from './types/TrueLayer.ts';
 import { closedProviders } from './data/providers.ts';
@@ -32,11 +32,45 @@ import { getMostRecentSunday, isMobile, toYYYYMMDD } from './utils/utils.ts';
 import requestGate from './utils/RequestGate.ts';
 import { getDatabaseManager } from './utils/DatabaseManager.ts';
 
+import Ascending from './assets/icons/Ascending.svg?react';
+import Descending from './assets/icons/Descending.svg?react';
+import MoneyBag from './assets/icons/MoneyBag.svg?react';
+import Alpha from './assets/icons/SortByAlpha.svg?react';
+import Bank from './assets/icons/Bank.svg?react';
+import Users from './assets/icons/Users.svg?react';
+
 enum ResponseState {
     LOADING = 'LOADING',
     SUCCESS = 'SUCCESS',
     ERROR = 'ERROR',
 }
+
+export type AppSettings = {
+    accounts: {
+        sortBy: 'name' | 'balance',
+        sortOrder: 'asc' | 'desc',
+        groupBy?: 'bank' | 'user',
+    },
+    transactions: {
+
+    },
+    global: {
+        modesty: boolean,
+    },
+}
+
+const defaultAppSettings = (): AppSettings => ({
+    accounts: {
+        sortBy: 'balance',
+        sortOrder: 'desc',
+    },
+    transactions: {
+
+    },
+    global: {
+        modesty: true,
+    },
+});
 
 function App() {
 
@@ -62,7 +96,7 @@ function App() {
     const [openEditAccount, setOpenEditAccount] = useState<BankAccount | null>(null);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
-    const [modesty, setModesty] = useState<boolean>(true);
+    const [appSettings, setAppSettings] = useState<AppSettings>(defaultAppSettings());
 
     useEffect(() => {
         // HANDLE SETUP
@@ -126,7 +160,7 @@ function App() {
                 .catch(err => {
                     console.error('Failed to load wallet tokens:', err);
                 });
-            
+
             // SQLite
             getDatabaseManager().then(dbm => {
                 dbm.init().catch(err => {
@@ -136,13 +170,21 @@ function App() {
         }
         else {
             // in browser, use a demo token
-            setUsers([{
-                id: 'mock-user-id',
-                name: 'Demo User',
-                email: 'martyn-llewelyn@razzula.github.io',
-                icon: '/Serenity/hwyaden.png',
-            }]);
-            setWalletTokens(['demo']);
+            setUsers([
+                {
+                    id: 'mock-user-1',
+                    name: 'Demo User 1',
+                    icon: './Serenity/rubberducky.png',
+                    email: 'martyn-llewelyn@razzula.github.io',
+                },
+                {
+                    id: 'mock-user-2',
+                    name: 'Demo User 2',
+                    icon: './Serenity/hwyaden.png',
+                    email: 'martyn-llewelyn@razzula.github.io',
+                },
+            ]);
+            setWalletTokens(['mock-user-1', 'mock-user-2']);
         }
 
     }, []);
@@ -298,26 +340,26 @@ function App() {
                         ? () => TrueLayerClient.fetchCardBalance(walletToken, accountID)
                         : () => TrueLayerClient.fetchAccountBalance(walletToken, accountID);
 
-                    requestGate.run(
+                    requestGate.run<TrueLayerCardBalance[] | TrueLayerAccountBalance[]>(
                         `bl:${accountID}`,
                         request,
                         10 * 60 * 1000,
                     )
-                    .then((data: TrueLayerCardBalance[] | TrueLayerAccountBalance[]) => {
-                        if (data) {
-                            const entry = data[0];
-                            updateAccountBalance(
-                                accountID,
-                                isCard
-                                    ? fromTrueLayerCardBalance(entry as TrueLayerCardBalance)
-                                    : fromTrueLayerAccountBalance(entry as TrueLayerAccountBalance)
-                            );
-                        }
-                    })
-                    .catch(err => {
-                        console.error(`Failed to fetch balance for ${isCard ? 'card' : 'account'} ${accountID}:`, err);
-                        setAccountsState(ResponseState.ERROR);
-                    });
+                        .then((data) => {
+                            if (data) {
+                                const entry = data[0];
+                                updateAccountBalance(
+                                    accountID,
+                                    isCard
+                                        ? fromTrueLayerCardBalance(entry as TrueLayerCardBalance)
+                                        : fromTrueLayerAccountBalance(entry as TrueLayerAccountBalance)
+                                );
+                            }
+                        })
+                        .catch(err => {
+                            console.error(`Failed to fetch balance for ${isCard ? 'card' : 'account'} ${accountID}:`, err);
+                            setAccountsState(ResponseState.ERROR);
+                        });
                 }
 
                 // FETCH ACCOUNT TRANSACTIONS
@@ -827,7 +869,7 @@ function App() {
                                     >
                                         <div style={{ position: 'relative', width: '100px', height: '100px' }}>
                                             <img
-                                                className={`hat ${modesty ? 'lowered' : ''}`}
+                                                className={`hat ${appSettings.global.modesty ? 'lowered' : ''}`}
                                                 src='./MasterBagel-Hat.png'
                                                 alt='Master Bagel'
                                                 style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
@@ -854,24 +896,111 @@ function App() {
                         }
                     </div>
 
-                    {/* USER BUTTONS */}
+                    {/* WINDOW CONTROLS */}
                     <div className='headerRight'>
+                        {/* MODESTY */}
                         <Tooltip placement='left'>
                             <TooltipTrigger>
                                 <div>
-                                <ToggleSwitch
-                                    isOn={!modesty}
-                                    handleToggle={() => setModesty(!modesty)}
-                                    iconOn={<VisibilityIcon />}
-                                    iconOnColour='#ea4335'
-                                    iconOff={<VisibilityOffIcon />}
-                                />
+                                    <ToggleSwitch
+                                        isOn={!appSettings.global.modesty}
+                                        handleToggle={() => setAppSettings(prev => ({
+                                            ...prev,
+                                            global: {
+                                                ...prev.global,
+                                                modesty: !prev.global.modesty,
+                                            },
+                                        }))}
+                                        iconOn={<VisibilityIcon />}
+                                        iconOnColour='#ea4335'
+                                        iconOff={<VisibilityOffIcon />}
+                                    />
                                 </div>
                             </TooltipTrigger>
                             <TooltipContent>
-                                {modesty ? 'Show balances' : 'Hide balances'}
+                                {appSettings.global.modesty ? 'Show balances' : 'Hide balances'}
                             </TooltipContent>
                         </Tooltip>
+
+                        {/* ACCOUNTS WINDOW SETTINGS */}
+                        { panel === 'accounts' &&
+                            <div className='row'>
+                                {/* Order Accounts */}
+                                <span
+                                    className='clickable'
+                                    style={{ color: appSettings.accounts.sortBy === 'balance' ? 'green' : '#e3e3e3' }}
+                                    onClick={() => setAppSettings(prev => ({
+                                        ...prev,
+                                        accounts: {
+                                            ...prev.accounts,
+                                            sortBy: 'balance'
+                                        },
+                                    }))}
+                                >
+                                    <MoneyBag />
+                                </span>
+                                <span
+                                    className='clickable'
+                                    style={{ color: appSettings.accounts.sortBy === 'name' ? 'green' : '#e3e3e3' }}
+                                    onClick={() => setAppSettings(prev => ({
+                                        ...prev,
+                                        accounts: {
+                                            ...prev.accounts,
+                                            sortBy: 'name'
+                                        },
+                                    }))}
+                                >
+                                    <Alpha />
+                                </span>
+                                <div className='verticalSeparator' />
+                                <span
+                                    className='clickable'
+                                    style={{ color: appSettings.accounts.sortOrder === 'asc' ? 'green' : 'red' }}
+                                    onClick={() => setAppSettings(prev => ({
+                                        ...prev,
+                                        accounts: {
+                                            ...prev.accounts,
+                                            sortOrder: prev.accounts.sortOrder === 'asc' ? 'desc' : 'asc',
+                                        },
+                                    }))}
+                                >
+                                    {appSettings.accounts.sortOrder === 'asc' ? <Ascending /> : <Descending />}
+                                </span>
+                            </div>
+                        }
+
+                        { panel === 'accounts' &&
+                            <div className='row'>
+                                {/* Group Accounts */}
+                                <span
+                                    className='clickable'
+                                    style={{ color: appSettings.accounts.groupBy === 'bank' ? 'green' : '#e3e3e3' }}
+                                    onClick={() => setAppSettings(prev => ({
+                                        ...prev,
+                                        accounts: {
+                                            ...prev.accounts,
+                                            groupBy: prev.accounts.groupBy === 'bank' ? undefined : 'bank'
+                                        },
+                                    }))}
+                                >
+                                    <Bank />
+                                </span>
+                                <span
+                                    className='clickable'
+                                    style={{ color: appSettings.accounts.groupBy === 'user' ? 'green' : '#e3e3e3' }}
+                                    onClick={() => setAppSettings(prev => ({
+                                        ...prev,
+                                        accounts: {
+                                            ...prev.accounts,
+                                            groupBy: prev.accounts.groupBy === 'user' ? undefined : 'user'
+                                        },
+                                    }))}
+                                >
+                                    <Users />
+                                </span>
+                            </div>
+                        }
+
                     </div>
 
                     {/* PRIMARY CONTROLS */}
@@ -905,7 +1034,8 @@ function App() {
                         users={users}
                         providers={providers}
                         accountsSum={accountsSum}
-                        modesty={modesty}
+                        modesty={appSettings.global.modesty}
+                        windowSettings={appSettings.accounts}
                         setOpenEditAccount={setOpenEditAccount}
                         startLinkAccount={startLinkAccount}
                         startCreateAccount={startCreateAccount}
@@ -919,7 +1049,7 @@ function App() {
                         accounts={accounts}
                         users={users}
                         providers={providers}
-                        modesty={modesty}
+                        modesty={appSettings.global.modesty}
                         footend={footend}
                         updateAccountsTransactions={updateAccountsTransactions}
                         transactionsLoadedRange={transactionsLoadedRange} setTransactionsLoadedRange={setTransactionsLoadedRange}

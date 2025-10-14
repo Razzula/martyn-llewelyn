@@ -3,6 +3,7 @@ import { TrueLayerProvider } from "../types/TrueLayer";
 import { isTauri } from "../utils/tauri";
 import { toFinancialString } from "../utils/finance";
 import AccountCard from "./AccountCard";
+import { AppSettings } from "../App";
 
 import './AccountsPanel.css'
 
@@ -12,6 +13,7 @@ type AccountsPanelProps = {
     providers: Record<string, TrueLayerProvider>;
     accountsSum: number;
     modesty: boolean;
+    windowSettings: AppSettings['accounts'];
     setOpenEditAccount: (account: BankAccount) => void;
     startLinkAccount: () => void;
     startCreateAccount: () => void;
@@ -24,6 +26,7 @@ function AccountsPanel({
     providers,
     accountsSum,
     modesty,
+    windowSettings,
     setOpenEditAccount,
     startLinkAccount,
     startCreateAccount,
@@ -43,13 +46,26 @@ function AccountsPanel({
                     <div className='accountsGrid'>
                         {Object.entries(accounts)
                             .sort(([, a], [, b]) => {
-                                // order accounts in descending order by balance
+                                // order accounts in (ascending || descending) order by (balance || name)
                                 const aIsCard = a.cardNetwork !== undefined;
-                                const aValue = (aIsCard ? a.balance?.current : a.balance?.available) || 0;
+                                const aValue = (windowSettings.sortBy === 'name')
+                                    ? a.name.toLowerCase() // name
+                                    : (aIsCard ? a.balance?.current : a.balance?.available) || 0; // balance
                                 const bIsCard = b.cardNetwork !== undefined;
-                                const bValue = (bIsCard ? b.balance?.current : b.balance?.available) || 0;
-                                if (aValue > bValue) return -1;
-                                if (aValue < bValue) return 1;
+                                const bValue = (windowSettings.sortBy === 'name')
+                                    ? b.name.toLowerCase() // name
+                                    : (bIsCard ? b.balance?.current : b.balance?.available) || 0; // balance
+
+                                if (windowSettings.sortOrder == 'desc') {
+                                    // desc
+                                    if (aValue > bValue) return -1;
+                                    if (aValue < bValue) return 1;
+                                }
+                                else {
+                                    // asc
+                                    if (aValue > bValue) return 1;
+                                    if (aValue < bValue) return -1;
+                                }
                                 return 0;
                             })
                             .map(([accountID, account]) => (

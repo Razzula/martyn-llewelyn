@@ -9,7 +9,9 @@ import { isTauri } from "../utils/tauri.ts";
 import {
     providers as mockProviders,
     accounts as mockAccounts,
+    accountsForUser as mockAccountsForUser,
     cards as mockCards,
+    cardsForUser as mockCardsForUser,
     accountBalances as mockAccountBalances,
     cardBalances as mockCardBalances,
     cardTransactions as mockCardTransactions,
@@ -138,12 +140,22 @@ class MockTrueLayerAPI implements TrueLayerAPI {
         return mockProviders();
     }
 
-    async fetchAccountsData(_walletToken: string): Promise<[TrueLayerAccount[], string]> {
-        return [mockAccounts(), 'mock-user-id'];
+    async fetchAccountsData(walletToken: string): Promise<[TrueLayerAccount[], string]> {
+        return [
+            mockAccountsForUser(walletToken)
+                .map(accountID => mockAccounts().find(account => account.account_id === accountID))
+                .filter(Boolean) as TrueLayerAccount[],
+            walletToken,
+        ];
     }
 
-    async fetchCardsData(_walletToken: string): Promise<[TrueLayerCard[], string]> {
-        return [mockCards(), 'mock-user-id'];
+    async fetchCardsData(walletToken: string): Promise<[TrueLayerCard[], string]> {
+        return [
+            mockCardsForUser(walletToken)
+                .map(accountID => mockCards().find(account => account.account_id === accountID))
+                .filter(Boolean) as TrueLayerCard[],
+            walletToken,
+        ];
     }
 
     async fetchAccountBalance(_walletToken: string, accountId: string): Promise<TrueLayerAccountBalance[]> {

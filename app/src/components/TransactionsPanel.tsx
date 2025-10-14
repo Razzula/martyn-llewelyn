@@ -4,7 +4,7 @@ import { TrueLayerProvider } from "src/types/TrueLayer";
 import { OrderedDateTreeStruct } from "src/types/OrderedDateTree";
 import { getMonthName, getMostRecentSunday, getOrdinalSuffix, toYYYYMMDD } from "../utils/utils";
 import { isTauri } from "../utils/tauri";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 type TransactionsPanelProps = {
     transactionsTree: OrderedDateTreeStruct<Transaction>;

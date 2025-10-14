@@ -18,7 +18,7 @@ import { toYYYYMMDD } from '../utils/utils';
 export const providers = (): TrueLayerProvider[] => [
   {
     provider_id: 'mock',
-    display_name: 'Demo Bank',
+    display_name: 'Not A Real Bank',
     country: 'uk',
     logo_url: 'https://truelayer-provider-assets.s3.amazonaws.com/global/logos/mock.svg',
     scopes: [],
@@ -28,6 +28,24 @@ export const providers = (): TrueLayerProvider[] => [
     },
   },
 ];
+
+export const accountsForUser = (userID: string): string[] => {
+  if (userID === 'mock-user-1') {
+    return [
+      '89c3139784a055b9b47998f9dce9122e',
+      '328df3a40b828340fa4c3100e17de121',
+      '8de2de9eab01b935b21abcbed11adf26',
+    ];
+  }
+  else if (userID === 'mock-user-2') {
+    return [
+      '56c7b029e0f8ec5a2334fb0ffc2fface',
+      '3c6edb9484ecd581dc1cedde8bedb1f1',
+      '89c3139784a055b9b47998f9dce9122e',
+    ];
+  }
+  return [];
+};
 
 export const accounts = (): TrueLayerAccount[] => [
   {
@@ -43,7 +61,7 @@ export const accounts = (): TrueLayerAccount[] => [
     display_name: 'TRANSACTION ACCOUNT 1',
     provider: {
       provider_id: 'mock',
-      display_name: 'Demo Bank',
+      display_name: 'Not A Real Bank',
       logo_uri: 'https://truelayer-client-logos.s3-eu-west-1.amazonaws.com/banks/banks-icons/mock-icon.svg',
     },
     update_timestamp: '2025-08-28T18:29:09.1682758Z',
@@ -61,7 +79,7 @@ export const accounts = (): TrueLayerAccount[] => [
     display_name: 'SAVINGS ACCOUNT 1',
     provider: {
       provider_id: 'mock',
-      display_name: 'Demo Bank',
+      display_name: 'Not A Real Bank',
       logo_uri: 'https://truelayer-client-logos.s3-eu-west-1.amazonaws.com/banks/banks-icons/mock-icon.svg',
     },
     update_timestamp: '2025-08-28T18:29:09.1682828Z',
@@ -79,7 +97,7 @@ export const accounts = (): TrueLayerAccount[] => [
     display_name: 'TRANSACTION ACCOUNT 2',
     provider: {
       provider_id: 'mock',
-      display_name: 'Demo Bank',
+      display_name: 'Not A Real Bank',
       logo_uri: 'https://truelayer-client-logos.s3-eu-west-1.amazonaws.com/banks/banks-icons/mock-icon.svg',
     },
     update_timestamp: '2025-08-28T18:29:09.1682863Z',
@@ -97,7 +115,7 @@ export const accounts = (): TrueLayerAccount[] => [
     display_name: 'SAVINGS ACCOUNT 2',
     provider: {
       provider_id: 'mock',
-      display_name: 'Demo Bank',
+      display_name: 'Not A Real Bank',
       logo_uri: 'https://truelayer-client-logos.s3-eu-west-1.amazonaws.com/banks/banks-icons/mock-icon.svg',
     },
     update_timestamp: '2025-08-28T18:29:09.1682895Z',
@@ -115,12 +133,26 @@ export const accounts = (): TrueLayerAccount[] => [
     display_name: 'TRANSACTION ACCOUNT 3',
     provider: {
       provider_id: 'mock',
-      display_name: 'Demo Bank',
+      display_name: 'Not A Real Bank',
       logo_uri: 'https://truelayer-client-logos.s3-eu-west-1.amazonaws.com/banks/banks-icons/mock-icon.svg',
     },
     update_timestamp: '2025-08-28T18:29:09.1682937Z',
   },
 ];
+
+export const cardsForUser = (userID: string): string[] => {
+  if (userID === 'mock-user-1') {
+    return [
+      '2cbf9b6063102763ccbe3ea62f1b3e72',
+    ];
+  }
+  else if (userID === 'mock-user-2') {
+    return [
+      '328f557c68aebd532cbbd05ce5bcb6c8',
+    ];
+  }
+  return [];
+}
 
 export const cards = (): TrueLayerCard[] => [
   {
@@ -133,7 +165,7 @@ export const cards = (): TrueLayerCard[] => [
     partial_card_number: '1000',
     provider: {
       provider_id: 'mock',
-      display_name: 'Demo Bank',
+      display_name: 'Not A Real Bank',
       logo_uri: 'https://truelayer-client-logos.s3-eu-west-1.amazonaws.com/banks/banks-icons/mock-icon.svg',
     },
     update_timestamp: '2025-08-28T18:29:09.1663258Z',
@@ -148,7 +180,7 @@ export const cards = (): TrueLayerCard[] => [
     partial_card_number: '2000',
     provider: {
       provider_id: 'mock',
-      display_name: 'Demo Bank',
+      display_name: 'Not A Real Bank',
       logo_uri: 'https://truelayer-client-logos.s3-eu-west-1.amazonaws.com/banks/banks-icons/mock-icon.svg',
     },
     update_timestamp: '2025-08-28T18:29:09.1663319Z',
