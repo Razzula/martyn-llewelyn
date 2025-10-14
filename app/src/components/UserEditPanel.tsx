@@ -25,7 +25,7 @@ function UserEditPanel({
         id: crypto.randomUUID(),
         name: '',
         email: '',
-        icon: '/Serenity/unknown.png',
+        icon: './Serenity/unknown.png',
     };
 
     const [ephemeralUser, setEphemeralUser] = useState<User>({
@@ -52,13 +52,13 @@ function UserEditPanel({
     }, [user]);
 
     const icons = [
-        '/Serenity/bagel.png',
-        '/Serenity/nim.png',
-        // '/Serenity/paun.png',
-        // '/Serenity/andreas.png',
-        '/Serenity/mochyn.png',
-        '/Serenity/hwyaden.png',
-        // '/Serenity/trex.png',
+        './Serenity/bagel.png',
+        './Serenity/nim.png',
+        // './Serenity/paun.png',
+        // './Serenity/andreas.png',
+        './Serenity/mochyn.png',
+        './Serenity/hwyaden.png',
+        // './Serenity/trex.png',
     ]
 
     const invalidName = (

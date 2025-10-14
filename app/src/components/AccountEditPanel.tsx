@@ -133,7 +133,7 @@ function AccountEditPanel({
                     <div className='row'>
                         <img
                             className='bankLogoLarge'
-                            src={provider.logo_url || '/Serenity/unknown.png'}
+                            src={provider.logo_url || './Serenity/unknown.png'}
                             alt={provider.display_name || id}
                         />
                         {providerList.length < 10 &&
@@ -229,7 +229,7 @@ function AccountEditPanel({
                             icon={
                                 <img
                                     src={
-                                        providers?.[ephemeralAccount?.provider?.id]?.logo_url || '/Serenity/unknown.png'
+                                        providers?.[ephemeralAccount?.provider?.id]?.logo_url || './Serenity/unknown.png'
                                     }
                                 />
                             }

@@ -67,11 +67,11 @@ export enum InterestType {
 export const CardNetwork = {
     VISA: {
         name: 'Visa',
-        logo: '/Finance/CardNetworks/VisaLogo_Blue.svg',
+        logo: './Finance/CardNetworks/VisaLogo_Blue.svg',
     },
     MASTERCARD: {
         name: 'Mastercard',
-        logo: '/Finance/CardNetworks/MastercardLogo.svg',
+        logo: './Finance/CardNetworks/MastercardLogo.svg',
     },
 } as const;
 

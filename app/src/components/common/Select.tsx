@@ -98,7 +98,7 @@ function Select({ className, entries, setSelected, icon, forcedIndex, emptyText,
         >
             { selectedIcon ?? ((selectedIndex !== null && selectedIndex >= 0) ? entries[selectedIndex]?.name : <span className='empty'>{emptyText ?? '...'}</span>)}
             {/* {(selectedIndex !== null && selectedIndex >= 0) ? entries[selectedIndex]?.name : '...'} */}
-            {/* <img src='/bible-app/icons/drop.svg' alt='Arrow Down'/> */}
+            {/* <img src='./icons/drop.svg' alt='Arrow Down'/> */}
         </span>
 
         {isOpen && (

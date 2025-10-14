@@ -122,7 +122,7 @@ function AccountCard({
                                     account.provider.logoURI
                                     || providers?.[account.provider.id]?.accountLogo
                                     || providers?.[account.provider.id]?.logo_url
-                                    || '/Serenity/unknown.png'
+                                    || './Serenity/unknown.png'
                                 }
                                 alt={`${account.name} Logo`}
                                 onClick={(e) => {
