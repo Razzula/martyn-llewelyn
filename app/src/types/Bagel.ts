@@ -13,7 +13,7 @@ export interface BankAccount {
         swiftBIC?: string;
         sortCode?: string;
     }
-    cardNetwork?: 'VISA' | 'MASTERCARD' | string; // TrueLayerCard
+    cardNetwork?: keyof typeof CardNetwork; // TrueLayerCard
     provider: {
         id: string;
         // TrueLayerAccount

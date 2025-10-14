@@ -24,6 +24,7 @@ import { newOrderedDateTreeFromList, OrderedDateTree } from './types/OrderedDate
 import { ToggleSwitch } from './components/common/ToggleSwitch.tsx';
 import { WiggleWrapper } from './components/common/WiggleWrapper.tsx';
 import Spinner from './components/common/Spinner.tsx';
+import { RadioButtons, ToggleButton } from './components/common/RadioButtons.tsx';
 
 import VisibilityIcon from './assets/icons/Visibility.svg?react';
 import VisibilityOffIcon from './assets/icons/VisibilityOff.svg?react';
@@ -38,7 +39,9 @@ import MoneyBag from './assets/icons/MoneyBag.svg?react';
 import Alpha from './assets/icons/SortByAlpha.svg?react';
 import Bank from './assets/icons/Bank.svg?react';
 import Users from './assets/icons/Users.svg?react';
-import { RadioButtons, ToggleButton } from './components/common/RadioButtons.tsx';
+import List from './assets/icons/List.svg?react';
+import GridView from './assets/icons/GridView.svg?react';
+import Waterfall from './assets/icons/Waterfall.svg?react';
 
 enum ResponseState {
     LOADING = 'LOADING',
@@ -53,7 +56,7 @@ export type AppSettings = {
         groupBy?: 'bank' | 'user',
     },
     transactions: {
-
+        displayAs: 'list' | 'grid' | 'waterfall',
     },
     global: {
         modesty: boolean,
@@ -66,7 +69,7 @@ const defaultAppSettings = (): AppSettings => ({
         sortOrder: 'desc',
     },
     transactions: {
-
+        displayAs: 'list',
     },
     global: {
         modesty: true,
@@ -105,7 +108,6 @@ function App() {
         // LOAD PROVIDERS
         TrueLayerClient.fetchProviders()
             .then((providers: TrueLayerProvider[]) => {
-                console.log(providers);
                 const providersMap: Record<string, TrueLayerProvider> = {};
                 [...providers, ...closedProviders]
                     .filter(provider =>
@@ -117,7 +119,6 @@ function App() {
                         providersMap[provider.provider_id] = provider;
                     });
                 setProviders(providersMap);
-                console.log(providersMap);
             })
             .catch(err => {
                 console.error('Failed to fetch providers:', err);
@@ -863,7 +864,7 @@ function App() {
                                 >
                                     <WiggleWrapper
                                         balloonMs={2000}
-                                        balloonElement={<img src='./Serenity/Heart.png' alt='Balloon' style={{ width: '50px', height: '50px' }} />}
+                                        balloonElement={<img src='./Serenity/Heart.png' alt='❤️' style={{ width: '50px', height: '50px' }} />}
                                     >
                                         <div style={{ position: 'relative', width: '100px', height: '100px' }}>
                                             <img
@@ -987,6 +988,38 @@ function App() {
                                 iconOffColour='#e3e3e3'
                             />
                         }
+                        { panel === 'transactions' &&
+                            <RadioButtons 
+                                options={[
+                                    {
+                                        key: 'list',
+                                        desc: 'List View',
+                                        icon: <List />,
+                                    },
+                                    {
+                                        key: 'grid',
+                                        desc: 'Grid View',
+                                        icon: <GridView />,
+                                    },
+                                    {
+                                        key: 'waterfall',
+                                        desc: 'Waterfall View',
+                                        icon: <Waterfall />,
+                                    },
+                                ]}
+                                selected={appSettings.transactions.displayAs}
+                                setSelected={(key: string) => setAppSettings(prev => ({
+                                    ...prev,
+                                    transactions: {
+                                        ...prev.transactions,
+                                        displayAs: key as AppSettings['transactions']['displayAs']
+                                    },
+                                }))}
+                                tooltipPlacement='bottom'
+                                iconOnColour='green'
+                                iconOffColour='#e3e3e3'
+                            />
+                        }
 
                     </div>
 
@@ -1036,6 +1069,7 @@ function App() {
                         users={users}
                         providers={providers}
                         modesty={appSettings.global.modesty}
+                        windowSettings={appSettings.transactions}
                         footend={footend}
                         updateAccountsTransactions={updateAccountsTransactions}
                         transactionsLoadedRange={transactionsLoadedRange} setTransactionsLoadedRange={setTransactionsLoadedRange}
