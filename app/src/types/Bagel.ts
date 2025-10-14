@@ -1,5 +1,5 @@
 import { OrderedDateTree } from "./OrderedDateTree";
-import { TrueLayerTransactionCategory, TrueLayerTransactionType } from "./TrueLayer";
+import { TrueLayerProvider, TrueLayerTransactionCategory, TrueLayerTransactionType } from "./TrueLayer";
 
 export interface BankAccount {
     // unified TrueLayerAccount | TrueLayerCard
@@ -171,4 +171,11 @@ export interface TransactionCategory {
     icon: JSX.Element;
     channel: Channel;
     builtin?: true;
+}
+
+export function getAccountLogoSrc(account: BankAccount, providers: Record<string, TrueLayerProvider>) {
+    return account.provider.logoURI
+        || providers?.[account.provider.id]?.accountLogo
+        || providers?.[account.provider.id]?.logo_url
+        || './Serenity/unknown.png';
 }

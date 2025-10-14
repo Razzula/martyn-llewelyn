@@ -38,6 +38,7 @@ import MoneyBag from './assets/icons/MoneyBag.svg?react';
 import Alpha from './assets/icons/SortByAlpha.svg?react';
 import Bank from './assets/icons/Bank.svg?react';
 import Users from './assets/icons/Users.svg?react';
+import { RadioButtons, ToggleButton } from './components/common/RadioButtons.tsx';
 
 enum ResponseState {
     LOADING = 'LOADING',
@@ -104,14 +105,19 @@ function App() {
         // LOAD PROVIDERS
         TrueLayerClient.fetchProviders()
             .then((providers: TrueLayerProvider[]) => {
+                console.log(providers);
                 const providersMap: Record<string, TrueLayerProvider> = {};
                 [...providers, ...closedProviders]
-                    .filter(provider => provider.provider_id !== 'mock' && provider.country === 'uk') // XXX: restrict to UK for now
+                    .filter(provider =>
+                        (provider.provider_id !== 'mock' || !isTauri) // remove mock if not needed
+                        && provider.country === 'uk' // XXX: restrict to UK for now
+                    )
                     .sort((a, b) => a.display_name.localeCompare(b.display_name))
                     .forEach(provider => {
                         providersMap[provider.provider_id] = provider;
                     });
                 setProviders(providersMap);
+                console.log(providersMap);
             })
             .catch(err => {
                 console.error('Failed to fetch providers:', err);
@@ -635,14 +641,6 @@ function App() {
     // ref for the SegmentedControl container
     const controlRef = useRef<HTMLDivElement>(null);
 
-    const accountsSum = Object.values(accounts || {}).reduce((sum, account) => {
-        const isCard = account.cardNetwork !== undefined;
-        const current = account.balance?.current ?? 0;
-        const available = account.balance?.available ?? 0;
-        const balance = isCard ? -current : available; // cards are negative, others are positive
-        return sum + balance;
-    }, 0);
-
     const footend = (
         <div className='column footend mini'>
             <span>Powered by</span>
@@ -926,79 +924,68 @@ function App() {
                         { panel === 'accounts' &&
                             <div className='row'>
                                 {/* Order Accounts */}
-                                <span
-                                    className='clickable'
-                                    style={{ color: appSettings.accounts.sortBy === 'balance' ? 'green' : '#e3e3e3' }}
-                                    onClick={() => setAppSettings(prev => ({
+                                <RadioButtons 
+                                    options={[
+                                        { key: 'balance', desc: 'Sort by Balance', icon: <MoneyBag /> },
+                                        { key: 'name', desc: 'Sort by Name', icon: <Alpha /> },
+                                    ]}
+                                    selected={appSettings.accounts.sortBy}
+                                    setSelected={(key: string) => setAppSettings(prev => ({
                                         ...prev,
                                         accounts: {
                                             ...prev.accounts,
-                                            sortBy: 'balance'
+                                            sortBy: key as AppSettings['accounts']['sortBy']
                                         },
                                     }))}
-                                >
-                                    <MoneyBag />
-                                </span>
-                                <span
-                                    className='clickable'
-                                    style={{ color: appSettings.accounts.sortBy === 'name' ? 'green' : '#e3e3e3' }}
-                                    onClick={() => setAppSettings(prev => ({
-                                        ...prev,
-                                        accounts: {
-                                            ...prev.accounts,
-                                            sortBy: 'name'
-                                        },
-                                    }))}
-                                >
-                                    <Alpha />
-                                </span>
+                                    tooltipPlacement='bottom'
+                                    iconOnColour='green'
+                                    iconOffColour='#e3e3e3'
+                                />
                                 <div className='verticalSeparator' />
-                                <span
-                                    className='clickable'
-                                    style={{ color: appSettings.accounts.sortOrder === 'asc' ? 'green' : 'red' }}
-                                    onClick={() => setAppSettings(prev => ({
+                                <ToggleButton 
+                                    options={[
+                                        { key: 'asc', desc: 'Ascending', icon: <Ascending />, iconColour: 'green' },
+                                        { key: 'desc', desc: 'Descending', icon: <Descending />, iconColour: 'red' },
+                                    ]}
+                                    selected={appSettings.accounts.sortOrder}
+                                    setSelected={(key: string) => setAppSettings(prev => ({
                                         ...prev,
                                         accounts: {
                                             ...prev.accounts,
-                                            sortOrder: prev.accounts.sortOrder === 'asc' ? 'desc' : 'asc',
+                                            sortOrder: key as AppSettings['accounts']['sortOrder']
                                         },
                                     }))}
-                                >
-                                    {appSettings.accounts.sortOrder === 'asc' ? <Ascending /> : <Descending />}
-                                </span>
+                                    tooltipPlacement='bottom'
+                                />
                             </div>
                         }
 
                         { panel === 'accounts' &&
-                            <div className='row'>
-                                {/* Group Accounts */}
-                                <span
-                                    className='clickable'
-                                    style={{ color: appSettings.accounts.groupBy === 'bank' ? 'green' : '#e3e3e3' }}
-                                    onClick={() => setAppSettings(prev => ({
-                                        ...prev,
-                                        accounts: {
-                                            ...prev.accounts,
-                                            groupBy: prev.accounts.groupBy === 'bank' ? undefined : 'bank'
-                                        },
-                                    }))}
-                                >
-                                    <Bank />
-                                </span>
-                                <span
-                                    className='clickable'
-                                    style={{ color: appSettings.accounts.groupBy === 'user' ? 'green' : '#e3e3e3' }}
-                                    onClick={() => setAppSettings(prev => ({
-                                        ...prev,
-                                        accounts: {
-                                            ...prev.accounts,
-                                            groupBy: prev.accounts.groupBy === 'user' ? undefined : 'user'
-                                        },
-                                    }))}
-                                >
-                                    <Users />
-                                </span>
-                            </div>
+                            <RadioButtons 
+                                options={[
+                                    {
+                                        key: 'bank',
+                                        desc: `${appSettings.accounts.groupBy === 'bank' ? 'Grouped' : 'Group'} by Bank`,
+                                        icon: <Bank />,
+                                    },
+                                    {
+                                        key: 'user',
+                                        desc: `${appSettings.accounts.groupBy === 'user' ? 'Grouped' : 'Group'} by User`,
+                                        icon: <Users />,
+                                    },
+                                ]}
+                                selected={appSettings.accounts.groupBy}
+                                setSelected={(key: string) => setAppSettings(prev => ({
+                                    ...prev,
+                                    accounts: {
+                                        ...prev.accounts,
+                                        groupBy: (prev.accounts.groupBy === key ? undefined : key) as AppSettings['accounts']['groupBy']
+                                    },
+                                }))}
+                                tooltipPlacement='bottom'
+                                iconOnColour='green'
+                                iconOffColour='#e3e3e3'
+                            />
                         }
 
                     </div>
@@ -1033,7 +1020,6 @@ function App() {
                         accounts={accounts}
                         users={users}
                         providers={providers}
-                        accountsSum={accountsSum}
                         modesty={appSettings.global.modesty}
                         windowSettings={appSettings.accounts}
                         setOpenEditAccount={setOpenEditAccount}

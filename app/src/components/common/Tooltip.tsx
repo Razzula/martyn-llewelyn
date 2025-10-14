@@ -3,7 +3,7 @@ import { FloatingPortal, Placement, autoUpdate, flip, offset, shift, useDismiss,
 
 import './Tooltip.css';
 
-interface TooltipOptions {
+export interface TooltipOptions {
     initialOpen?: boolean;
     placement?: Placement;
     open?: boolean;

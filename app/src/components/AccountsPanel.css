@@ -5,3 +5,19 @@
     width: 100%;
     max-width: 100%;
 }
+
+.groupCard {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    margin: 0.5rem;
+    max-height: 200px;
+
+    align-content: flex-end;
+}
+
+.groupIcon {
+    width: 64px;
+    height: 64px;
+}

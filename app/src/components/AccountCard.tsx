@@ -1,4 +1,4 @@
-import { BankAccount, InterestType, User } from "../types/Bagel";
+import { BankAccount, getAccountLogoSrc, InterestType, User } from "../types/Bagel";
 import { openInBrowser } from "../utils/tauri";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./common/Tooltip";
 import { TrueLayerProvider } from "../types/TrueLayer";
@@ -118,12 +118,7 @@ function AccountCard({
                         <TooltipTrigger>
                             <img
                                 className={`bankLogo ${account.url ? 'clickable' : ''}`}
-                                src={
-                                    account.provider.logoURI
-                                    || providers?.[account.provider.id]?.accountLogo
-                                    || providers?.[account.provider.id]?.logo_url
-                                    || './Serenity/unknown.png'
-                                }
+                                src={getAccountLogoSrc(account, providers)}
                                 alt={`${account.name} Logo`}
                                 onClick={(e) => {
                                     e.stopPropagation();

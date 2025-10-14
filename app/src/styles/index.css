@@ -15,7 +15,7 @@ body {
 
 @font-face {
     font-family: "SerenityOS Emoji";
-    src: url('./SerenityOS-Emoji.ttf') format('truetype');
+    src: url('/SerenityOS-Emoji.ttf') format('truetype');
 }
 
 .glyph {
