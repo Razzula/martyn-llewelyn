@@ -7,6 +7,7 @@ import { TrueLayerProvider } from "../types/TrueLayer";
 import { OrderedDateTreeStruct } from "../types/OrderedDateTree";
 import { getMonthName, getMostRecentSunday, getOrdinalSuffix, toYYYYMMDD } from "../utils/utils";
 import { AppSettings } from "../App";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./common/Tooltip";
 
 import './TransactionsPanel.css';
 
@@ -151,14 +152,21 @@ function TransactionsPanel({
                             >
                                 Back to Top
                             </button>
-                            <button
-                                style={{ marginTop: '0.5rem' }}
-                                onClick={loadMoreTransactions}
-                                disabled={!isTauri || loadingTransactions}
-                            >
-                                {/* TODO: possibly render what (amount / timespan) is to be loaded */}
-                                {loadingTransactions ? <div className='spinner' /> : 'Load More...'}
-                            </button>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <button
+                                            style={{ marginTop: '0.5rem' }}
+                                            onClick={loadMoreTransactions}
+                                            disabled={!isTauri || loadingTransactions}
+                                        >
+                                            {/* TODO: possibly render what (amount / timespan) is to be loaded */}
+                                            {loadingTransactions ? <div className='spinner' /> : 'Load More...'}
+                                        </button>
+                                    </TooltipTrigger>
+                                    { !isTauri &&
+                                        <TooltipContent>This feature is unavailable in limited demo mode.</TooltipContent>
+                                    }
+                                </Tooltip>
                         </div>
                     </div>
                 ) : (

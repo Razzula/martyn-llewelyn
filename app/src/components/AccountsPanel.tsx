@@ -6,6 +6,7 @@ import { isTauri } from "../utils/tauri";
 import { toFinancialString } from "../utils/finance";
 import AccountCard from "./AccountCard";
 import { AppSettings } from "../App";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./common/Tooltip";
 
 import './AccountsPanel.css'
 
@@ -198,18 +199,25 @@ function AccountsPanel({
                         alignItems: 'stretch',
                     }}
                 >
-                    <button
-                        className='column'
-                        onClick={() => startLinkAccount()}
-                        disabled={!isTauri}
-                    >
-                        <img
-                            src='./TrueLayer/Banks/BankLogos_UnitedKingdom_5icons.svg'
-                            alt='All Major UK Banks Supported'
-                            height={24}
-                        />
-                        <span>Connect with {Object.values(accounts)?.length === 0 ? 'your' : 'another'} Bank</span>
-                    </button>
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <button
+                                className='column'
+                                onClick={() => startLinkAccount()}
+                                disabled={!isTauri}
+                            >
+                                <img
+                                    src='./TrueLayer/Banks/BankLogos_UnitedKingdom_5icons.svg'
+                                    alt='All Major UK Banks Supported'
+                                    height={24}
+                                />
+                                <span>Connect with {Object.values(accounts)?.length === 0 || !isTauri ? 'your' : 'another'} Bank</span>
+                            </button>
+                        </TooltipTrigger>
+                        { !isTauri &&
+                            <TooltipContent>This feature is unavailable in limited demo mode.</TooltipContent>
+                        }
+                    </Tooltip>
                     <button
                         className='column'
                         onClick={startCreateAccount}
