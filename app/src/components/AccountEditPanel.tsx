@@ -6,6 +6,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "./common/Tooltip";
 import Select from "./common/Select";
 import { asSortCode } from "../utils/finance";
 import { emptyBankAccount } from "../data/stubs";
+import { fromTrueLayerCardNetwork } from "../types/TrueLayerAdapters";
 
 type AccountEditPanelProps = {
     account: BankAccount | null;
@@ -289,7 +290,7 @@ function AccountEditPanel({
                                 ? <img src={selectedCardNetwork?.logo} alt={selectedCardNetwork?.name} />
                                 : undefined
                             }
-                            setSelected={(key) => setEphemeralAccount({ ...ephemeralAccount, cardNetwork: key })}
+                            setSelected={(key) => setEphemeralAccount({ ...ephemeralAccount, cardNetwork: fromTrueLayerCardNetwork(key) })}
                             emptyText='Card Network'
                             disabled={isAccountOnline}
                         />

@@ -13,7 +13,7 @@ export interface BankAccount {
         swiftBIC?: string;
         sortCode?: string;
     }
-    cardNetwork?: keyof typeof CardNetwork; // TrueLayerCard
+    cardNetwork?: CardNetworkKey; // TrueLayerCard
     provider: {
         id: string;
         // TrueLayerAccount
@@ -74,6 +74,8 @@ export const CardNetwork = {
         logo: './Finance/CardNetworks/MastercardLogo.svg',
     },
 } as const;
+
+export type CardNetworkKey = keyof typeof CardNetwork;
 
 export interface BankAccountBalance {
     current: number;

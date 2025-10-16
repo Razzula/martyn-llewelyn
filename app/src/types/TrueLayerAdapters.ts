@@ -1,5 +1,5 @@
 import { TrueLayerAccount, TrueLayerAccountBalance, TrueLayerAccountTransaction, TrueLayerCard, TrueLayerCardBalance, TrueLayerCardTransaction } from '../types/TrueLayer';
-import { BankAccount, BankAccountBalance, Transaction } from '../types/Bagel';
+import { BankAccount, BankAccountBalance, CardNetwork, CardNetworkKey, Transaction } from '../types/Bagel';
 
 export function fromTrueLayerAccount(input: TrueLayerAccount): BankAccount {
     return {
@@ -36,7 +36,7 @@ export function fromTrueLayerCard(input: TrueLayerCard): BankAccount {
         number: {
             number: input.partial_card_number,
         },
-        cardNetwork: input.card_network,
+        cardNetwork: fromTrueLayerCardNetwork(input.card_network),
         provider: {
             id: input.provider.provider_id,
             name: input.provider.display_name,
@@ -110,4 +110,9 @@ export function fromTrueLayerCardTransaction(input: TrueLayerCardTransaction, ac
         accountID,
         annotation: input.meta?.bagel_category ?? undefined,
     };
+}
+
+export function fromTrueLayerCardNetwork(trueLayerCardNetwork: string): CardNetworkKey | undefined {
+    const cardNetworkKey = trueLayerCardNetwork as CardNetworkKey;
+    return cardNetworkKey in CardNetwork ? cardNetworkKey : undefined;
 }
