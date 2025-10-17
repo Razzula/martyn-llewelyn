@@ -39,12 +39,32 @@ function TransactionsPanel({
     const [loadingTransactions, setLoadingTransactions] = useState(false);
     const [minCardWidth, setMinCardWidth] = useState<number>(Infinity);
 
+    const [sortedAccounts, setSortedAccounts] = useState<BankAccount[]>([]);
+
     useEffect(() => {
         if (windowSettings.displayAs === 'list') {
             // XXX: cards needs to be able to grow to full-size in min state
             setMinCardWidth(9999);
         }
     }, [windowSettings.displayAs])
+
+    useEffect(() => {
+        if (windowSettings.displayAs === 'waterfall') {
+            const sortedAccounts = Object.values(accounts).sort((a, b) => {
+                const aIsCard = a.cardNetwork !== undefined;
+                const bIsCard = b.cardNetwork !== undefined;
+                const aValue = (aIsCard ? a.balance?.current : a.balance?.available) ?? 0;
+                const bValue = (bIsCard ? b.balance?.current : b.balance?.available) ?? 0;
+    
+                // descending
+                if (aValue > bValue) return -1;
+                if (aValue < bValue) return 1;
+                // tie-breaker: alphabetically by name
+                return a.name.localeCompare(b.name);
+            });
+            setSortedAccounts(sortedAccounts);
+        }
+    }, [accounts, windowSettings])
 
     function loadMoreTransactions() {
         // TODO: split this into chunks?
@@ -78,18 +98,23 @@ function TransactionsPanel({
                         <span>Date</span>
                         <div className='verticalSeparator'/>
                         {
-                            Object.values(accounts).map(account =>
+                            sortedAccounts.map((account: BankAccount) =>
                                 <>
                                     <div>
-                                        <img className='waterfallHeaderIcon' src={getAccountLogoSrc(account, providers)} />
-                                        { account?.cardNetwork &&
-                                            <img className='waterfallHeaderIcon' src={CardNetwork[account.cardNetwork].logo} />
-                                        }
-                                        {
-                                            users?.map(user =>
-                                                <img className='waterfallHeaderIconMini' src={user.icon} />
-                                            )
-                                        }
+                                        <div>
+                                            <img className='waterfallHeaderIcon' src={getAccountLogoSrc(account, providers)} />
+                                            { account?.cardNetwork &&
+                                                <img className='waterfallHeaderIcon' src={CardNetwork[account.cardNetwork].logo} />
+                                            }
+                                            {
+                                                account?.users?.map(user =>
+                                                    <img className='waterfallHeaderIconMini' src={users?.find(u => u.id === user.id)?.icon} />
+                                                )
+                                            }
+                                        </div>
+                                        <div className='small'>
+                                            {account.name}
+                                        </div>
                                     </div>
                                     <div className='verticalSeparator'/>
                                 </>
