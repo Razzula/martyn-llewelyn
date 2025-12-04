@@ -42,6 +42,7 @@ import Users from './assets/icons/Users.svg?react';
 import List from './assets/icons/List.svg?react';
 import GridView from './assets/icons/GridView.svg?react';
 import Waterfall from './assets/icons/Waterfall.svg?react';
+import { defaultChannels, defaultExpenditures, defaultIncomes } from './data/categories.tsx';
 
 enum ResponseState {
     LOADING = 'LOADING',
@@ -197,6 +198,8 @@ function App() {
                 },
             ]);
             setWalletTokens(['mock-user-1', 'mock-user-2']);
+            setCategories([...defaultExpenditures, ...defaultIncomes]);
+            setChannels([...defaultChannels]);
         }
 
     }, []);
