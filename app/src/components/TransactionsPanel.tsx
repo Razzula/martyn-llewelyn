@@ -19,7 +19,7 @@ type TransactionsPanelProps = {
     modesty: boolean;
     windowSettings: AppSettings['transactions'];
     footend?: React.ReactNode;
-    updateAccountsTransactions: (from?: string, to?: string) => Promise<void>;
+    updateAccountsTransactions: (from: string, to: string) => Promise<void>;
     transactionsLoadedRange: Date;
     setTransactionsLoadedRange: (range: Date) => void;
     

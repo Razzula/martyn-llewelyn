@@ -59,6 +59,7 @@ export class OrderedDateTree<T extends { transactionID: string }> {
                 }
             }
         }
+        return this;
     }
 
     count() {

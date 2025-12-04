@@ -19,11 +19,12 @@ import Savings from '../assets/icons/Savings.svg?react';
 import EventRepeat from '../assets/icons/EventRepeat.svg?react';
 import { useLayoutEffect, useRef } from "react";
 import { icons } from "../data/categories";
+import { getDatabaseManager } from "../utils/DatabaseManager";
 
 type TransactionCardProps = {
     className?: string;
     transaction: Transaction;
-    account: BankAccount;
+    account: BankAccount | null;
     users: User[] | null;
     providers: Record<string, TrueLayerProvider>;
     modesty: boolean;
@@ -93,17 +94,24 @@ function TransactionCard({
         }
     }
 
-    const isCard = account.cardNetwork !== undefined;
+    function setAnnotation(categoryID: string) {
+        // XXX not persistent (in memory; without a db re-read)
+        transaction.annotation = categoryID;
+        // save to db
+        getDatabaseManager().then(dbm => dbm.annotateTransaction(transaction.transactionID, categoryID));
+    }
+
+    const isCard = account?.cardNetwork !== undefined;
 
     const currency = transaction?.currency === 'GBP' ? '£' : transaction?.currency;
     const amount = isCard ? -transaction.amount : transaction?.amount; // card transactions are negative amounts
 
-    const accountUsers = users?.filter(user => account.users.some(u => u.id === user.id));
+    const accountUsers = users?.filter(user => account?.users.some(u => u.id === user.id));
 
     const isPositive = amount > 0;
 
     const categories = allCategories.filter(c => channels.find(ch => ch.id === c.channelID)?.isIncome === isPositive); // XXX should do in advance
-    const category = categories.find(c => c.id === transaction.annotation);
+    const category = categories.find(c => c.id === transaction.annotation?.[0]); // XXX
     const channel = channels.find(ch => ch.id === category?.channelID);
 
     return (
@@ -181,10 +189,8 @@ function TransactionCard({
                                                 })
                                             })
                                         }
-                                        forcedIndex={categories.findIndex(c => c.id === transaction.annotation)} // XXX!
-                                        setSelected={function (name: string): void {
-                                            throw new Error(`Function for setSelected(${name}) not implemented.`);
-                                        }}
+                                        forcedIndex={categories.findIndex(c => c.id === category?.id)} // XXX!
+                                        setSelected={setAnnotation}
                                         mode='grid'
                                         windowMaxWidth={340}
                                     />
@@ -205,7 +211,7 @@ function TransactionCard({
                         { windowSettings.displayAs !== 'list' &&
                             <div className='verticalSeparator' />
                         }
-                        <div className='small'>{account.name}</div>
+                        <div className='small'>{account?.name}</div>
                     </span>
                     {/* ACCOUNT / CARD NUMBERS */}
                     {/* {!isCard ? account.number.number : `${account?.cardNetwork === 'MASTERCARD' ? 5 : 4}*** **** **** ${account.number.number}`} */}
@@ -240,24 +246,29 @@ function TransactionCard({
                         <Tooltip>
                             <TooltipTrigger>
                                 <img
-                                    className={`bankLogo ${account.url ? 'clickable' : ''}`}
+                                    className={`bankLogo ${account?.url ? 'clickable' : ''}`}
                                     src={
-                                        account.provider.logoURI
-                                        || providers?.[account.provider.id]?.accountLogo
-                                        || providers?.[account.provider.id]?.logo_url
+                                        account?.provider.logoURI
+                                        || (account && (
+                                            providers?.[account.provider.id]?.accountLogo
+                                            || providers?.[account.provider.id]?.logo_url
+                                        ))
                                         || './Serenity/unknown.png'
                                     }
-                                    alt={`${account.name} Logo`}
+                                    alt={`${account?.name} Logo`}
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        if (account.url) {
+                                        if (account?.url) {
                                             openInBrowser(account.url);
                                         }
                                     }}
                                 />
                             </TooltipTrigger>
                             <TooltipContent>
-                                {providers?.[account.provider.id]?.display_name ?? account.provider.name ?? account.provider.id}
+                                { account ?
+                                    (providers?.[account.provider.id]?.display_name ?? account.provider.name ?? account.provider.id)
+                                    : 'Unknown Account'
+                                }
                             </TooltipContent>
                         </Tooltip>
                     </span>

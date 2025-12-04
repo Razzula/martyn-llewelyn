@@ -4,7 +4,8 @@ import { appDataDir } from '@tauri-apps/api/path';
 import { getSQL } from '../sql/SQLRegistry.js';
 
 import { defaultChannels, defaultExpenditures, defaultIncomes } from '../data/categories.js';
-import { Channel, TransactionCategory } from 'src/types/Bagel.js';
+import { Channel, Transaction, TransactionCategory } from '../types/Bagel.js';
+import { newOrderedDateTreeFromList, OrderedDateTree } from '../types/OrderedDateTree.js';
 
 /**
  * Singleton instance of the database manager.
@@ -109,9 +110,9 @@ export class DatabaseManager {
     }
 
     async getChannels(): Promise<Channel[]> {
-        const res: unknown[] = await this.db.select('SELECT * FROM channels');
+        const rows: unknown[] = await this.db.select('SELECT * FROM channels');
         const channels: Channel[] = [];
-        res?.forEach((element: any) => {
+        rows?.forEach((element: any) => {
             channels.push({
                 id: element.id,
                 name: element.name,
@@ -123,9 +124,9 @@ export class DatabaseManager {
     }
 
     async getCategories(): Promise<TransactionCategory[]> {
-        const res: unknown[] = await this.db.select('SELECT * FROM categories');
+        const rows: unknown[] = await this.db.select('SELECT * FROM categories');
         const categories: TransactionCategory[] = [];
-        res?.forEach((element: any) => {
+        rows?.forEach((element: any) => {
             categories.push({
                 id: element.id,
                 name: element.name,
@@ -135,6 +136,86 @@ export class DatabaseManager {
             });
         });
         return categories;
+    }
+
+    async insertTransactions(transactions: OrderedDateTree<Transaction>) {
+        const tree = transactions.getTree();
+        const inserts: any[] = [];
+
+        const sql = `
+            INSERT OR IGNORE INTO transactions
+            (id, accountID, amount, currency, description, transactionType, transactionCategory, timestamp, source, recordTimestamp)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        // flatten tree
+        for (const year in tree) {
+            for (const month in tree[year]) {
+                for (const day in tree[year][month]) {
+                    for (const tx of tree[year][month][day]) {
+                        inserts.push([
+                            tx.transactionID,
+                            tx.accountID,
+                            tx.amount,
+                            tx.currency,
+                            tx.description ?? '',
+                            tx.transactionType ?? '',
+                            tx.transactionCategory ?? '',
+                            tx.timestamp,
+                            tx.source,
+                            new Date().toISOString(), // recordTimestamp
+                        ]);
+                    }
+                }
+            }
+        }
+
+        // batch insert
+        for (const params of inserts) {
+            await this.db.execute(sql, params);
+        }
+        console.log(`Inserted* ${inserts.length} transactions.`);
+    }
+
+    async getTransactions(from: string, to: string): Promise<OrderedDateTree<Transaction>> {
+        const rows: any[] = await this.db.select(
+            `SELECT t.*, 
+                GROUP_CONCAT(c.id) AS categoryIDs
+            FROM transactions t
+            LEFT JOIN transaction2category tc ON t.id = tc.transactionID
+            LEFT JOIN categories c ON tc.categoryID = c.id
+            WHERE t.timestamp >= ? AND t.timestamp <= ?
+            GROUP BY t.id`,
+            [from, to]
+        );
+
+        // map DB rows to Transaction objects
+        const transactions: Transaction[] = rows.map(row => ({
+            transactionID: row.id,
+            accountID: row.accountID,
+            amount: row.amount,
+            currency: row.currency,
+            description: row.description,
+            transactionType: row.transactionType,
+            transactionCategory: row.transactionCategory,
+            timestamp: row.timestamp,
+            source: row.source,
+            recordTimestamp: row.recordTimestamp,
+            annotation: row.categoryIDs?.split(',') || [], // array of category names
+        }));
+
+        // rebuild the OrderedDateTree
+        console.log(transactions);
+        return newOrderedDateTreeFromList(transactions, tx => new Date(tx.timestamp));
+    }
+
+    async annotateTransaction(transactionID: string, categoryID: string) {
+        const sql = `
+            INSERT OR IGNORE INTO transaction2category
+            (transactionID, categoryID)
+            VALUES (?, ?)
+        `;
+        await this.execute(sql, [transactionID, categoryID]);
+        console.log('Inserted 1 annotation');
     }
 
 }

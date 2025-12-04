@@ -149,13 +149,14 @@ export interface Transaction {
     currency: string;
     transactionType: TrueLayerTransactionType;
     transactionCategory: TrueLayerTransactionCategory;
-    transactionClassification: string[];
+    transactionClassification?: string[];
     merchantName?: string;
     meta?: Record<string, unknown>;
 
     // BAGEL
     accountID?: string; // the BankAccount.id this transaction belongs to
-    annotation?: string;
+    annotation?: string | string[];
+    source: string;
 }
 
 export interface Channel {

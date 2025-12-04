@@ -1,5 +1,6 @@
 CREATE TABLE IF NOT EXISTS transactions (
     id TEXT PRIMARY KEY, -- TrueLayer transaction_id
+    accountID TEXT NOT NULL,
     amount REAL NOT NULL, -- encrypted
     currency TEXT NOT NULL,
     description TEXT,

@@ -265,7 +265,7 @@ export const cardTransactions = (): Record<string, Array<TrueLayerCardTransactio
       description: 'MR ANDREAS BEAUX',
       meta: {
         provider_transaction_category: 'TFR',
-        bagel_category: 'GIVING:GIFTS', // added for categorisation in demo mode
+        bagel_category: ['GIVING:GIFTS'], // added for categorisation in demo mode
       },
       normalised_provider_transaction_id: 'txn-2df23cef02f5fef92',
       provider_transaction_id: 'd505e768dd2619af10',
@@ -282,7 +282,7 @@ export const cardTransactions = (): Record<string, Array<TrueLayerCardTransactio
       description: 'MASTER BAGEL GILLESPIE',
       meta: {
         provider_transaction_category: 'DEB',
-        bagel_category: 'INCOME:INVESTMENTYIELD', // added for categorisation in demo mode
+        bagel_category: ['INCOME:INVESTMENTYIELD'], // added for categorisation in demo mode
       },
       normalised_provider_transaction_id: 'txn-1f56a713901bae410',
       provider_transaction_id: '5f2975362be3d5a8d1',
@@ -299,7 +299,7 @@ export const cardTransactions = (): Record<string, Array<TrueLayerCardTransactio
       description: 'INTEREST',
       meta: {
         provider_transaction_category: 'CSH',
-        bagel_category: 'INCOME:INTEREST', // added for categorisation in demo mode
+        bagel_category: ['INCOME:INTEREST'], // added for categorisation in demo mode
       },
       normalised_provider_transaction_id: 'txn-74d0bca7901c9e1b7',
       provider_transaction_id: '71e6e06ef28711edba',
@@ -316,7 +316,7 @@ export const cardTransactions = (): Record<string, Array<TrueLayerCardTransactio
       description: 'DIGITAL REGULAR SAVER',
       meta: { 
         provider_transaction_category: 'DEP',
-        bagel_category: 'SAVINGS:SAVINGS' // added for categorisation in demo mode
+        bagel_category: ['SAVINGS:SAVINGS'] // added for categorisation in demo mode
       },
       normalised_provider_transaction_id: 'txn-0c4bf57ead82ca43e',
       provider_transaction_id: '3cc118c336d8475f6e',
@@ -335,7 +335,7 @@ export const cardTransactions = (): Record<string, Array<TrueLayerCardTransactio
       description: 'THE BATTERED HEN INN',
       meta: {
         provider_transaction_category: 'CSH',
-        bagel_category: 'ESSENTIAL:RENT', // added for categorisation in demo mode
+        bagel_category: ['ESSENTIAL:RENT'], // added for categorisation in demo mode
       },
       normalised_provider_transaction_id: 'txn-8062417e3a4934296',
       provider_transaction_id: '7ad0d85593575df9f9',
@@ -352,7 +352,7 @@ export const cardTransactions = (): Record<string, Array<TrueLayerCardTransactio
       description: 'BOBLIN & BORG CHEESE DELIVERY SERVICES LTD',
       meta: {
         provider_transaction_category: 'DEB',
-        bagel_category: 'ESSENTIAL:GROCERIES', // added for categorisation in demo mode
+        bagel_category: ['ESSENTIAL:GROCERIES'], // added for categorisation in demo mode
       },
       normalised_provider_transaction_id: 'txn-c370c77e9b12134f7',
       provider_transaction_id: '4832e65bddacd1d01d',
@@ -369,7 +369,7 @@ export const cardTransactions = (): Record<string, Array<TrueLayerCardTransactio
       description: 'ATM WITHDRAWAL',
       meta: { 
         provider_transaction_category: 'DEP',
-        bagel_category: 'NON-ESSENTIAL:MISC.' // added for categorisation in demo mode
+        bagel_category: ['NON-ESSENTIAL:MISC.'] // added for categorisation in demo mode
       },
       normalised_provider_transaction_id: 'txn-0c4bf57ead82ca43c',
       provider_transaction_id: '3cc118c336d8475f6d',

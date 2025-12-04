@@ -426,15 +426,15 @@ function App() {
                     }
                 })
             });
-            updateTransactions(transactions);
         }
+        updateTransactions(transactions);
     }
 
     /**
      * For a given account (or card), fetch the required transactions.
      * Make use of RequestGate's request coalescing, to reduce network load.
      */
-    async function updateAccountTransactions(walletToken: string, accountID: string, isCard: boolean, from?: string, to?: string) {
+    async function updateAccountTransactions(walletToken: string, accountID: string, isCard: boolean, from: string, to: string) {
         const request = isCard
             ? () => TrueLayerClient.fetchCardTransactions(walletToken, accountID, from, to)
             : () => TrueLayerClient.fetchAccountTransactions(walletToken, accountID, from, to);
@@ -453,8 +453,8 @@ function App() {
                 data.map(tx => fromTrueLayerAccountTransaction(tx, accountID)),
                 tx => new Date(tx.timestamp)
             );
-
-            updateAccountTransactionsTree(accountID, tree);
+            
+            handleTransactionLoading(accountID, tree, from, to);
             return tree;
         }
         catch (err) {
@@ -467,7 +467,7 @@ function App() {
     /**
      * For all accounts and cards, fetch the required transactions.
      */
-    async function updateAccountsTransactions(from?: string, to?: string) {
+    async function updateAccountsTransactions(from: string, to: string) {
         await Promise.all(Object.entries(accounts).map(([accountID, account]: [string, BankAccount]) => {
             const walletToken = account.users?.[0]?.walletToken || walletTokens[0]; // XXX: use the first token if not specified
             const isCard = account.cardNetwork !== undefined;
@@ -477,8 +477,18 @@ function App() {
 
     function updateTransactions(newTransactions: OrderedDateTree<Transaction>) {
         /// XXX: this certainly breaks some React rules
-        transactionsTree.graft(newTransactions);
-        setTransactionsTree(transactionsTree);
+        setTransactionsTree(prev => prev.graft(newTransactions));
+    }
+
+    function handleTransactionLoading(accountID: string, tree: OrderedDateTree<Transaction>, from: string, to: string) {
+        if (isTauri) {
+            getDatabaseManager().then(dbm => dbm.insertTransactions(tree))
+            getDatabaseManager().then(dbm => dbm.getTransactions(from, to).then(dbTree => updateAccountTransactionsTree(accountID, dbTree)));
+        }
+        else {
+            // demo has no access to db
+            updateAccountTransactionsTree(accountID, tree);
+        }
     }
 
     function startLinkAccount() {

@@ -38,7 +38,7 @@ export type TrueLayerAccountTransaction = {
     transaction_classification: string[];
     merchant_name?: string;
     running_balance?: TrueLayerAccountBalance;
-    meta?: Record<string, string>;
+    meta?: Record<string, string | string[]>;
 };
 
 export type TrueLayerCard = {
@@ -84,7 +84,7 @@ export type TrueLayerCardTransaction = {
     transaction_classification: string[];
     merchant_name?: string;
     running_balance?: TrueLayerCardTransactionRunningBalance;
-    meta?: Record<string, string>;
+    meta?: Record<string, string | string[]>;
 };
 
 export interface TrueLayerProvider {
