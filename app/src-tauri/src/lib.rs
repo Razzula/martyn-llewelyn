@@ -188,6 +188,12 @@ async fn exchangeToken(
 
     let text = res.text().await.map_err(|e| e.to_string())?;
     let json: serde_json::Value = serde_json::from_str(&text).map_err(|e| e.to_string())?;
+    if (json.get("error").is_some()) {
+        println!("TrueLayer error (token exchange): {}", json["error"]);
+        if (json.get("error_description").is_some()) {
+            println!("Details: {}", json["error_description"]);
+        }
+    }
 
     let accessToken = json["access_token"]
         .as_str()
@@ -245,6 +251,12 @@ async fn refreshToken(
 
     let text = res.text().await.map_err(|e| e.to_string())?;
     let json: serde_json::Value = serde_json::from_str(&text).map_err(|e| e.to_string())?;
+    if (json.get("error").is_some()) {
+        println!("TrueLayer error (token refresh): {}", json["error"]);
+        if (json.get("error_description").is_some()) {
+            println!("Details: {}", json["error_description"]);
+        }
+    }
 
     let accessToken = json["access_token"]
         .as_str()

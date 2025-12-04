@@ -4,7 +4,7 @@ import { invoke } from '@tauri-apps/api/core';
 
 import { TrueLayerClient } from './lib/TrueLayer.ts';
 
-import { BankAccount, BankAccountBalance, BankAccountPatch, generatePatchFromAccount, Transaction, User } from './types/Bagel.ts';
+import { BankAccount, BankAccountBalance, BankAccountPatch, Channel, generatePatchFromAccount, Transaction, TransactionCategory, User } from './types/Bagel.ts';
 import { ResponsiveModal } from './components/common/ResponsiveModal.tsx';
 import { AccountManager } from './utils/AccountManager.ts';
 import { fromTrueLayerAccountBalance, fromTrueLayerAccountTransaction, fromTrueLayerCardBalance } from './types/TrueLayerAdapters.ts';
@@ -102,6 +102,9 @@ function App() {
 
     const [appSettings, setAppSettings] = useState<AppSettings>(defaultAppSettings());
 
+    const [categories, setCategories] = useState<TransactionCategory[]>([]);
+    const [channels, setChannels] = useState<Channel[]>([]);
+
     useEffect(() => {
         // HANDLE SETUP
 
@@ -172,7 +175,9 @@ function App() {
             getDatabaseManager().then(dbm => {
                 dbm.init().catch(err => {
                     console.error('Failed to initialise database:', err);
-                });
+                })
+                dbm.getCategories().then(categories => setCategories(categories));
+                dbm.getChannels().then(channels => setChannels(channels));
             });
         }
         else {
@@ -1073,6 +1078,8 @@ function App() {
                         footend={footend}
                         updateAccountsTransactions={updateAccountsTransactions}
                         transactionsLoadedRange={transactionsLoadedRange} setTransactionsLoadedRange={setTransactionsLoadedRange}
+
+                        categories={categories} channels={channels}
                     />
                 }
             </div>

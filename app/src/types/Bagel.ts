@@ -158,20 +158,18 @@ export interface Transaction {
     annotation?: string;
 }
 
-export const channels = [
-    'ESSENTIAL',
-    'NON-ESSENTIAL',
-    'GIVING',
-    'SAVINGS',
-    'INCOME',
-] as const;
-export type Channel = typeof channels[number];
+export interface Channel {
+    id: string;
+    name: string;
+    isIncome: boolean;
+    colour?: string;
+};
 
 export interface TransactionCategory {
     id: string;
     name: string;
-    icon: JSX.Element;
-    channel: Channel;
+    icon: string;
+    channelID: Channel['id'];
     builtin?: true;
 }
 

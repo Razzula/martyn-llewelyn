@@ -1,4 +1,4 @@
-import { BankAccount, Transaction, User } from "../types/Bagel";
+import { BankAccount, Channel, Transaction, TransactionCategory, User } from "../types/Bagel";
 import { openInBrowser } from "../utils/tauri";
 import { toFinancialString } from "../utils/finance";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./common/Tooltip";
@@ -6,7 +6,6 @@ import { TrueLayerProvider, TrueLayerTransactionCategory } from "../types/TrueLa
 
 import { AppSettings } from "src/App";
 import Select from "./common/Select";
-import { expenditures, incomes } from "../data/categories";
 
 import './TransactionCard.css'
 import '../styles/CommonCard.css'
@@ -19,6 +18,7 @@ import CardSpending from '../assets/icons/CardSpending.svg?react';
 import Savings from '../assets/icons/Savings.svg?react';
 import EventRepeat from '../assets/icons/EventRepeat.svg?react';
 import { useLayoutEffect, useRef } from "react";
+import { icons } from "../data/categories";
 
 type TransactionCardProps = {
     className?: string;
@@ -30,6 +30,9 @@ type TransactionCardProps = {
     windowSettings: AppSettings['transactions'];
     globalMaxCardWidth: number,
     cardWidthIs: (cardWith: number) => void;
+
+    allCategories: TransactionCategory[];
+    channels: Channel[];
 }
 
 function TransactionCard({
@@ -40,6 +43,8 @@ function TransactionCard({
     modesty,
     windowSettings,
     globalMaxCardWidth, cardWidthIs,
+
+    allCategories, channels,
 }: TransactionCardProps) {
 
     const ref = useRef<HTMLDivElement>(null);
@@ -88,23 +93,6 @@ function TransactionCard({
         }
     }
 
-    function getChannelColour(channel: string): string {
-        switch (channel) {
-            case 'ESSENTIAL':
-                return '#ea4335';
-            case 'NON-ESSENTIAL':
-                return '#4a86e8';
-            case 'GIVING':
-                return '#46bdc6';
-            case 'SAVINGS':
-                return '#b6d7a8';
-                case 'INCOME':
-                return '#34a853';
-            default:
-                return 'black';
-        }
-    }
-
     const isCard = account.cardNetwork !== undefined;
 
     const currency = transaction?.currency === 'GBP' ? '£' : transaction?.currency;
@@ -114,8 +102,9 @@ function TransactionCard({
 
     const isPositive = amount > 0;
 
-    const categories = Object.values(isPositive ? incomes : expenditures);
+    const categories = allCategories.filter(c => channels.find(ch => ch.id === c.channelID)?.isIncome === isPositive); // XXX should do in advance
     const category = categories.find(c => c.id === transaction.annotation);
+    const channel = channels.find(ch => ch.id === category?.channelID);
 
     return (
         <div ref={ref}
@@ -167,26 +156,30 @@ function TransactionCard({
                                 <TooltipTrigger>
                                     <Select
                                         entries={
-                                            categories.map(category => ({
-                                                name: category.name,
-                                                key: category.id,
-                                                element: (
-                                                    <Tooltip>
-                                                        <TooltipTrigger>
-                                                            <span
-                                                                style={{
-                                                                    width: '100%',
-                                                                    color: getChannelColour(category.channel)
-                                                                }}
-                                                            >
-                                                                {category.icon}
-                                                            </span>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent><span>{category.name}</span></TooltipContent>
-                                                    </Tooltip>
-                                                ),
-                                                icon: <span style={{ color: getChannelColour(category.channel) }}>{category.icon}</span>,
-                                            }))
+                                            categories.map(category => {
+                                                const channel = channels.find(ch => ch.id === category.channelID);
+                                                const categoryIcon = icons?.[category.icon];
+                                                return ({
+                                                    name: category.name,
+                                                    key: category.id,
+                                                    element: (
+                                                        <Tooltip>
+                                                            <TooltipTrigger>
+                                                                <span
+                                                                    style={{
+                                                                        width: '100%',
+                                                                        color: channel?.colour,
+                                                                    }}
+                                                                >
+                                                                    {categoryIcon}
+                                                                </span>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent><span>{category.name}</span></TooltipContent>
+                                                        </Tooltip>
+                                                    ),
+                                                    icon: <span style={{ color: channel?.colour }}>{categoryIcon}</span>,
+                                                })
+                                            })
                                         }
                                         forcedIndex={categories.findIndex(c => c.id === transaction.annotation)} // XXX!
                                         setSelected={function (name: string): void {
@@ -196,7 +189,7 @@ function TransactionCard({
                                         windowMaxWidth={340}
                                     />
                                 </TooltipTrigger>
-                                <TooltipContent>{category ? `(${category.channel}) ${category.name}` : 'Select a category'}</TooltipContent>
+                                <TooltipContent>{category ? `(${channel?.name}) ${category.name}` : 'Select a category'}</TooltipContent>
                             </Tooltip>
                         </div>
                         {/* DESCRIPTION */}

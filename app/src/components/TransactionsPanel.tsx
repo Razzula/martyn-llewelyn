@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { isTauri } from "../utils/tauri";
 
-import { BankAccount, CardNetwork, getAccountLogoSrc, Transaction, User } from "../types/Bagel";
+import { BankAccount, CardNetwork, Channel, getAccountLogoSrc, Transaction, TransactionCategory, User } from "../types/Bagel";
 import TransactionCard from "./TransactionCard";
 import { TrueLayerProvider } from "../types/TrueLayer";
 import { OrderedDateTreeStruct } from "../types/OrderedDateTree";
@@ -22,6 +22,9 @@ type TransactionsPanelProps = {
     updateAccountsTransactions: (from?: string, to?: string) => Promise<void>;
     transactionsLoadedRange: Date;
     setTransactionsLoadedRange: (range: Date) => void;
+    
+    categories: TransactionCategory[];
+    channels: Channel[];
 }
 
 function TransactionsPanel({
@@ -34,6 +37,8 @@ function TransactionsPanel({
     footend,
     updateAccountsTransactions,
     transactionsLoadedRange, setTransactionsLoadedRange,
+
+    categories, channels,
 }: TransactionsPanelProps) {
 
     const [loadingTransactions, setLoadingTransactions] = useState(false);
@@ -155,6 +160,8 @@ function TransactionsPanel({
                                                                             windowSettings={windowSettings}
                                                                             globalMaxCardWidth={minCardWidth}
                                                                             cardWidthIs={cardWidthIs}
+
+                                                                            allCategories={categories} channels={channels}
                                                                         />
                                                                     ))
                                                                 }
