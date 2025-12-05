@@ -4,6 +4,7 @@
  * cannot be done safely in a browser environment.
  */
 
+import { CategoryStat } from 'src/types/Bagel';
 import {
   TrueLayerAccount,
   TrueLayerAccountBalance,
@@ -314,7 +315,7 @@ export const cardTransactions = (): Record<string, Array<TrueLayerCardTransactio
       amount: 150,
       currency: 'GBP',
       description: 'DIGITAL REGULAR SAVER',
-      meta: { 
+      meta: {
         provider_transaction_category: 'DEP',
         bagel_category: ['SAVINGS:SAVINGS'] // added for categorisation in demo mode
       },
@@ -367,7 +368,7 @@ export const cardTransactions = (): Record<string, Array<TrueLayerCardTransactio
       amount: 40,
       currency: 'GBP',
       description: 'ATM WITHDRAWAL',
-      meta: { 
+      meta: {
         provider_transaction_category: 'DEP',
         bagel_category: ['NON-ESSENTIAL:MISC.'] // added for categorisation in demo mode
       },
@@ -382,3 +383,17 @@ export const cardTransactions = (): Record<string, Array<TrueLayerCardTransactio
     },
   ]
 });
+
+export const categoryStats: CategoryStat[] = [
+  { categoryID: 'SAVINGS:SAVINGS', channelID: 'SAVINGS', totalAmount: 150, transactionCount: 1, },
+  { categoryID: 'ESSENTIAL:RENT', channelID: 'ESSENTIAL', totalAmount: 420, transactionCount: 1, },
+  { categoryID: 'ESSENTIAL:GROCERIES', channelID: 'ESSENTIAL', totalAmount: 36.59, transactionCount: 1, },
+  { categoryID: 'NON-ESSENTIAL:MISC.', channelID: 'NON-ESSENTIAL', totalAmount: 40, transactionCount: 1, },
+  { categoryID: 'GIVING:GIFTS', channelID: 'GIVING', totalAmount: 15.86, transactionCount: 1, },
+];
+
+export const channelStats: Record<string, number> = {
+  'ESSENTIAL': 420 + 36.59,
+  'NON-ESSENTIAL': 40,
+  'GIVING': 15.86,
+};

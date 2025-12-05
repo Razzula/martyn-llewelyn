@@ -218,4 +218,15 @@ export class DatabaseManager {
         console.log('Inserted 1 annotation');
     }
 
+    async getCategoryStats() {
+        const rows: any[] = await this.db.select(
+            `SELECT c.id AS categoryID, c.channel AS channelID, COUNT(t.id) AS transactionCount, SUM(t.amount) AS totalAmount
+            FROM categories c
+            LEFT JOIN transaction2category tc ON c.id = tc.categoryID
+            LEFT JOIN transactions t ON t.id = tc.transactionID
+            GROUP BY c.id, c.name`
+        );
+        return rows;
+    }
+
 }

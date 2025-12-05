@@ -180,3 +180,10 @@ export function getAccountLogoSrc(account: BankAccount, providers: Record<string
         || providers?.[account.provider.id]?.logo_url
         || './Serenity/unknown.png';
 }
+
+export interface CategoryStat {
+    categoryID: string;
+    channelID: string;
+    totalAmount: number;
+    transactionCount:  number;
+}

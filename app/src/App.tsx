@@ -4,7 +4,7 @@ import { invoke } from '@tauri-apps/api/core';
 
 import { TrueLayerClient } from './lib/TrueLayer.ts';
 
-import { BankAccount, BankAccountBalance, BankAccountPatch, Channel, generatePatchFromAccount, Transaction, TransactionCategory, User } from './types/Bagel.ts';
+import { BankAccount, BankAccountBalance, BankAccountPatch, CategoryStat, Channel, generatePatchFromAccount, Transaction, TransactionCategory, User } from './types/Bagel.ts';
 import { ResponsiveModal } from './components/common/ResponsiveModal.tsx';
 import { AccountManager } from './utils/AccountManager.ts';
 import { fromTrueLayerAccountBalance, fromTrueLayerAccountTransaction, fromTrueLayerCardBalance } from './types/TrueLayerAdapters.ts';
@@ -25,6 +25,7 @@ import { ToggleSwitch } from './components/common/ToggleSwitch.tsx';
 import { WiggleWrapper } from './components/common/WiggleWrapper.tsx';
 import Spinner from './components/common/Spinner.tsx';
 import { RadioButtons, ToggleButton } from './components/common/RadioButtons.tsx';
+import { categoryStats as defaultCategoryStats, channelStats as defaultChannelStats } from './data/TrueLayerMock.ts';
 
 import VisibilityIcon from './assets/icons/Visibility.svg?react';
 import VisibilityOffIcon from './assets/icons/VisibilityOff.svg?react';
@@ -43,6 +44,7 @@ import List from './assets/icons/List.svg?react';
 import GridView from './assets/icons/GridView.svg?react';
 import Waterfall from './assets/icons/Waterfall.svg?react';
 import { defaultChannels, defaultExpenditures, defaultIncomes } from './data/categories.tsx';
+import DashboardPanel from './components/DashboardPanel.tsx';
 
 enum ResponseState {
     LOADING = 'LOADING',
@@ -79,7 +81,7 @@ const defaultAppSettings = (): AppSettings => ({
 
 function App() {
 
-    const [panel, setPanel] = useState<'accounts' | 'transactions'>('accounts');
+    const [panel, setPanel] = useState<'dashboard' | 'accounts' | 'transactions'>('dashboard');
 
     const [users, setUsers] = useState<User[] | null>(null);
     const [providers, setProviders] = useState<Record<string, TrueLayerProvider>>({});
@@ -105,6 +107,9 @@ function App() {
 
     const [categories, setCategories] = useState<TransactionCategory[]>([]);
     const [channels, setChannels] = useState<Channel[]>([]);
+
+    const [categoryStats, setCategoryStats] = useState<CategoryStat[]>([]);
+    const [channelStats, setChannelStats] = useState<Record<string, number>>({});
 
     useEffect(() => {
         // HANDLE SETUP
@@ -177,8 +182,9 @@ function App() {
                 dbm.init().catch(err => {
                     console.error('Failed to initialise database:', err);
                 })
-                dbm.getCategories().then(categories => setCategories(categories));
-                dbm.getChannels().then(channels => setChannels(channels));
+                dbm.getCategories().then(setCategories);
+                dbm.getChannels().then(setChannels);
+                dbm.getCategoryStats().then(setCategoryStats);
             });
         }
         else {
@@ -200,6 +206,8 @@ function App() {
             setWalletTokens(['mock-user-1', 'mock-user-2']);
             setCategories([...defaultExpenditures, ...defaultIncomes]);
             setChannels([...defaultChannels]);
+            setCategoryStats(defaultCategoryStats);
+            setChannelStats(defaultChannelStats);
         }
 
     }, []);
@@ -387,6 +395,21 @@ function App() {
             });
         }
     }, [accounts, walletTokens]);
+
+    useEffect(() => {
+        if (categoryStats) {
+            const channelStats: Record<string, number> = {};
+            categoryStats.forEach(stat => {
+                if (channelStats?.[stat.channelID]) {
+                    channelStats[stat.channelID] += stat.totalAmount;
+                }
+                else {
+                    channelStats[stat.channelID] = stat.totalAmount;
+                }
+            });
+            setChannelStats(channelStats);
+        }
+    }, [categoryStats])
 
     function redirectToTrueLayer(userID: string, userEmail: string) {
         if (userID !== null) {
@@ -1049,14 +1072,19 @@ function App() {
                             controlRef={controlRef}
                             segments={[
                                 {
+                                    label: 'Dashboard',
+                                    value: 'dashboard',
+                                    ref: segmentRefs[0]
+                                },
+                                {
                                     label: 'Accounts',
                                     value: 'accounts',
-                                    ref: segmentRefs[0]
+                                    ref: segmentRefs[1]
                                 },
                                 {
                                     label: 'Transactions',
                                     value: 'transactions',
-                                    ref: segmentRefs[1]
+                                    ref: segmentRefs[2]
                                 },
                             ]}
                         />
@@ -1066,6 +1094,16 @@ function App() {
             </div>
 
             <div className='body'>
+                {panel === 'dashboard' &&
+                    <DashboardPanel
+                        accounts={accounts}
+                        modesty={appSettings.global.modesty}
+                        categories={categories}
+                        channels={channels}
+                        categoryStats={categoryStats}
+                        channelStats={channelStats}
+                    />
+                }
                 {panel === 'accounts' &&
                     <AccountsPanel
                         accounts={accounts}
@@ -1079,7 +1117,6 @@ function App() {
                         footend={footend}
                     />
                 }
-
                 {panel === 'transactions' &&
                     <TransactionsPanel
                         transactionsTree={transactionsTree.getTree()}

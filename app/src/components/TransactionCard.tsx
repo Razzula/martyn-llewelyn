@@ -96,7 +96,7 @@ function TransactionCard({
 
     function setAnnotation(categoryID: string) {
         // XXX not persistent (in memory; without a db re-read)
-        transaction.annotation = categoryID;
+        transaction.annotation = [categoryID];
         // save to db
         getDatabaseManager().then(dbm => dbm.annotateTransaction(transaction.transactionID, categoryID));
     }

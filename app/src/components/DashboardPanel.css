@@ -1,0 +1,10 @@
+.chartStack {
+    position: relative;
+    width: 100%;
+    height: 300px; /* or whatever height you want */
+}
+
+.chartStack > .chartLayer {
+    position: absolute;
+    inset: 0;
+}
