@@ -7,6 +7,7 @@ import { toFinancialString } from "../utils/finance";
 import AccountCard from "./AccountCard";
 import { AppSettings } from "../App";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./common/Tooltip";
+import { getAccountBalance } from "../utils/utils";
 
 import './AccountsPanel.css'
 
@@ -71,14 +72,6 @@ function AccountsPanel({
             Object.values(accounts || {}).reduce((sum, account) => sum + getAccountBalance(account), 0)
         )
     }, [accounts])
-
-    function getAccountBalance(account: BankAccount) {
-        const isCard = account.cardNetwork !== undefined;
-        const current = account.balance?.current ?? 0;
-        const available = account.balance?.available ?? 0;
-        const balance = isCard ? -current : available; // cards are negative, others are positive
-        return balance;
-    }
 
     function getGroupBankLogoSrc(group: AccountGroup): string {
         for (const account of Object.values(group.accounts)) {

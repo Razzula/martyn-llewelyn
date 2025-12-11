@@ -59,9 +59,12 @@ export function fromTrueLayerAccountBalance(input: TrueLayerAccountBalance): Ban
 }
 
 export function fromTrueLayerCardBalance(input: TrueLayerCardBalance): BankAccountBalance {
+    // cards display inverted amounts
+    const current = -input.current;
+    const available = -input.available;
     return {
-        current: input.current,
-        available: input.available,
+        current: current,
+        available: available,
         currency: input.currency,
         updateTimestamp: input.update_timestamp,
         creditLimit: input.credit_limit,
@@ -94,13 +97,15 @@ export function fromTrueLayerAccountTransaction(input: TrueLayerAccountTransacti
 }
 
 export function fromTrueLayerCardTransaction(input: TrueLayerCardTransaction, accountID?: string): Transaction {
+    console.log(input);
+    const amount = -input.amount; // cards display inverted amounts
     return {
         transactionID: input.transaction_id,
         normalisedProviderTransactionID: input.normalised_provider_transaction_id,
         providerTransactionID: input.provider_transaction_id,
         timestamp: input.timestamp,
         description: input.description?.trim() ?? '',
-        amount: input.amount,
+        amount: amount,
         currency: input.currency,
         transactionType: input.transaction_type,
         transactionCategory: input.transaction_category,

@@ -1,3 +1,5 @@
+import { BankAccount } from "../types/Bagel";
+
 export function isMobile() {
     return /Mobi|Android/i.test(navigator.userAgent);
 }
@@ -43,4 +45,13 @@ export function getMostRecentSunday(from?: Date, allowFrom?: boolean ): Date {
 
 export function toYYYYMMDD(date: Date): string {
     return date.toISOString().slice(0, 10);
+}
+
+export function getAccountBalance(account: BankAccount) {
+    // TODO cards are negative, others are positive; this needs to be done pre-db
+    const isCard = account.cardNetwork !== undefined;
+    const current = account.balance?.current ?? 0;
+    const available = account.balance?.available ?? 0;
+    const balance = isCard ? current : available;
+    return balance;
 }

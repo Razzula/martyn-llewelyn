@@ -1,10 +1,49 @@
+/* container row — two columns */
+.dashboard {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: stretch;
+    display: flex;
+    gap: 24px;
+    width: 100%;
+
+    --chart-height: 500px;
+}
+
+/* left: overlapping pies; right: bar chart (gets more width) */
+.leftPane {
+    width: 40%;
+    /* pies column */
+    position: relative;
+    /* adjust once to change both heights */
+    height: var(--chart-height);
+}
+
+.rightPane {
+    width: 60%;
+    /* bar chart column (priority) */
+    height: var(--chart-height);
+}
+
+/* stacked pies: children overlap and are centred */
 .chartStack {
     position: relative;
     width: 100%;
-    height: 300px; /* or whatever height you want */
+    height: 100%;
 }
 
-.chartStack > .chartLayer {
+.chartStack>.chartLayer {
     position: absolute;
     inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    /* make the top layer not block tooltips by default */
+}
+
+/* allow interactive elements (tooltips) inside the recharts wrapper */
+.chartLayer .recharts-wrapper {
+    pointer-events: auto;
 }

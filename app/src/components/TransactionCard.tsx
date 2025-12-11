@@ -104,7 +104,8 @@ function TransactionCard({
     const isCard = account?.cardNetwork !== undefined;
 
     const currency = transaction?.currency === 'GBP' ? '£' : transaction?.currency;
-    const amount = isCard ? -transaction.amount : transaction?.amount; // card transactions are negative amounts
+    // const amount = isCard ? -transaction.amount : transaction?.amount; // card transactions are negative amounts
+    const amount = transaction.amount; // card transactions are negative amounts
 
     const accountUsers = users?.filter(user => account?.users.some(u => u.id === user.id));
 

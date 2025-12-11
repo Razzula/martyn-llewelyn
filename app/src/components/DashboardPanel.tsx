@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Bar } from 'recharts';
 
 import { toFinancialString } from '../utils/finance';
 import { BankAccount, CategoryStat, Channel, TransactionCategory } from '../types/Bagel';
+import { getAccountBalance } from '../utils/utils';
 
 import './DashboardPanel.css'
 
@@ -22,7 +23,7 @@ function DashboardPanel({
     channels,
     categoryStats,
     channelStats,
-    
+
 }: DashboardPanelProps) {
 
     const [accountsSum, setAccountsSum] = useState<number>(0);
@@ -57,12 +58,14 @@ function DashboardPanel({
         Object.entries(channelStats).forEach((stat) => {
             const channel = channels.find(ch => ch.id === stat[0]);
             if (!channel?.isIncome) {
-                const value = stat[1] || 0;
-                data.push({
-                    name: stat[0],
-                    value: Math.round((Math.abs(value))),
-                    colour: channel?.colour,
-                });
+                const value = Number(Math.abs(stat[1] || 0).toFixed(2));
+                if (value !== 0) {
+                    data.push({
+                        name: stat[0],
+                        value: value,
+                        colour: channel?.colour,
+                    });
+                }
             }
         });
         setChannelChart(data);
@@ -72,26 +75,17 @@ function DashboardPanel({
         const data: { name?: string; value?: number; colour?: string }[] = [];
         categoryStats.forEach((stat) => {
             const channel = channels.find(ch => ch.id === stat.channelID);
-            if (!channel?.isIncome) {
+            if (!channel?.isIncome && stat.totalAmount !== null) {
                 const category = categories.find(ca => ca.id === stat.categoryID);
                 data.push({
                     name: category?.name,
-                    value: Math.round((Math.abs(stat.totalAmount))),
+                    value: Number(Math.abs(stat.totalAmount).toFixed(2)),
                     colour: channel?.colour,
                 });
             }
         });
         setCategoryChart(data);
     }, [categoryStats])
-
-    function getAccountBalance(account: BankAccount) {
-        // TODO this needs to be done pre-db
-        const isCard = account.cardNetwork !== undefined;
-        const current = account.balance?.current ?? 0;
-        const available = account.balance?.available ?? 0;
-        const balance = isCard ? -current : available; // cards are negative, others are positive
-        return balance;
-    }
 
     return (
         <>
@@ -100,48 +94,60 @@ function DashboardPanel({
                     {!modesty ? `£ ${toFinancialString(accountsSum)}` : '£ ***'}
                 </h1>
             </div>
-            <div className="chartStack">
-                <div className="chartLayer">
-                    <ResponsiveContainer width="100%" height={600}>
-                        <PieChart>
-                            <Pie
-                                data={channelChart}
-                                dataKey="value"
-                                nameKey="name"
-                                cx="50%"
-                                cy="50%"
-                                outerRadius={100}
-                                label
-                            >
-                                {channelChart.map((entry, index) => (
-                                    <Cell key={index} fill={entry.colour} />
-                                ))}
-                            </Pie>
-                            <Tooltip />
-                            {/* <Legend /> */}
-                        </PieChart>
-                    </ResponsiveContainer>
+            <div className='dashboard'>
+                <div className='leftPane'>
+                    <div className='chartStack'>
+                        <div className='chartLayer'>
+                            <ResponsiveContainer width='100%' height='100%'>
+                                {/* smaller pie (channelChart) */}
+                                <PieChart>
+                                    <Pie
+                                        data={channelChart} dataKey='value' nameKey='name' 
+                                        cx='50%' cy='50%' outerRadius={125}
+                                        startAngle={90} endAngle={-270}
+                                    >
+                                        {channelChart.map((entry, i) => (
+                                            <Cell key={i} fill={entry.colour ?? '#cccccc'} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+
+                        <div className='chartLayer'>
+                            <ResponsiveContainer width='100%' height='100%'>
+                                {/* larger pie (categoryChart) */}
+                                <PieChart>
+                                    <Pie
+                                        data={categoryChart} dataKey='value' nameKey='name'
+                                        cx='50%' cy='50%' outerRadius={225} innerRadius={125}
+                                        startAngle={90} endAngle={-270}
+                                        label
+                                    >
+                                        {categoryChart.map((entry, i) => (
+                                            <Cell key={i} fill={entry.colour ?? '#cccccc'} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
                 </div>
-                <div className="chartLayer">
-                    <ResponsiveContainer width="100%" height={600}>
-                        <PieChart>
-                            <Pie
-                                data={categoryChart}
-                                dataKey="value"
-                                nameKey="name"
-                                cx="50%"
-                                cy="50%"
-                                outerRadius={200}
-                                innerRadius={112}
-                                label
-                            >
+                <div className='rightPane'>
+                    <ResponsiveContainer width='100%' height='100%'>
+                        <BarChart data={categoryChart} margin={{ top: 20, right: 20, left: 0, bottom: 60 }}>
+                            <CartesianGrid strokeDasharray='3 3' />
+                            <XAxis dataKey='name' angle={-45} textAnchor='end' interval={0} height={60} />
+                            <YAxis />
+                            {/* <Tooltip /> */}
+                            <Bar dataKey='value'>
                                 {categoryChart.map((entry, index) => (
-                                    <Cell key={index} fill={entry.colour ?? ''} />
+                                    <Cell key={index} fill={entry.colour ?? '#999999'} />
                                 ))}
-                            </Pie>
-                            <Tooltip />
-                            {/* <Legend /> */}
-                        </PieChart>
+                            </Bar>
+                        </BarChart>
                     </ResponsiveContainer>
                 </div>
             </div>

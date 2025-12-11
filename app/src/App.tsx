@@ -7,9 +7,9 @@ import { TrueLayerClient } from './lib/TrueLayer.ts';
 import { BankAccount, BankAccountBalance, BankAccountPatch, CategoryStat, Channel, generatePatchFromAccount, Transaction, TransactionCategory, User } from './types/Bagel.ts';
 import { ResponsiveModal } from './components/common/ResponsiveModal.tsx';
 import { AccountManager } from './utils/AccountManager.ts';
-import { fromTrueLayerAccountBalance, fromTrueLayerAccountTransaction, fromTrueLayerCardBalance } from './types/TrueLayerAdapters.ts';
+import { fromTrueLayerAccountBalance, fromTrueLayerAccountTransaction, fromTrueLayerCardBalance, fromTrueLayerCardTransaction } from './types/TrueLayerAdapters.ts';
 import { Tooltip, TooltipContent, TooltipTrigger } from './components/common/Tooltip.tsx';
-import { TrueLayerAccountBalance, TrueLayerCardBalance, TrueLayerProvider } from './types/TrueLayer.ts';
+import { TrueLayerAccountBalance, TrueLayerAccountTransaction, TrueLayerCardBalance, TrueLayerCardTransaction, TrueLayerProvider } from './types/TrueLayer.ts';
 import { closedProviders } from './data/providers.ts';
 import { isTauri, openInBrowser } from './utils/tauri.ts';
 import AccountEditPanel from './components/AccountEditPanel.tsx';
@@ -461,6 +461,9 @@ function App() {
         const request = isCard
             ? () => TrueLayerClient.fetchCardTransactions(walletToken, accountID, from, to)
             : () => TrueLayerClient.fetchAccountTransactions(walletToken, accountID, from, to);
+        const mapping = isCard
+            ? (tx: TrueLayerCardTransaction, accountID: string | undefined) => fromTrueLayerCardTransaction(tx, accountID)
+            : (tx: TrueLayerAccountTransaction, accountID: string | undefined) => fromTrueLayerAccountTransaction(tx, accountID);
 
         try {
             const data = await requestGate.run(
@@ -473,7 +476,7 @@ function App() {
                 return null;
             }
             const tree = newOrderedDateTreeFromList(
-                data.map(tx => fromTrueLayerAccountTransaction(tx, accountID)),
+                data.map(tx => mapping(tx, accountID)),
                 tx => new Date(tx.timestamp)
             );
             

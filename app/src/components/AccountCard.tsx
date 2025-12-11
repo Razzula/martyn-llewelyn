@@ -31,7 +31,7 @@ function AccountCard({
     const current = balance ? toFinancialString(balance?.current) : null;
 
     const currency = balance?.currency === 'GBP' ? '£' : balance?.currency;
-    const displayBalance = current ? (`${currency}\u00A0${modesty ? '***' : `${(isCard ? '-' : '')}${current}`}`) : null;
+    const displayBalance = current ? (`${currency}\u00A0${modesty ? '***' : current}`) : null;
     const displayAvailable = available ? `${currency}\u00A0${modesty ? '***' : available}` : null;
 
     const accountUsers = users?.filter(user => account.users.some(u => u.id === user.id));
