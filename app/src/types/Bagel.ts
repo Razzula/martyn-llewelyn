@@ -5,6 +5,7 @@ export interface BankAccount {
     // unified TrueLayerAccount | TrueLayerCard
     id: string;
     name: string;
+    instrumentType: InstrumentType;
     type: BankAccountType;
     number: {
         number: string;
@@ -49,6 +50,13 @@ export interface BankAccount {
     };
 
     url?: string; // URL to the bank's website or app
+}
+
+export enum InstrumentType {
+    ACCOUNT = 'ACCOUNT',
+    CARD = 'CARD',
+    PENSION = 'PENSION',
+    GIFTCARD = 'GIFTCARD',
 }
 
 export enum BankAccountType {

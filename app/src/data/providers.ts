@@ -35,5 +35,41 @@ export const closedProviders: TrueLayerProvider[] = [
             updated_at: ""
         },
     },
+    {
+        provider_id: "bagel-progressivebs",
+        display_name: "Progressive Building Society",
+        country: "uk",
+        logo_url: "/Finance/Banks/ProgressiveBS.png",
+        accountLogo: "/Finance/Banks/ProgressiveBSSquare.png",
+        scopes: [],
+        availability: {
+            recommended_status: "",
+            updated_at: ""
+        },
+    },
+    {
+        provider_id: "bagel-landg",
+        display_name: "Legal & General",
+        country: "uk",
+        logo_url: "/Finance/Pensions/LegalAndGeneral.svg",
+        accountLogo: "/Finance/Pensions/LegalAndGeneralSquare.png",
+        scopes: [],
+        availability: {
+            recommended_status: "",
+            updated_at: ""
+        },
+    },
+    {
+        provider_id: "bagel-one4all",
+        display_name: "One4All",
+        country: "uk",
+        logo_url: "/Finance/GiftCards/One4all.jpg",
+        accountLogo: "/Finance/GiftCards/One4allSquare.png",
+        scopes: [],
+        availability: {
+            recommended_status: "",
+            updated_at: ""
+        },
+    },
     // YBS always has sort code 60-92-04
 ];

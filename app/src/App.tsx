@@ -43,6 +43,7 @@ import Users from './assets/icons/Users.svg?react';
 import List from './assets/icons/List.svg?react';
 import GridView from './assets/icons/GridView.svg?react';
 import Waterfall from './assets/icons/Waterfall.svg?react';
+import Category from './assets/icons/Category.svg?react';
 import { defaultChannels, defaultExpenditures, defaultIncomes } from './data/categories.tsx';
 import DashboardPanel from './components/DashboardPanel.tsx';
 
@@ -56,7 +57,7 @@ export type AppSettings = {
     accounts: {
         sortBy: 'name' | 'balance',
         sortOrder: 'asc' | 'desc',
-        groupBy?: 'bank' | 'user',
+        groupBy?: 'bank' | 'user' | 'type',
     },
     transactions: {
         displayAs: 'list' | 'grid' | 'waterfall',
@@ -1010,13 +1011,18 @@ function App() {
                                 options={[
                                     {
                                         key: 'bank',
-                                        desc: `${appSettings.accounts.groupBy === 'bank' ? 'Grouped' : 'Group'} by Bank`,
+                                        desc: `${appSettings.accounts.groupBy === 'bank' ? 'Grouped' : 'Group'} by Provider`,
                                         icon: <Bank />,
                                     },
                                     {
                                         key: 'user',
                                         desc: `${appSettings.accounts.groupBy === 'user' ? 'Grouped' : 'Group'} by User`,
                                         icon: <Users />,
+                                    },
+                                    {
+                                        key: 'type',
+                                        desc: `${appSettings.accounts.groupBy === 'bank' ? 'Grouped' : 'Group'} by Type`,
+                                        icon: <Category />,
                                     },
                                 ]}
                                 selected={appSettings.accounts.groupBy}

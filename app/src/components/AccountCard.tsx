@@ -7,6 +7,7 @@ import Spinner from "./common/Spinner";
 
 import './AccountCard.css'
 import '../styles/CommonCard.css'
+import { getInstrumentTypeIcon } from "../utils/icons";
 
 type AccountCardProps = {
     accountID: string;
@@ -23,7 +24,8 @@ function AccountCard({
     modesty,
     setOpenEditAccount,
 }: AccountCardProps) {
-    const isCard = account.cardNetwork !== undefined;
+    const isBankCard = account.instrumentType === 'CARD';
+    const isCard = isBankCard || account.instrumentType === 'GIFTCARD';
 
     const balance = 'balance' in account ? account.balance : null;
 
@@ -133,6 +135,7 @@ function AccountCard({
                         </TooltipContent>
                     </Tooltip>
                     <div className='verticalSeparator' />
+                    {getInstrumentTypeIcon(account.instrumentType, true)}
                 </div>
                 {/* ACCOUNT NAME */}
                 <div className='name'>{account.name}</div>
@@ -154,7 +157,7 @@ function AccountCard({
                 </div>
                 <div className='row'>
                     {/* ACCOUNT / CARD NUMBERS */}
-                    {!isCard ? account.number.number : `${account?.cardNetwork === 'MASTERCARD' ? 5 : 4}*** **** **** ${account.number.number}`}
+                    {!isBankCard ? account.number.number : `${account?.cardNetwork === 'MASTERCARD' ? 5 : 4}*** **** **** ${account.number.number}`}
                     {!isCard &&
                         <>
                             <div className='verticalSeparator' />

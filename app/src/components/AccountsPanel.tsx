@@ -10,6 +10,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "./common/Tooltip";
 import { getAccountBalance } from "../utils/utils";
 
 import './AccountsPanel.css'
+import { getInstrumentTypeIcon } from "../utils/icons";
 
 type AccountGroup = {
     accounts: Record<string, BankAccount>,
@@ -44,26 +45,35 @@ function AccountsPanel({
     const [accountsSum, setAccountsSum] = useState<number>(0);
 
     useEffect(() => {
-        const groupBy = windowSettings.groupBy;
+        const { groupBy } = windowSettings;
         const groups: Record<string, AccountGroup> = {};
-        Object.entries(accounts).forEach(([key, account]) => {
-            const groupKey =
-                // GROUP ACCOUNTS BY PROVIDER
-                (groupBy === 'bank') ? account.provider.id :
-                // GROUP ACCOUNTS BY UNIQUE USER GROUPS
-                // i.e., A, B, and A&B as separate groups
-                (groupBy === 'user') ? (account.users.reduce((prev, u) => `${prev}_${u.id}`, '')) :
-                // no (valid) grouping defined
-                'all';
-            if (groups[groupKey] == undefined) {
-                groups[groupKey] = {
-                    accounts: {},
-                    sum: 0,
-                };
+
+        const getGroupKey = (account: BankAccount): string => {
+            switch (groupBy) {
+                case 'bank':
+                    return account.provider.id;
+                case 'user':
+                    return account.users
+                        .map(u => u.id)
+                        .sort()
+                        .join('_');
+                case 'type':
+                    return account.instrumentType;
+                default:
+                    return 'all';
             }
+        };
+
+        Object.entries(accounts).forEach(([key, account]) => {
+            const groupKey = getGroupKey(account);
+
+            if (!groups[groupKey]) {
+                groups[groupKey] = { accounts: {}, sum: 0 };
+            }
+
             groups[groupKey].accounts[key] = account;
             groups[groupKey].sum += getAccountBalance(account);
-        })
+        });
         setGroupedAccounts(groups);
     }, [accounts, windowSettings])
 
@@ -72,6 +82,66 @@ function AccountsPanel({
             Object.values(accounts || {}).reduce((sum, account) => sum + getAccountBalance(account), 0)
         )
     }, [accounts])
+
+    function getGroupIcons(
+        groupBy: string,
+        groupName: string,
+        group: AccountGroup,
+        users?: User[]
+    ) {
+        switch (groupBy) {
+            case 'bank':
+                return (
+                    <img
+                        className="groupIcon"
+                        src={getGroupBankLogoSrc(group)}
+                    />
+                );
+            case 'user':
+                return groupName
+                    .split('_')
+                    .filter(Boolean)
+                    .map(userID => {
+                        const icon = users?.find(u => u.id === userID)?.icon;
+                        return icon
+                            ? (
+                                <img
+                                    key={userID}
+                                    className="groupIcon"
+                                    src={icon}
+                                />
+                            )
+                            : null;
+                    });
+            case 'type':
+                return getInstrumentTypeIcon(groupName as any);
+            default:
+                return null;
+        }
+    }
+
+    function getGroupLabel(
+        groupBy: string,
+        groupName: string,
+        users?: User[],
+        providers?: Record<string, TrueLayerProvider>
+    ): string {
+        switch (groupBy) {
+            case 'bank':
+                return providers?.[groupName]?.display_name ?? groupName;
+            case 'user':
+                return groupName
+                    .split('_')
+                    .filter(Boolean)
+                    .map(id => users?.find(u => u.id === id)?.name)
+                    .filter(Boolean)
+                    .join(' & ');
+            case 'type':
+                return groupName;
+            default:
+                return '';
+        }
+    }
 
     function getGroupBankLogoSrc(group: AccountGroup): string {
         for (const account of Object.values(group.accounts)) {
@@ -96,83 +166,76 @@ function AccountsPanel({
                     // POPULATED RECORD
                     <div className='accountsGrid'>
                         {
-                            Object.entries(groupedAccounts).map(([groupName, group]) =>
+                            Object.entries(groupedAccounts).map(([groupName, group]) => {
                                 // <div className='accountsGroup'>
-                            // </div>
-                                <>
-                                    { windowSettings.groupBy &&
-                                        <div className='groupCard'>
-                                            <h2>
-                                                {
-                                                    (windowSettings.groupBy === 'bank')
-                                                        ? <img className='groupIcon' src={getGroupBankLogoSrc(group)} />
-                                                        : (groupName.split('_').map((userID) => {
-                                                            if (userID) {
-                                                                const icon = users?.find(u => u.id === userID)?.icon;
-                                                                if (icon) {
-                                                                    return <img className='groupIcon' src={icon} />
-                                                                }
-                                                            }}))
-                                                }
-                                            </h2>
-                                            <span>
-                                                {
-                                                    (windowSettings.groupBy === 'bank')
-                                                        ? (providers[groupName]?.display_name ?? groupName)
-                                                        : (groupName.split('_').map((userID, index, full) => {
-                                                            if (userID) {
-                                                                const name = users?.find(u => u.id === userID)?.name;
-                                                                if (index < full.length - 1) {
-                                                                    return `${name} & `
-                                                                }
-                                                                return name;
-                                                            }}))
-                                                }
-                                            </span>
-                                            <span className='row'>
-                                                <h3>({Object.values(group.accounts).length})</h3>
-                                                <div className='verticalSeparator' />
-                                                <h3>{!modesty ? `£ ${toFinancialString(group.sum)}` : '£ ***'}</h3>
-                                            </span>
-                                        </div>
-                                    }
-                                    {
-                                        Object.entries(group.accounts)
-                                            .sort(([, a], [, b]) => {
-                                                // order accounts in (ascending || descending) order by (balance || name)
-                                                const aIsCard = a.cardNetwork !== undefined;
-                                                const aValue = (windowSettings.sortBy === 'name')
-                                                    ? a.name.toLowerCase() // name
-                                                    : (aIsCard ? a.balance?.current : a.balance?.available) || 0; // balance
-                                                const bIsCard = b.cardNetwork !== undefined;
-                                                const bValue = (windowSettings.sortBy === 'name')
-                                                    ? b.name.toLowerCase() // name
-                                                    : (bIsCard ? b.balance?.current : b.balance?.available) || 0; // balance
+                                // </div>
+                                return (
+                                    <>
+                                        {windowSettings.groupBy &&
+                                            <div className='groupCard'>
+                                                <h2>
+                                                    {getGroupIcons(
+                                                        windowSettings.groupBy,
+                                                        groupName,
+                                                        group,
+                                                        users || undefined
+                                                    )}
+                                                </h2>
+                                                <span>
+                                                    {
+                                                        getGroupLabel(
+                                                            windowSettings.groupBy,
+                                                            groupName,
+                                                            users || undefined,
+                                                            providers || undefined
+                                                        )
+                                                    }
+                                                </span>
+                                                <span className='row'>
+                                                    <h3>({Object.values(group.accounts).length})</h3>
+                                                    <div className='verticalSeparator' />
+                                                    <h3>{!modesty ? `£ ${toFinancialString(group.sum)}` : '£ ***'}</h3>
+                                                </span>
+                                            </div>
+                                        }
+                                        {
+                                            Object.entries(group.accounts)
+                                                .sort(([, a], [, b]) => {
+                                                    // order accounts in (ascending || descending) order by (balance || name)
+                                                    const aIsCard = a.cardNetwork !== undefined;
+                                                    const aValue = (windowSettings.sortBy === 'name')
+                                                        ? a.name.toLowerCase() // name
+                                                        : (aIsCard ? a.balance?.current : a.balance?.available) || 0; // balance
+                                                    const bIsCard = b.cardNetwork !== undefined;
+                                                    const bValue = (windowSettings.sortBy === 'name')
+                                                        ? b.name.toLowerCase() // name
+                                                        : (bIsCard ? b.balance?.current : b.balance?.available) || 0; // balance
 
-                                                if (windowSettings.sortOrder == 'desc') {
-                                                    // desc
-                                                    if (aValue > bValue) return -1;
-                                                    if (aValue < bValue) return 1;
-                                                }
-                                                else {
-                                                    // asc
-                                                    if (aValue > bValue) return 1;
-                                                    if (aValue < bValue) return -1;
-                                                }
-                                                return 0;
-                                            })
-                                            .map(([accountID, account]) => (
-                                                <AccountCard
-                                                    key={accountID}
-                                                    accountID={accountID} account={account}
-                                                    users={users} providers={providers}
-                                                    modesty={modesty}
-                                                    setOpenEditAccount={setOpenEditAccount}
-                                                />
-                                            ))
-                                    }
-                                </>
-                            )
+                                                    if (windowSettings.sortOrder == 'desc') {
+                                                        // desc
+                                                        if (aValue > bValue) return -1;
+                                                        if (aValue < bValue) return 1;
+                                                    }
+                                                    else {
+                                                        // asc
+                                                        if (aValue > bValue) return 1;
+                                                        if (aValue < bValue) return -1;
+                                                    }
+                                                    return 0;
+                                                })
+                                                .map(([accountID, account]) => (
+                                                    <AccountCard
+                                                        key={accountID}
+                                                        accountID={accountID} account={account}
+                                                        users={users} providers={providers}
+                                                        modesty={modesty}
+                                                        setOpenEditAccount={setOpenEditAccount}
+                                                    />
+                                                ))
+                                        }
+                                    </>
+                                );
+                            })
                         }
                     </div>
                 ) : (
@@ -183,8 +246,8 @@ function AccountsPanel({
                 )
             }
 
-            {/* CONNECT ACCOUNT */ }
-            {/* TrueLayer */ }
+            {/* CONNECT ACCOUNT */}
+            {/* TrueLayer */}
             <div className='column footer' style={{ paddingBottom: '2rem' }}>
                 <div className='row'
                     style={{
@@ -207,7 +270,7 @@ function AccountsPanel({
                                 <span>Connect with {Object.values(accounts)?.length === 0 || !isTauri ? 'your' : 'another'} Bank</span>
                             </button>
                         </TooltipTrigger>
-                        { !isTauri &&
+                        {!isTauri &&
                             <TooltipContent>This feature is unavailable in limited demo mode.</TooltipContent>
                         }
                     </Tooltip>

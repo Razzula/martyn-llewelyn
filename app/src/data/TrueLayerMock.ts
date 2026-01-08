@@ -4,7 +4,7 @@
  * cannot be done safely in a browser environment.
  */
 
-import { CategoryStat } from 'src/types/Bagel';
+import { CategoryStat } from '../types/Bagel';
 import {
   TrueLayerAccount,
   TrueLayerAccountBalance,

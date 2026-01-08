@@ -2,24 +2,18 @@ import { BankAccount, Channel, Transaction, TransactionCategory, User } from "..
 import { openInBrowser } from "../utils/tauri";
 import { toFinancialString } from "../utils/finance";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./common/Tooltip";
-import { TrueLayerProvider, TrueLayerTransactionCategory } from "../types/TrueLayer";
+import { TrueLayerProvider } from "../types/TrueLayer";
 
-import { AppSettings } from "src/App";
+import { AppSettings } from "../App";
 import Select from "./common/Select";
 
 import './TransactionCard.css'
 import '../styles/CommonCard.css'
 
-import Bank from '../assets/icons/Bank.svg?react';
-import Cash from '../assets/icons/Cash.svg?react';
-import Chequebook from '../assets/icons/Checkbook.svg?react';
-import CardCredit from '../assets/icons/CardCredit.svg?react';
-import CardSpending from '../assets/icons/CardSpending.svg?react';
-import Savings from '../assets/icons/Savings.svg?react';
-import EventRepeat from '../assets/icons/EventRepeat.svg?react';
 import { useLayoutEffect, useRef } from "react";
 import { icons } from "../data/categories";
 import { getDatabaseManager } from "../utils/DatabaseManager";
+import { getTransactionIcon } from "../utils/icons";
 
 type TransactionCardProps = {
     className?: string;
@@ -57,42 +51,6 @@ function TransactionCard({
         const width = ref.current.getBoundingClientRect().width;
         cardWidthIs(width);
     }, [windowSettings.displayAs]);
-
-    function getTransactionIcon(category: TrueLayerTransactionCategory, isCard: boolean): JSX.Element {
-        switch (category) {
-            case TrueLayerTransactionCategory.ATM:
-            case TrueLayerTransactionCategory.CASH:
-            case TrueLayerTransactionCategory.CASHBACK:
-                return <Cash />;
-            case TrueLayerTransactionCategory.CHEQUE:
-                return <Chequebook />;
-            case TrueLayerTransactionCategory.CREDIT:
-                return <CardCredit />;
-            case TrueLayerTransactionCategory.DEBIT:
-                return <CardSpending />;
-            case TrueLayerTransactionCategory.DIRECT_DEBIT:
-                return <img
-                    src='./Finance/DirectDebit_Portrait.svg'
-                    alt='Direct Debit'
-                    width={24} height={24}
-                />;
-            case TrueLayerTransactionCategory.DIVIDEND:
-            case TrueLayerTransactionCategory.INTEREST:
-                return <Savings />;
-            case TrueLayerTransactionCategory.STANDING_ORDER:
-                return <EventRepeat />;
-            case TrueLayerTransactionCategory.TRANSFER:
-                return <Bank />;
-            // case TrueLayerTransactionCategory.BILL_PAYMENT:
-            // case TrueLayerTransactionCategory.CORRECTION:
-            // case TrueLayerTransactionCategory.FEE_CHARGE:
-            // case TrueLayerTransactionCategory.PURCHASE:
-            case TrueLayerTransactionCategory.OTHER:
-            case TrueLayerTransactionCategory.UNKNOWN:
-            default:
-                return isCard ? <CardCredit /> : <Bank />;
-        }
-    }
 
     function setAnnotation(categoryID: string) {
         // XXX not persistent (in memory; without a db re-read)

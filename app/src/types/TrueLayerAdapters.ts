@@ -1,10 +1,11 @@
 import { TrueLayerAccount, TrueLayerAccountBalance, TrueLayerAccountTransaction, TrueLayerCard, TrueLayerCardBalance, TrueLayerCardTransaction } from '../types/TrueLayer';
-import { BankAccount, BankAccountBalance, CardNetwork, CardNetworkKey, Transaction } from '../types/Bagel';
+import { BankAccount, BankAccountBalance, CardNetwork, CardNetworkKey, InstrumentType, Transaction } from '../types/Bagel';
 
 export function fromTrueLayerAccount(input: TrueLayerAccount): BankAccount {
     return {
         id: input.account_id,
         name: input.display_name.trim(),
+        instrumentType: InstrumentType.ACCOUNT,
         type: input.account_type as BankAccount['type'],
         number: {
             number: input.account_number.number,
@@ -32,6 +33,7 @@ export function fromTrueLayerCard(input: TrueLayerCard): BankAccount {
     return {
         id: input.account_id,
         name: input.display_name.trim(),
+        instrumentType: InstrumentType.CARD,
         type: input.card_type as BankAccount['type'],
         number: {
             number: input.partial_card_number,

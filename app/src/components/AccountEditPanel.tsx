@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { BankAccount, BankAccountType, CardNetwork, InterestType, User } from "../types/Bagel";
+import { BankAccount, BankAccountType, CardNetwork, InstrumentType, InterestType, User } from "../types/Bagel";
 import { TrueLayerProvider } from "../types/TrueLayer";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./common/Tooltip";
 import Select from "./common/Select";
@@ -43,7 +43,9 @@ function AccountEditPanel({
     }
 
     const isAccountOnline = ephemeralAccount?.source === 'TrueLayer';
-    const isCard = ephemeralAccount?.type === BankAccountType.CREDIT;
+    const isAccount = ephemeralAccount?.instrumentType === InstrumentType.ACCOUNT;
+    const isBankCard = ephemeralAccount?.instrumentType === InstrumentType.CARD;
+    const isCard = isBankCard || ephemeralAccount?.instrumentType === InstrumentType.GIFTCARD;
 
     const invalidUsers = (
         // non-null
@@ -52,6 +54,11 @@ function AccountEditPanel({
     const invalidName = (
         // non-null
         ephemeralAccount?.name?.trim() === ''
+    );
+    const invalidIntrumentType = (
+        // non-null
+        ephemeralAccount?.instrumentType === undefined
+        || ephemeralAccount?.instrumentType.trim() === ''
     );
     const invalidType = (
         // non-null
@@ -67,9 +74,9 @@ function AccountEditPanel({
             && existingAccount.number?.number === ephemeralAccount.number?.number
         ))
         // format
-        || ( !isCard ?
-            !/^\d{8,10}$/.test(ephemeralAccount?.number?.number || '')
-            : !/^\d{4}$/.test(ephemeralAccount?.number?.number || '')
+        || ( isBankCard ?
+            !/^\d{4}$/.test(ephemeralAccount?.number?.number || '')
+            : !/^\d{8,10}$/.test(ephemeralAccount?.number?.number || '')
         )
     );
     const invalidSortCode = !isCard && (
@@ -77,9 +84,11 @@ function AccountEditPanel({
         ephemeralAccount?.number?.sortCode === undefined
         || ephemeralAccount?.number?.sortCode?.trim() === ''
         // format
-        || !/^\d{2}-\d{2}-\d{2}$/.test(ephemeralAccount?.number?.sortCode || '')
+        || ( isAccount &&
+            !/^\d{2}-\d{2}-\d{2}$/.test(ephemeralAccount?.number?.sortCode || '')
+        )
     );
-    const invalidCardNetwork = isCard && (
+    const invalidCardNetwork = isBankCard && (
         // non-null
         ephemeralAccount?.cardNetwork === undefined
         || ephemeralAccount?.cardNetwork.trim() === ''
@@ -119,8 +128,8 @@ function AccountEditPanel({
     )
 
     const invalidForm = (
-        invalidUsers || invalidName || invalidType || invalidNumber || invalidSortCode || invalidCardNetwork
-        || !isCard && (invalidInterest)
+        invalidUsers || invalidName || invalidIntrumentType || invalidType || invalidNumber || invalidSortCode || invalidCardNetwork
+        || isAccount && (invalidInterest)
     );
 
 
@@ -148,8 +157,8 @@ function AccountEditPanel({
     })));
     const selectedBankProviderIndex = providers ? Object.keys(providers).indexOf(ephemeralAccount?.provider?.id || '') : -1;
 
-    const selectedCardNetworkIndex = isCard ? Object.keys(CardNetwork).findIndex(key => key === ephemeralAccount?.cardNetwork) : -1;
-    const selectedCardNetwork = isCard ? Object.values(CardNetwork)[selectedCardNetworkIndex] : null;
+    const selectedCardNetworkIndex = isBankCard ? Object.keys(CardNetwork).findIndex(key => key === ephemeralAccount?.cardNetwork) : -1;
+    const selectedCardNetwork = isBankCard ? Object.values(CardNetwork)[selectedCardNetworkIndex] : null;
     const cardPrefix = selectedCardNetwork ? (selectedCardNetwork.name === CardNetwork.VISA.name ? '4' : '5') : '*';
 
     return (
@@ -255,17 +264,28 @@ function AccountEditPanel({
                     className={invalidType ? 'invalid' : ''}
                     entries={Object.values(BankAccountType).map((name) => ({
                         key: name, name, element:
-                            <span>{name.charAt(0).toUpperCase() + name.slice(1)}</span>
+                        <span>{name.charAt(0).toUpperCase() + name.slice(1)}</span>
                     }))}
                     forcedIndex={ephemeralAccount?.type ? Object.values(BankAccountType).indexOf(ephemeralAccount.type) : -1}
                     setSelected={(key) => setEphemeralAccount({ ...ephemeralAccount, type: key as BankAccountType })}
                     emptyText='Select Type'
                     disabled={isAccountOnline}
                 />
+                <Select
+                    className={invalidType ? 'invalid' : ''}
+                    entries={Object.values(InstrumentType).map((name) => ({
+                        key: name, name, element:
+                            <span>{name.charAt(0).toUpperCase() + name.slice(1)}</span>
+                    }))}
+                    forcedIndex={ephemeralAccount?.type ? Object.values(InstrumentType).indexOf(ephemeralAccount.instrumentType) : -1}
+                    setSelected={(key) => setEphemeralAccount({ ...ephemeralAccount, instrumentType: key as InstrumentType })}
+                    emptyText='Select Type'
+                    disabled={isAccountOnline}
+                />
             </div>
 
             <div className='row'>
-                { isCard && 
+                { isBankCard && 
                     <>
                         <Select
                             className={invalidCardNetwork ? 'invalid' : ''}
@@ -298,11 +318,11 @@ function AccountEditPanel({
                 }
 
                 <div className='ghostInputWrapper'>
-                    { isCard &&
+                    { isBankCard &&
                         <span className='ghostPrefix'>{cardPrefix}*** **** **** </span>
                     }
                     <input
-                        className={`centre ${isCard ? 'ghostInput' : ''} ${invalidNumber ? 'invalid' : ''}`}
+                        className={`centre ${isBankCard ? 'ghostInput' : ''} ${invalidNumber ? 'invalid' : ''}`}
                         type='text'
                         placeholder={`${isCard ? 'Card' : 'Account Number'}`}
                         value={ephemeralAccount?.number?.number}
@@ -315,10 +335,10 @@ function AccountEditPanel({
                     <input
                         className={`centre ${invalidSortCode ? 'invalid' : ''}`}
                         type='text'
-                        placeholder='Sort Code'
+                        placeholder={isAccount ? 'Sort Code' : 'Group ID'}
                         value={ephemeralAccount?.number?.sortCode}
-                        onChange={(e) => setEphemeralAccount({ ...ephemeralAccount, number: { ...ephemeralAccount.number, sortCode: asSortCode(e.target.value) } })}
-                                                disabled={isAccountOnline}
+                        onChange={(e) => setEphemeralAccount({ ...ephemeralAccount, number: { ...ephemeralAccount.number, sortCode: isAccount ? asSortCode(e.target.value) : e.target.value } })}
+                        disabled={isAccountOnline}
                     />
                 }
             </div>
@@ -341,7 +361,7 @@ function AccountEditPanel({
                                 updateTimestamp: new Date().toISOString(),
                             }
                         })}
-                                                disabled={isAccountOnline}
+                        disabled={isAccountOnline}
                     />
                 </div>
             }
