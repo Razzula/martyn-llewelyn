@@ -28,6 +28,8 @@ type TransactionCardProps = {
 
     allCategories: TransactionCategory[];
     channels: Channel[];
+
+    style?: React.CSSProperties;
 }
 
 function TransactionCard({
@@ -40,10 +42,12 @@ function TransactionCard({
     globalMaxCardWidth, cardWidthIs,
 
     allCategories, channels,
+
+    style,
 }: TransactionCardProps) {
 
     const ref = useRef<HTMLDivElement>(null);
-    
+
     useLayoutEffect(() => {
         if (!ref.current) {
             return;
@@ -74,165 +78,172 @@ function TransactionCard({
     const channel = channels.find(ch => ch.id === category?.channelID);
 
     return (
-        <div ref={ref}
-            className={`transactionCard ${windowSettings.displayAs} ${className}`}
+        <div
             key={transaction.transactionID}
-            style={{
-                position: 'relative',
-                maxWidth: globalMaxCardWidth,
-            }}
         >
+            <div ref={ref}
+                className={`transactionCard ${windowSettings.displayAs} ${className}`}
+                style={{
+                    maxWidth: globalMaxCardWidth,
+                    position: 'relative',
+                    ...style,
+                }}
+            >
 
-            { /* HEADER */}
-            <div className='accountHeader'>
+                { /* HEADER */}
+                <div className='accountHeader'>
 
-                <div className={windowSettings.displayAs === 'list' ? 'row' : ''}>
-                    <div className='row anchorLeft'>
-                        {/* TRANSACTION TYPE */}
-                        <Tooltip>
-                            <TooltipTrigger>
-                                <span className='icon' style={{
-                                    width: '24px', height: '24px',
-                                    color: '#231f20'
-                                }}>
-                                    {getTransactionIcon(transaction.transactionCategory, isCard)}
-                                </span>
-                            </TooltipTrigger>
-                            <TooltipContent>{transaction.transactionCategory}</TooltipContent>
-                        </Tooltip>
-                        <div className='verticalSeparator' />
-
-                        {/* BALANCE */}
-                        <div
-                            className={`balance ${modesty ? 'hidden' : (isPositive ? 'positive' : 'negative')}`}
-                            style={{ width: modesty || windowSettings.displayAs !== 'list' ? '50px' : '100px' }}
-                        >
-                            {currency}&nbsp;
-                            {modesty ? '***' : toFinancialString(amount)}
-                        </div>
-                    </div>
-
-                    { windowSettings.displayAs === 'list' &&
-                        <div className='verticalSeparator' />
-                    }
-
-                    <div className='row'>
-                        {/* TRANSACTION CATEGORY */}
-                        <div style={{ marginRight: '8px' }}>
+                    <div className={windowSettings.displayAs === 'list' ? 'row' : ''}>
+                        <div className='row anchorLeft'>
+                            {/* TRANSACTION TYPE */}
                             <Tooltip>
                                 <TooltipTrigger>
-                                    <Select
-                                        entries={
-                                            categories.map(category => {
-                                                const channel = channels.find(ch => ch.id === category.channelID);
-                                                const categoryIcon = icons?.[category.icon];
-                                                return ({
-                                                    name: category.name,
-                                                    key: category.id,
-                                                    element: (
-                                                        <Tooltip>
-                                                            <TooltipTrigger>
-                                                                <span
-                                                                    style={{
-                                                                        width: '100%',
-                                                                        color: channel?.colour,
-                                                                    }}
-                                                                >
-                                                                    {categoryIcon}
-                                                                </span>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent><span>{category.name}</span></TooltipContent>
-                                                        </Tooltip>
-                                                    ),
-                                                    icon: <span style={{ color: channel?.colour }}>{categoryIcon}</span>,
-                                                })
-                                            })
-                                        }
-                                        forcedIndex={categories.findIndex(c => c.id === category?.id)} // XXX!
-                                        setSelected={setAnnotation}
-                                        mode='grid'
-                                        windowMaxWidth={340}
-                                    />
+                                    <span className='icon' style={{
+                                        width: '24px', height: '24px',
+                                        color: '#231f20'
+                                    }}>
+                                        {getTransactionIcon(transaction.transactionCategory, isCard)}
+                                    </span>
                                 </TooltipTrigger>
-                                <TooltipContent>{category ? `(${channel?.name}) ${category.name}` : 'Select a category'}</TooltipContent>
+                                <TooltipContent>{transaction.transactionCategory}</TooltipContent>
                             </Tooltip>
+                            <div className='verticalSeparator' />
+
+                            {/* BALANCE */}
+                            <div
+                                className={`balance ${modesty ? 'hidden' : (isPositive ? 'positive' : 'negative')}`}
+                                style={{ width: modesty || windowSettings.displayAs !== 'list' ? '50px' : '100px' }}
+                            >
+                                {currency}&nbsp;
+                                {modesty ? '***' : toFinancialString(amount)}
+                            </div>
                         </div>
-                        {/* DESCRIPTION */}
-                        <span className='description'>{transaction.description}</span>
-                    </div>
 
-                </div>
-
-
-                <div className='bankDetails'>
-                    {/* ACCOUNT NAME */}
-                    <span className='row'>
-                        { windowSettings.displayAs !== 'list' &&
+                        {windowSettings.displayAs === 'list' &&
                             <div className='verticalSeparator' />
                         }
-                        <div className='small'>{account?.name}</div>
-                    </span>
-                    {/* ACCOUNT / CARD NUMBERS */}
-                    {/* {!isCard ? account.number.number : `${account?.cardNetwork === 'MASTERCARD' ? 5 : 4}*** **** **** ${account.number.number}`} */}
-                    {/* {!isCard &&
-                        <>
+
+                        <div className='row'>
+                            {/* TRANSACTION CATEGORY */}
+                            <div style={{ marginRight: '8px' }}>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <Select
+                                            entries={
+                                                categories.map(category => {
+                                                    const channel = channels.find(ch => ch.id === category.channelID);
+                                                    const categoryIcon = icons?.[category.icon];
+                                                    return ({
+                                                        name: category.name,
+                                                        key: category.id,
+                                                        element: (
+                                                            <Tooltip>
+                                                                <TooltipTrigger>
+                                                                    <span
+                                                                        style={{
+                                                                            width: '100%',
+                                                                            color: channel?.colour,
+                                                                        }}
+                                                                    >
+                                                                        {categoryIcon}
+                                                                    </span>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent><span>{category.name}</span></TooltipContent>
+                                                            </Tooltip>
+                                                        ),
+                                                        icon: <span style={{ color: channel?.colour }}>{categoryIcon}</span>,
+                                                    })
+                                                })
+                                            }
+                                            forcedIndex={categories.findIndex(c => c.id === category?.id)} // XXX!
+                                            setSelected={setAnnotation}
+                                            mode='grid'
+                                            windowMaxWidth={340}
+                                        />
+                                    </TooltipTrigger>
+                                    <TooltipContent>{category ? `(${channel?.name}) ${category.name}` : 'Select a category'}</TooltipContent>
+                                </Tooltip>
+                            </div>
+                            {/* DESCRIPTION */}
+                            <span className='description'>{transaction.description}</span>
+                        </div>
+
+                    </div>
+
+
+                    <div className='bankDetails'>
+                        {/* ACCOUNT NAME */}
+                        {windowSettings.displayAs !== 'waterfall' &&
+                            <span className='row'>
+                                {windowSettings.displayAs !== 'list' &&
+                                    <div className='verticalSeparator' />
+                                }
+                                <div className='small'>{account?.name}</div>
+                            </span>
+                        }
+                        {/* ACCOUNT / CARD NUMBERS */}
+                        {/* {!isCard ? account.number.number : `${account?.cardNetwork === 'MASTERCARD' ? 5 : 4}*** **** **** ${account.number.number}`} */}
+                        {/* {!isCard &&
+                            <>
+                                <div className='verticalSeparator' />
+                                {account.number.sortCode}
+                            </>
+                        } */}
+                        {windowSettings.displayAs === 'list' &&
                             <div className='verticalSeparator' />
-                            {account.number.sortCode}
-                        </>
-                    } */}
-                    { windowSettings.displayAs === 'list' &&
-                        <div className='verticalSeparator' />
-                    }
-                    <span className='row'>
-                        {/* USERS */}
-                        {
-                            accountUsers?.map(user => (
-                                <Tooltip key={user.id}>
+                        }
+                        <span className='row'>
+                            {/* USERS */}
+                            {windowSettings.displayAs !== 'waterfall' &&
+                                accountUsers?.map(user => (
+                                    <Tooltip key={user.id}>
+                                        <TooltipTrigger>
+                                            <img
+                                                key={user.id}
+                                                className='bankLogo'
+                                                src={user.icon}
+                                            />
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            {user.name}
+                                        </TooltipContent>
+                                    </Tooltip>
+                                ))
+                            }
+                            {/* BANK */}
+                            {windowSettings.displayAs !== 'waterfall' &&
+                                <Tooltip>
                                     <TooltipTrigger>
                                         <img
-                                            key={user.id}
-                                            className='bankLogo'
-                                            src={user.icon}
+                                            className={`bankLogo ${account?.url ? 'clickable' : ''}`}
+                                            src={
+                                                account?.provider.logoURI
+                                                || (account && (
+                                                    providers?.[account.provider.id]?.accountLogo
+                                                    || providers?.[account.provider.id]?.logo_url
+                                                ))
+                                                || './Serenity/unknown.png'
+                                            }
+                                            alt={`${account?.name} Logo`}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (account?.url) {
+                                                    openInBrowser(account.url);
+                                                }
+                                            }}
                                         />
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                        {user.name}
+                                        {account ?
+                                            (providers?.[account.provider.id]?.display_name ?? account.provider.name ?? account.provider.id)
+                                            : 'Unknown Account'
+                                        }
                                     </TooltipContent>
                                 </Tooltip>
-                            ))
-                        }
-                        {/* BANK */}
-                        <Tooltip>
-                            <TooltipTrigger>
-                                <img
-                                    className={`bankLogo ${account?.url ? 'clickable' : ''}`}
-                                    src={
-                                        account?.provider.logoURI
-                                        || (account && (
-                                            providers?.[account.provider.id]?.accountLogo
-                                            || providers?.[account.provider.id]?.logo_url
-                                        ))
-                                        || './Serenity/unknown.png'
-                                    }
-                                    alt={`${account?.name} Logo`}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (account?.url) {
-                                            openInBrowser(account.url);
-                                        }
-                                    }}
-                                />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                { account ?
-                                    (providers?.[account.provider.id]?.display_name ?? account.provider.name ?? account.provider.id)
-                                    : 'Unknown Account'
-                                }
-                            </TooltipContent>
-                        </Tooltip>
-                    </span>
+                            }
+                        </span>
+                    </div>
                 </div>
-
             </div>
 
             {/* BODY */}

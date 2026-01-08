@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 import { isTauri } from "../utils/tauri";
 
 import { BankAccount, CardNetwork, Channel, getAccountLogoSrc, Transaction, TransactionCategory, User } from "../types/Bagel";
@@ -22,7 +22,7 @@ type TransactionsPanelProps = {
     updateAccountsTransactions: (from: string, to: string) => Promise<void>;
     transactionsLoadedRange: Date;
     setTransactionsLoadedRange: (range: Date) => void;
-    
+
     categories: TransactionCategory[];
     channels: Channel[];
 }
@@ -43,15 +43,17 @@ function TransactionsPanel({
 
     const [loadingTransactions, setLoadingTransactions] = useState(false);
     const [minCardWidth, setMinCardWidth] = useState<number>(Infinity);
+    const [accountIndexes, setAccountIndexes] = useState<Record<string, number>>({});
+    const [columnWidths, setColumnWidths] = useState<number[]>([]);
 
     const [sortedAccounts, setSortedAccounts] = useState<BankAccount[]>([]);
 
     useEffect(() => {
-        if (windowSettings.displayAs === 'list') {
+        if (['list'].includes(windowSettings.displayAs)) {
             // XXX: cards needs to be able to grow to full-size in min state
             setMinCardWidth(9999);
         }
-    }, [windowSettings.displayAs])
+    }, [windowSettings.displayAs]);
 
     useEffect(() => {
         if (windowSettings.displayAs === 'waterfall') {
@@ -60,7 +62,7 @@ function TransactionsPanel({
                 const bIsCard = b.cardNetwork !== undefined;
                 const aValue = (aIsCard ? a.balance?.current : a.balance?.available) ?? 0;
                 const bValue = (bIsCard ? b.balance?.current : b.balance?.available) ?? 0;
-    
+
                 // descending
                 if (aValue > bValue) return -1;
                 if (aValue < bValue) return 1;
@@ -69,7 +71,16 @@ function TransactionsPanel({
             });
             setSortedAccounts(sortedAccounts);
         }
-    }, [accounts, windowSettings])
+    }, [accounts, windowSettings]);
+
+    useEffect(() => {
+        const indexes: Record<string, number> = {};
+        sortedAccounts.forEach((account, index) => {
+            indexes[account.id] = index;
+        });
+        setAccountIndexes(indexes);
+    }, [sortedAccounts]);
+
 
     function loadMoreTransactions() {
         // TODO: split this into chunks?
@@ -86,6 +97,21 @@ function TransactionsPanel({
             });
     }
 
+    // function updateAccountIndex(account: string, index: number) {
+    //     setAccountIndexes((prev) => {
+    //         const next = { ...prev };
+    //         next[account] = index;
+    //         return next;
+    //     });
+    // }
+
+    function getAccountIndex(account: string | undefined) {
+        if (account) {
+            return accountIndexes?.[account] ?? 0;
+        }
+        return 0;
+    }
+
     function cardWidthIs(cardWidth: number) {
         setMinCardWidth((prev) => {
             const next = Math.min(prev, cardWidth);
@@ -93,40 +119,74 @@ function TransactionsPanel({
         });
     };
 
+    function columnWidthIs(columnIndex: number, accountWidth: number) {
+        setColumnWidths((prev) => {
+            const next = { ...prev };
+            while (next.length - 1 < columnIndex) {
+                next.push(0);
+            }
+            next[columnIndex] = accountWidth;
+            return next;
+        });
+    };
+
+    function getColumnWidth(accountID?: string) {
+        if (!accountID) {
+            return 0;
+        }
+        const index = getAccountIndex(accountID);
+        return columnWidths[index];
+    }
+
+    function getColumnOffset(accountID?: string) {
+        if (!accountID) {
+            return 0;
+        }
+        const index = getAccountIndex(accountID);
+        let offset = 0;
+        for (let i = 0; i < index; i++) {
+            offset += columnWidths[i] ?? minCardWidth;
+        }
+        return offset;
+    }
+
     return (
         <>
             <div>
                 {/* WATERFALL HEADER */}
-                { windowSettings.displayAs === 'waterfall' &&
+                {windowSettings.displayAs === 'waterfall' &&
                     <div className='waterfallHeaders row'>
-                        <div className='verticalSeparator'/>
-                        <span>Date</span>
-                        <div className='verticalSeparator'/>
+                        <div className='verticalSeparator' />
+                        {/* <span style={{ minWidth: 100 }}>Date</span> */}
                         {
-                            sortedAccounts.map((account: BankAccount) =>
-                                <>
-                                    <div>
-                                        <div>
-                                            <img className='waterfallHeaderIcon' src={getAccountLogoSrc(account, providers)} />
-                                            { account?.cardNetwork &&
-                                                <img className='waterfallHeaderIcon' src={CardNetwork[account.cardNetwork].logo} />
-                                            }
-                                            {
-                                                account?.users?.map(user =>
-                                                    <img className='waterfallHeaderIconMini' src={users?.find(u => u.id === user.id)?.icon} />
-                                                )
-                                            }
-                                        </div>
-                                        <div className='small'>
-                                            {account.name}
-                                        </div>
-                                    </div>
-                                    <div className='verticalSeparator'/>
-                                </>
-                            )
+                            sortedAccounts.map((account: BankAccount, index: number) => {
+                                return (
+                                    <>
+                                        <AccountHeading onResize={(width: number) => columnWidthIs(index, width)}>
+                                            <div>
+                                                <div>
+                                                    <img className='waterfallHeaderIcon' src={getAccountLogoSrc(account, providers)} />
+                                                    {account?.cardNetwork &&
+                                                        <img className='waterfallHeaderIcon' src={CardNetwork[account.cardNetwork].logo} />
+                                                    }
+                                                    {
+                                                        account?.users?.map(user =>
+                                                            <img className='waterfallHeaderIconMini' src={users?.find(u => u.id === user.id)?.icon} />
+                                                        )
+                                                    }
+                                                </div>
+                                                <div className='small'>
+                                                    {account.name}
+                                                </div>
+                                            </div>
+                                        </AccountHeading>
+                                        {/* <div className='verticalSeparator' /> */}
+                                    </>
+                                )
+                            })
                         }
-                        <span>Balance</span>
-                        <div className='verticalSeparator'/>
+                        {/* <span style={{ minWidth: 100 }}>Balance</span> */}
+                        <div className='verticalSeparator' />
                     </div>
                 }
 
@@ -158,10 +218,16 @@ function TransactionsPanel({
                                                                             providers={providers}
                                                                             modesty={modesty}
                                                                             windowSettings={windowSettings}
-                                                                            globalMaxCardWidth={minCardWidth}
+                                                                            globalMaxCardWidth={
+                                                                                windowSettings.displayAs === 'waterfall' ? getColumnWidth(tx.accountID) : minCardWidth
+                                                                            }
                                                                             cardWidthIs={cardWidthIs}
-
                                                                             allCategories={categories} channels={channels}
+
+                                                                            style={{
+                                                                                // position: windowSettings.displayAs === 'waterfall' ? 'absolute' : 'relative', // or relative container
+                                                                                left: windowSettings.displayAs === 'waterfall' ? getColumnOffset(tx.accountID) : undefined,
+                                                                            }}
                                                                         />
                                                                     ))
                                                                 }
@@ -184,21 +250,21 @@ function TransactionsPanel({
                             >
                                 Back to Top
                             </button>
-                                <Tooltip>
-                                    <TooltipTrigger>
-                                        <button
-                                            style={{ marginTop: '0.5rem' }}
-                                            onClick={loadMoreTransactions}
-                                            disabled={!isTauri || loadingTransactions}
-                                        >
-                                            {/* TODO: possibly render what (amount / timespan) is to be loaded */}
-                                            {loadingTransactions ? <div className='spinner' /> : 'Load More...'}
-                                        </button>
-                                    </TooltipTrigger>
-                                    { !isTauri &&
-                                        <TooltipContent>This feature is unavailable in limited demo mode.</TooltipContent>
-                                    }
-                                </Tooltip>
+                            <Tooltip>
+                                <TooltipTrigger>
+                                    <button
+                                        style={{ marginTop: '0.5rem' }}
+                                        onClick={loadMoreTransactions}
+                                        disabled={!isTauri || loadingTransactions}
+                                    >
+                                        {/* TODO: possibly render what (amount / timespan) is to be loaded */}
+                                        {loadingTransactions ? <div className='spinner' /> : 'Load More...'}
+                                    </button>
+                                </TooltipTrigger>
+                                {!isTauri &&
+                                    <TooltipContent>This feature is unavailable in limited demo mode.</TooltipContent>
+                                }
+                            </Tooltip>
                         </div>
                     </div>
                 ) : (
@@ -212,5 +278,42 @@ function TransactionsPanel({
         </>
     );
 }
+
+type AccountHeadingProps = {
+    children: React.ReactNode;
+    onResize?: (width: number) => void;
+};
+
+const AccountHeading = forwardRef<HTMLDivElement, AccountHeadingProps>(
+    ({ children, onResize }, ref) => {
+        const internalRef = useRef<HTMLDivElement>(null);
+
+        useEffect(() => {
+            const el = (ref as React.RefObject<HTMLDivElement>)?.current || internalRef.current;
+            if (!el || !onResize) {
+                return;
+            }
+
+            // initial size
+            // onResize(el.offsetWidth);
+
+            // listen for resizes
+            const observer = new ResizeObserver(entries => {
+                for (let entry of entries) {
+                    onResize(entry.contentRect.width);
+                }
+            });
+            observer.observe(el);
+
+            return () => observer.disconnect();
+        }, [ref, onResize]);
+
+        return (
+            <div ref={ref || internalRef} className="accountHeading">
+                {children}
+            </div>
+        );
+    }
+);
 
 export default TransactionsPanel;

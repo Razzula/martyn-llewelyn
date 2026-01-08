@@ -5,7 +5,7 @@
     "identifier": "io.github.razzula.martyn-llewelyn",
     "build": {
         "frontendDist": "../dist",
-        "devUrl": "http://localhost:3180/",
+        "devUrl": "http://localhost:13648/",
         "beforeDevCommand": "bun run dev:vite",
         "beforeBuildCommand": "bun run build:vite"
     },

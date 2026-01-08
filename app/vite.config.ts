@@ -19,8 +19,8 @@ export default defineConfig({
         },
     },
     server: {
-        origin: 'http://localhost:3180',
-        port: 3180,
+        origin: 'http://localhost:13648',
+        port: 13648,
         strictPort: true, // Tauri expects a fixed port, fail if that port is not available
         fs: {
             allow: ['..'], // allow importing from one level up

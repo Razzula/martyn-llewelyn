@@ -82,7 +82,7 @@ const defaultAppSettings = (): AppSettings => ({
 
 function App() {
 
-    const [panel, setPanel] = useState<'dashboard' | 'accounts' | 'transactions'>('dashboard');
+    const [panel, setPanel] = useState<'dashboard' | 'accounts' | 'transactions' | 'standing'>('dashboard');
 
     const [users, setUsers] = useState<User[] | null>(null);
     const [providers, setProviders] = useState<Record<string, TrueLayerProvider>>({});
@@ -1095,6 +1095,11 @@ function App() {
                                     value: 'transactions',
                                     ref: segmentRefs[2]
                                 },
+                                // {
+                                //     label: 'Standing',
+                                //     value: 'standing',
+                                //     ref: segmentRefs[3]
+                                // },
                             ]}
                         />
                     </div>
@@ -1140,6 +1145,9 @@ function App() {
 
                         categories={categories} channels={channels}
                     />
+                }
+                {panel === 'standing' &&
+                    <div>UNDER CONSTRUCTION...</div>
                 }
             </div>
         </div>
