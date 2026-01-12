@@ -4,7 +4,7 @@ import { invoke } from '@tauri-apps/api/core';
 
 import { TrueLayerClient } from './lib/TrueLayer.ts';
 
-import { BankAccount, BankAccountBalance, BankAccountPatch, CategoryStat, Channel, generatePatchFromAccount, Transaction, TransactionCategory, User } from './types/Bagel.ts';
+import { BankAccount, BankAccountBalance, BankAccountPatch, CategoryStat, Channel, generatePatchFromAccount, WalletEntry, Transaction, TransactionCategory, User } from './types/Bagel.ts';
 import { ResponsiveModal } from './components/common/ResponsiveModal.tsx';
 import { AccountManager } from './utils/AccountManager.ts';
 import { fromTrueLayerAccountBalance, fromTrueLayerAccountTransaction, fromTrueLayerCardBalance, fromTrueLayerCardTransaction } from './types/TrueLayerAdapters.ts';
@@ -97,7 +97,7 @@ function App() {
     const [transactionsTree, setTransactionsTree] = useState<OrderedDateTree<Transaction>>(new OrderedDateTree<Transaction>());
     const [transactionsLoadedRange, setTransactionsLoadedRange] = useState<Date>(getMostRecentSunday());
 
-    const [walletTokens, setWalletTokens] = useState<string[]>([]);
+    const [walletEntries, setWalletEntries] = useState<WalletEntry[]>([]);
 
     const [openSelectUser, setOpenSelectUser] = useState<((userID: string, userEmail: string) => void) | null>(null); // holds a function to redirect after user selection
     const [openEditUser, setOpenEditUser] = useState<((userID: string, userEmail: string) => void) | null>(null); // holds a function to redirect after user creation
@@ -167,11 +167,10 @@ function App() {
 
             // XXX
             invoke('loadWalletTokens')
-                .then((tokens: unknown) => {
-                    const walletTokensArr = tokens as string[];
-                    if (walletTokensArr.length > 0) {
-                        // use the first token for now
-                        setWalletTokens(walletTokensArr);
+                .then((walletEntries: unknown) => {
+                    const walletEntriesArr = walletEntries as WalletEntry[];
+                    if (walletEntriesArr.length > 0) {
+                        setWalletEntries(walletEntriesArr);
                     }
                 })
                 .catch(err => {
@@ -204,7 +203,10 @@ function App() {
                     email: 'martyn-llewelyn@razzula.github.io',
                 },
             ]);
-            setWalletTokens(['mock-user-1', 'mock-user-2']);
+            setWalletEntries([
+                { walletToken: 'mock-user-1', userID: 'mock-user-1', consentedAt: 0, },
+                { walletToken: 'mock-user-2', userID: 'mock-user-1', consentedAt: 0, },
+            ]);
             setCategories([...defaultExpenditures, ...defaultIncomes]);
             setChannels([...defaultChannels]);
             setCategoryStats(defaultCategoryStats);
@@ -226,8 +228,8 @@ function App() {
             // trigger token exchange, navigate, etc.
             if (code && state) {
                 TrueLayerClient.handleTokenExchange(code, state)
-                    .then((walletToken: string) => {
-                        setWalletTokens(prev => [...prev, walletToken]);
+                    .then((walletEntry: WalletEntry) => {
+                        setWalletEntries(prev => [...prev, walletEntry]);
                     })
                     .catch(err => {
                         console.error('Token exchange failed:', err);
@@ -307,17 +309,18 @@ function App() {
 
     useEffect(() => {
         // FETCH ACCOUNTS
-        if (walletTokens.length > 0) {
+        if (walletEntries.length > 0) {
+            console.debug('Wallet Entries:', walletEntries);
             setAccountsDataLive({});
             setAccountsState(ResponseState.LOADING); // reset accounts while fetching
 
             const accountManager = new AccountManager();
 
-            walletTokens.forEach(token => {
+            walletEntries.forEach(walletEntry => {
                 Promise.all([
                     // fetch accounts and cards data
-                    TrueLayerClient.fetchAccountsData(token),
-                    TrueLayerClient.fetchCardsData(token)
+                    TrueLayerClient.fetchAccountsData(walletEntry.walletToken),
+                    TrueLayerClient.fetchCardsData(walletEntry.walletToken)
                 ])
                     .then(([accounts, cards]) => {
                         [...accounts, ...cards].forEach(account => {
@@ -333,7 +336,7 @@ function App() {
                         }
                     })
                     .catch(err => {
-                        console.error(`Failed to fetch for token ${token}:`, err);
+                        console.error(`Failed to fetch for token ${walletEntry}:`, err);
                         setAccountsState(ResponseState.ERROR);
                     });
             });
@@ -341,11 +344,11 @@ function App() {
         else {
             setAccountsDataLive({});
         }
-    }, [walletTokens]);
+    }, [walletEntries]);
 
     useEffect(() => {
         // FETCH ACCOUNT BALANCES
-        if (walletTokens.length === 0 || !accounts) return;
+        if (walletEntries.length === 0 || !accounts) return;
 
         if (Object.keys(accounts).length > 0) {
 
@@ -356,7 +359,7 @@ function App() {
                 }
 
                 const isCard = account.cardNetwork !== undefined;
-                const walletToken = account.users?.[0]?.walletToken || walletTokens[0]; // XXX: use the first token if not specified
+                const walletToken = account.users?.[0]?.walletToken || walletEntries[0]?.walletToken; // XXX: use the first token if not specified
 
                 // FETCH ACCOUNT BALANCE
                 if (account.balance === undefined) {
@@ -395,7 +398,7 @@ function App() {
 
             });
         }
-    }, [accounts, walletTokens]);
+    }, [accounts, walletEntries]);
 
     useEffect(() => {
         if (categoryStats) {
@@ -480,7 +483,7 @@ function App() {
                 data.map(tx => mapping(tx, accountID)),
                 tx => new Date(tx.timestamp)
             );
-            
+
             handleTransactionLoading(accountID, tree, from, to);
             return tree;
         }
@@ -496,7 +499,7 @@ function App() {
      */
     async function updateAccountsTransactions(from: string, to: string) {
         await Promise.all(Object.entries(accounts).map(([accountID, account]: [string, BankAccount]) => {
-            const walletToken = account.users?.[0]?.walletToken || walletTokens[0]; // XXX: use the first token if not specified
+            const walletToken = account.users?.[0]?.walletToken || walletEntries[0]?.walletToken; // XXX: use the first token if not specified
             const isCard = account.cardNetwork !== undefined;
             return updateAccountTransactions(walletToken, accountID, isCard, from, to);
         }));
@@ -509,7 +512,7 @@ function App() {
 
     function handleTransactionLoading(accountID: string, tree: OrderedDateTree<Transaction>, from: string, to: string) {
         if (isTauri) {
-            getDatabaseManager().then(dbm => dbm.insertTransactions(tree))
+            getDatabaseManager().then(dbm => dbm.insertTransactions(tree));
             getDatabaseManager().then(dbm => dbm.getTransactions(from, to).then(dbTree => updateAccountTransactionsTree(accountID, dbTree)));
         }
         else {
@@ -595,7 +598,9 @@ function App() {
                     return; // user cancelled
                 }
                 await invoke('removeWalletTokens', { walletTokens: linkedWalletTokens });
-                setWalletTokens(prev => prev.filter(token => !linkedWalletTokens.includes(token)));
+                setWalletEntries(prev =>
+                    prev.filter(walletEntry => !linkedWalletTokens.includes(walletEntry.walletToken))
+                );
             }
 
             // remove user from the list
@@ -967,10 +972,10 @@ function App() {
                         </Tooltip>
 
                         {/* ACCOUNTS WINDOW SETTINGS */}
-                        { panel === 'accounts' &&
+                        {panel === 'accounts' &&
                             <div className='row'>
                                 {/* Order Accounts */}
-                                <RadioButtons 
+                                <RadioButtons
                                     options={[
                                         { key: 'balance', desc: 'Sort by Balance', icon: <MoneyBag /> },
                                         { key: 'name', desc: 'Sort by Name', icon: <Alpha /> },
@@ -988,7 +993,7 @@ function App() {
                                     iconOffColour='#e3e3e3'
                                 />
                                 <div className='verticalSeparator' />
-                                <ToggleButton 
+                                <ToggleButton
                                     options={[
                                         { key: 'asc', desc: 'Ascending', icon: <Ascending />, iconColour: 'green' },
                                         { key: 'desc', desc: 'Descending', icon: <Descending />, iconColour: 'red' },
@@ -1006,8 +1011,8 @@ function App() {
                             </div>
                         }
 
-                        { panel === 'accounts' &&
-                            <RadioButtons 
+                        {panel === 'accounts' &&
+                            <RadioButtons
                                 options={[
                                     {
                                         key: 'bank',
@@ -1038,8 +1043,8 @@ function App() {
                                 iconOffColour='#e3e3e3'
                             />
                         }
-                        { panel === 'transactions' &&
-                            <RadioButtons 
+                        {panel === 'transactions' &&
+                            <RadioButtons
                                 options={[
                                     {
                                         key: 'list',

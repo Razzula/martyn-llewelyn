@@ -190,9 +190,9 @@ function TransactionsPanel({
                     </div>
                 }
 
-                {Object.keys(transactionsTree).length > 0 ? (
-                    <div>
-                        {
+                <div>
+                    {
+                        Object.keys(transactionsTree).length > 0 ? (
                             Object.keys(transactionsTree).sort((a, b) => b.localeCompare(a)).map(year => (
                                 <div key={year}>
                                     <h2>{year}</h2>
@@ -240,37 +240,35 @@ function TransactionsPanel({
                                     }
                                 </div>
                             ))
-                        }
-
-                        <div className='column'>
-                            <button
-                                onClick={() => {
-                                    document.querySelector('.body')?.scrollTo({ top: 0, behavior: 'smooth' });
-                                }}
-                            >
-                                Back to Top
-                            </button>
-                            <Tooltip>
-                                <TooltipTrigger>
-                                    <button
-                                        style={{ marginTop: '0.5rem' }}
-                                        onClick={loadMoreTransactions}
-                                        disabled={!isTauri || loadingTransactions}
-                                    >
-                                        {/* TODO: possibly render what (amount / timespan) is to be loaded */}
-                                        {loadingTransactions ? <div className='spinner' /> : 'Load More...'}
-                                    </button>
-                                </TooltipTrigger>
-                                {!isTauri &&
-                                    <TooltipContent>This feature is unavailable in limited demo mode.</TooltipContent>
-                                }
-                            </Tooltip>
-                        </div>
+                        ) : (
+                            <p>No recent transactions.</p>
+                        )
+                    }
+                    <div className='column'>
+                        <button
+                            onClick={() => {
+                                document.querySelector('.body')?.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                        >
+                            Back to Top
+                        </button>
+                        <Tooltip>
+                            <TooltipTrigger>
+                                <button
+                                    style={{ marginTop: '0.5rem' }}
+                                    onClick={loadMoreTransactions}
+                                    disabled={!isTauri || loadingTransactions}
+                                >
+                                    {/* TODO: possibly render what (amount / timespan) is to be loaded */}
+                                    {loadingTransactions ? <div className='spinner' /> : 'Load More...'}
+                                </button>
+                            </TooltipTrigger>
+                            {!isTauri &&
+                                <TooltipContent>This feature is unavailable in limited demo mode.</TooltipContent>
+                            }
+                        </Tooltip>
                     </div>
-                ) : (
-                    <p>No recent transactions.</p>
-                )
-                }
+                </div>
             </div>
             <div className='column' style={{ paddingBottom: '2rem' }}>
                 {footend}

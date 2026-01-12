@@ -97,10 +97,22 @@ pub fn decryptData(data: &[u8], key: &[u8; 32]) -> Result<String, String> {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TokenEntry {
+    // backend-only, encrypted at rest
+    pub userID: String,
     pub accessToken: String,
     pub refreshToken: String,
     pub expiresAt: u64, // epoch seconds
+    pub consentedAt: u64, // epoch seconds
+    pub meta: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct TokenFace {
+    // frontend-safe
+    pub walletToken: String,
     pub userID: String,
+    pub consentedAt: u64,
+    pub meta: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Default)]
@@ -189,15 +201,36 @@ impl Wallet {
         self.tokens.get(walletToken)
     }
 
+    pub async fn see(&mut self, walletToken: &str, app: &AppHandle) -> Option<TokenFace> {
+        if (self.isEmpty()) {
+            *self = Wallet::load(app).await;
+        }
+        // isolate the TokenFace version of the TokenEntry, if it exists
+        self.tokens.get(walletToken).map(|entry| TokenFace {
+            walletToken: walletToken.to_string(),
+            userID: entry.userID.clone(),
+            consentedAt: entry.consentedAt,
+            meta: entry.meta.clone(),
+        })
+    }
+
     pub fn isEmpty(&self) -> bool {
         self.tokens.is_empty()
     }
 
-    pub async fn tokenList(&mut self, app: &AppHandle) -> Result<Vec<String>, String> {
+    pub async fn tokenList(&mut self, app: &AppHandle) -> Result<Vec<TokenFace>, String> {
         if (self.isEmpty()) {
             *self = Wallet::load(app).await;
         }
-        // return flat list of all wallet tokens
-        Ok(self.tokens.keys().cloned().collect())
+
+        Ok(self.tokens.iter().map(|(walletToken, entry)| {
+            TokenFace {
+                walletToken: walletToken.clone(),
+                userID: entry.userID.clone(),
+                consentedAt: entry.consentedAt,
+                meta: entry.meta.clone(),
+            }
+        }).collect())
     }
+
 }

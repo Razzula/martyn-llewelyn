@@ -193,5 +193,12 @@ export interface CategoryStat {
     categoryID: string;
     channelID: string;
     totalAmount: number;
-    transactionCount:  number;
+    transactionCount: number;
+}
+
+export interface WalletEntry {
+    walletToken: string;
+    userID: string;
+    consentedAt: number; // epoch seconds
+    meta?: string | null;
 }

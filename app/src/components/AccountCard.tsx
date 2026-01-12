@@ -135,7 +135,10 @@ function AccountCard({
                         </TooltipContent>
                     </Tooltip>
                     <div className='verticalSeparator' />
-                    {getInstrumentTypeIcon(account.instrumentType, true)}
+                    <Tooltip>
+                        <TooltipTrigger>{getInstrumentTypeIcon(account.instrumentType, true)}</TooltipTrigger>
+                        <TooltipContent>{account.instrumentType}</TooltipContent>
+                    </Tooltip>
                 </div>
                 {/* ACCOUNT NAME */}
                 <div className='name'>{account.name}</div>

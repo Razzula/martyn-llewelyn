@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 
 import { TrueLayerAccount, TrueLayerAccountBalance, TrueLayerCard, TrueLayerCardBalance, TrueLayerProvider } from "../types/TrueLayer.ts";
 import { generateCodeChallenge, generateCodeVerifier } from "../utils/PKCE.ts";
-import { BankAccount } from "../types/Bagel.ts";
+import { BankAccount, WalletEntry } from "../types/Bagel.ts";
 import { fromTrueLayerAccount, fromTrueLayerCard } from "../types/TrueLayerAdapters.ts";
 import { isTauri } from "../utils/tauri.ts";
 
@@ -19,7 +19,7 @@ import {
 
 interface TrueLayerAPI {
     getTrueLayerAuthURL(userID: string, userEmail: string): Promise<string>;
-    handleTokenExchange(code: string, state: string): Promise<string>;
+    handleTokenExchange(code: string, state: string): Promise<WalletEntry>;
 
     fetchProviders(): Promise<TrueLayerProvider[]>;
 
@@ -70,7 +70,7 @@ class RealTrueLayerAPI implements TrueLayerAPI {
     async handleTokenExchange(code: string, state: string) {
         const verifier = sessionStorage.getItem('codeVerifier');
 
-        const walletToken: string = await invoke('exchangeToken', { code, userId: state, verifier });
+        const walletToken: WalletEntry = await invoke('exchangeToken', { code, userId: state, verifier });
         return walletToken;
     }
 
@@ -132,8 +132,12 @@ class MockTrueLayerAPI implements TrueLayerAPI {
         return 'mock-auth-url';
     }
 
-    async handleTokenExchange(_code: string, _state: string): Promise<string> {
-        return 'mock-wallet-token';
+    async handleTokenExchange(_code: string, _state: string): Promise<WalletEntry> {
+        return {
+            walletToken: 'mock-wallet-token',
+            userID: 'user-id',
+            consentedAt: 0,
+        };
     }
 
     async fetchProviders(): Promise<TrueLayerProvider[]> {
@@ -183,7 +187,7 @@ export class TrueLayerClient {
         return TrueLayerClient.api.getTrueLayerAuthURL(userID, userEmail);
     }
 
-    static async handleTokenExchange(code: string, state: string): Promise<string> {
+    static async handleTokenExchange(code: string, state: string): Promise<WalletEntry> {
         return TrueLayerClient.api.handleTokenExchange(code, state);
     }
 

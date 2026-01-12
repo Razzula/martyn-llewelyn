@@ -6,6 +6,7 @@ import { getSQL } from '../sql/SQLRegistry.js';
 import { defaultChannels, defaultExpenditures, defaultIncomes } from '../data/categories.js';
 import { Channel, Transaction, TransactionCategory } from '../types/Bagel.js';
 import { newOrderedDateTreeFromList, OrderedDateTree } from '../types/OrderedDateTree.js';
+import { toYYYYMMDD } from './utils.js';
 
 /**
  * Singleton instance of the database manager.
@@ -177,6 +178,12 @@ export class DatabaseManager {
     }
 
     async getTransactions(from: string, to: string): Promise<OrderedDateTree<Transaction>> {
+        
+        // XXX: this is bit hacky, but since `to` will alwaysbe 00:00:00, we use the next day as the bound
+        const toUpperBound = new Date(to);
+        toUpperBound.setDate(toUpperBound.getDate() + 1); // move to next day
+        const toUpper = toYYYYMMDD(toUpperBound);
+
         const rows: any[] = await this.db.select(
             `SELECT t.*, 
                 GROUP_CONCAT(c.id) AS categoryIDs
@@ -185,7 +192,7 @@ export class DatabaseManager {
             LEFT JOIN categories c ON tc.categoryID = c.id
             WHERE t.timestamp >= ? AND t.timestamp <= ?
             GROUP BY t.id`,
-            [from, to]
+            [from, toUpper]
         );
 
         // map DB rows to Transaction objects
@@ -204,7 +211,6 @@ export class DatabaseManager {
         }));
 
         // rebuild the OrderedDateTree
-        console.log(transactions);
         return newOrderedDateTreeFromList(transactions, tx => new Date(tx.timestamp));
     }
 
