@@ -10,7 +10,7 @@ import { AccountManager } from './utils/AccountManager.ts';
 import { fromTrueLayerAccountBalance, fromTrueLayerAccountTransaction, fromTrueLayerCardBalance, fromTrueLayerCardTransaction } from './types/TrueLayerAdapters.ts';
 import { Tooltip, TooltipContent, TooltipTrigger } from './components/common/Tooltip.tsx';
 import { TrueLayerAccountBalance, TrueLayerAccountTransaction, TrueLayerCardBalance, TrueLayerCardTransaction, TrueLayerProvider } from './types/TrueLayer.ts';
-import { closedProviders } from './data/providers.ts';
+import { closedProviders, providerPatches } from './data/providers.ts';
 import { isTauri, openInBrowser } from './utils/tauri.ts';
 import AccountEditPanel from './components/AccountEditPanel.tsx';
 
@@ -124,6 +124,7 @@ function App() {
         TrueLayerClient.fetchProviders()
             .then((providers: TrueLayerProvider[]) => {
                 const providersMap: Record<string, TrueLayerProvider> = {};
+                // unify TrueLayer's and Bagel's Provider lists
                 [...providers, ...closedProviders]
                     .filter(provider =>
                         (provider.provider_id !== 'mock' || !isTauri) // remove mock if not needed
@@ -133,6 +134,14 @@ function App() {
                     .forEach(provider => {
                         providersMap[provider.provider_id] = provider;
                     });
+                // apply Bagel's patches
+                Object.entries(providersMap).forEach(([providerID, provider]) => {
+                    const patch = providerPatches[providerID];
+                    if (patch) {
+                        Object.assign(provider, patch);
+                    }
+                });
+                // save
                 setProviders(providersMap);
             })
             .catch(err => {
@@ -200,8 +209,8 @@ function App() {
                 },
             ]);
             setWalletEntries([
-                { walletToken: 'mock-user-1', userID: 'mock-user-1', consentedAt: 0, },
-                { walletToken: 'mock-user-2', userID: 'mock-user-1', consentedAt: 0, },
+                { walletToken: 'mock-user-1', userID: 'mock-user-1', consentedAt: 0, meta: 'mock' },
+                { walletToken: 'mock-user-2', userID: 'mock-user-2', consentedAt: 0, meta: 'mock' },
             ]);
             setCategories([...defaultExpenditures, ...defaultIncomes]);
             setChannels([...defaultChannels]);
@@ -730,7 +739,7 @@ function App() {
         <div
             id='app'
             style={{
-                marginTop: isMobile() ? '2.2rem' : 0,
+                marginTop: isMobile() ? '2.8rem' : 0,
             }}
         >
 
@@ -829,7 +838,7 @@ function App() {
             </ResponsiveModal>
 
             {/* WALLET MODAL */}
-            <ResponsiveModal title='Your Credentials'
+            <ResponsiveModal title='Your Open Banking Credentials'
                 open={openWallet}
                 onClose={() => {
                     setOpenWallet(false);
@@ -850,7 +859,7 @@ function App() {
                                 )
                             }
                             <span>
-                                Removing an account here only deletes it from this app. To fully revoke access, please do so in your bank's portal.
+                                To revoke access, please visit the '<strong>Open Banking</strong>' section of your bank's app or website.
                             </span>
 
                         </div>
@@ -1059,7 +1068,7 @@ function App() {
 
                         {/* ACCOUNTS WINDOW SETTINGS */}
                         {panel === 'accounts' &&
-                            <div className='row'>
+                            <div className='flipRow'>
                                 {/* Order Accounts */}
                                 <RadioButtons
                                     options={[
@@ -1078,7 +1087,7 @@ function App() {
                                     iconOnColour='green'
                                     iconOffColour='#e3e3e3'
                                 />
-                                <div className='verticalSeparator' />
+                                {!isMobile() && <div className='verticalSeparator' />}
                                 <ToggleButton
                                     options={[
                                         { key: 'asc', desc: 'Ascending', icon: <Ascending />, iconColour: 'green' },
@@ -1129,7 +1138,7 @@ function App() {
                                 iconOffColour='#e3e3e3'
                             />
                         }
-                        {panel === 'transactions' &&
+                        {panel === 'transactions' && !isMobile() &&
                             <RadioButtons
                                 options={[
                                     {

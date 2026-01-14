@@ -53,8 +53,15 @@
 
 .selectOptions.grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(2rem, 1fr)); /* XXX */
+    grid-template-columns: repeat(auto-fill, minmax(2rem, 1fr));
     gap: 0.5rem;
+}
+
+.selectOptions.grid img {
+    width: 100%;
+    max-width: 100px;
+    height: auto;
+    object-fit: contain;
 }
 
 .selectOption {

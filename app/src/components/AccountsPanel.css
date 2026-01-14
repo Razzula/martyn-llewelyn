@@ -21,3 +21,18 @@
     width: 64px;
     height: 64px;
 }
+
+@media (max-width: 600px) {
+    .accountsGrid {
+        gap: 0.4rem;
+    }
+
+    .groupCard {
+        padding: 0;
+    }
+
+    .accountCard {
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+}

@@ -1,6 +1,7 @@
 import { TrueLayerProvider } from "../types/TrueLayer";
 
 export const closedProviders: TrueLayerProvider[] = [
+    // ACCOUNTS and/or CARDS
     {
         provider_id: "bagel-kingdom-bank",
         display_name: "Kingdom Bank",
@@ -47,6 +48,7 @@ export const closedProviders: TrueLayerProvider[] = [
             updated_at: ""
         },
     },
+    // PENSION SCHEMES
     {
         provider_id: "bagel-landg",
         display_name: "Legal & General",
@@ -59,6 +61,7 @@ export const closedProviders: TrueLayerProvider[] = [
             updated_at: ""
         },
     },
+    // GIFT CARDS
     {
         provider_id: "bagel-one4all",
         display_name: "One4All",
@@ -73,3 +76,9 @@ export const closedProviders: TrueLayerProvider[] = [
     },
     // YBS always has sort code 60-92-04
 ];
+
+export const providerPatches: Record<string, Partial<Omit<TrueLayerProvider, 'provider_id'>>> = {
+    'ob-yorkshire-building-society': {
+        accountLogo: '/Finance/Banks/YBSSquare.png',
+    },
+};

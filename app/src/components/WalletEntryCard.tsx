@@ -1,6 +1,7 @@
 import { User, WalletEntry } from "../types/Bagel";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./common/Tooltip";
 import { TrueLayerProvider } from "../types/TrueLayer";
+import { isTauri } from "../utils/tauri";
 
 import './TransactionCard.css'
 import '../styles/CommonCard.css'
@@ -20,7 +21,7 @@ function WalletEntryCard({
     const provider = walletEntry.meta ? providers?.[walletEntry.meta] : undefined;
 
     const consentDate = new Date(walletEntry.consentedAt * 1000);
-    const expirationDate =  new Date(consentDate);
+    const expirationDate = new Date(consentDate);
     expirationDate.setDate(expirationDate.getDate() + 90); // 90 days after consent
 
     return (
@@ -64,12 +65,31 @@ function WalletEntryCard({
                         </Tooltip>
                     </div>
                     {/* CONSENT */}
-                    <span>
-                        Consented: {consentDate.toLocaleDateString()}
-                    </span>
-                    <span>
-                        Valid Until: {expirationDate.toLocaleDateString()}
-                    </span>
+                    <div style={{
+                        paddingLeft: '0.6rem',
+                        paddingRight: '0.6rem',
+                    }}>
+                        <div>
+                            Consented: {consentDate.toLocaleDateString()}
+                        </div>
+                        <div>
+                            Expires: {expirationDate.toLocaleDateString()}
+                        </div>
+                    </div>
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <button
+                                className='column'
+                                // onClick={() => startLinkAccount()}
+                                disabled={!isTauri}
+                            >
+                                Renew Consent
+                            </button>
+                        </TooltipTrigger>
+                        {!isTauri &&
+                            <TooltipContent>This feature is unavailable in limited demo mode.</TooltipContent>
+                        }
+                    </Tooltip>
                 </div>
             </div>
         </div>

@@ -34,6 +34,13 @@ body,
     align-items: center;
 }
 
+.flipRow {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}
+
 .formRow {
     display: flex;
     flex-direction: row;
@@ -112,7 +119,7 @@ button,
 
 .androidBanner {
     background-color: #8a9a5b;
-    height: 2.2rem;
+    height: 2.5rem;
     width: 100%;
 
     position: fixed;
@@ -378,5 +385,33 @@ h3 {
 @media (max-width: 600px) {
     .userRow {
         grid-template-columns: repeat(auto-fill, minmax(30px, 1fr));
+    }
+
+    .headerGrid {
+        grid-template-columns: 1fr minmax(0, auto) 1fr;
+        overflow-x: hidden;
+        padding: 4px;
+    }
+
+    .headerGrid > .headerLeft {
+        display: flex;
+        justify-content: flex-end;
+        gap: 2px;
+    }
+
+    .headerGrid > .headerRight {
+        display: flex;
+        justify-content: flex-start;
+        gap: 2px;
+    }
+
+    .headerCentre {
+        justify-self: center;
+    }
+
+    .flipRow {
+            display: flex;
+        flex-direction: column;
+        align-items: center;
     }
 }

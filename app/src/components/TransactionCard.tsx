@@ -14,6 +14,7 @@ import { useLayoutEffect, useRef } from "react";
 import { icons } from "../data/categories";
 import { getDatabaseManager } from "../utils/DatabaseManager";
 import { getTransactionIcon } from "../utils/icons";
+import { isMobile } from "../utils/utils";
 
 type TransactionCardProps = {
     className?: string;
@@ -165,7 +166,9 @@ function TransactionCard({
                                 </Tooltip>
                             </div>
                             {/* DESCRIPTION */}
-                            <span className='description'>{transaction.description}</span>
+                            {!isMobile() &&
+                                <span className='description'>{transaction.description}</span>  
+                            }
                         </div>
 
                     </div>
@@ -254,6 +257,9 @@ function TransactionCard({
                     } */}
                     {/* <div className='verticalSeparator' /> */}
                     {/* <span>{transaction.description}</span> */}
+                    {isMobile() &&
+                        <span className='description'>{transaction.description}</span>  
+                    }
                 </div>
             </div>
         </div>
