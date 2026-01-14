@@ -1,3 +1,9 @@
+.accountRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
 .accountHeader {
     display: flex;
     justify-content: space-between;

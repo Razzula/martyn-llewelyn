@@ -9,7 +9,7 @@ use aes_gcm::Aes256Gcm;
 use rand::RngCore;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
-use uuid::Uuid;
+use sha2::{Digest, Sha256};
 
 #[cfg(target_os = "android")]
 use tauri_plugin_android_keystore::AndroidKeystoreExt;
@@ -101,7 +101,7 @@ pub struct TokenEntry {
     pub userID: String,
     pub accessToken: String,
     pub refreshToken: String,
-    pub expiresAt: u64, // epoch seconds
+    pub expiresAt: u64,   // epoch seconds
     pub consentedAt: u64, // epoch seconds
     pub meta: Option<String>,
 }
@@ -167,13 +167,16 @@ impl Wallet {
         fs::write(&self.path, encryptedData.unwrap()).expect("Failed to write wallet");
     }
 
-    pub async fn insert(&mut self, entry: TokenEntry, app: AppHandle) -> String {
+    pub async fn insert(&mut self, id: String, entry: TokenEntry, app: AppHandle) -> String {
         if (self.isEmpty()) {
             *self = Wallet::load(&app).await;
         }
-        // generate a new entry
-        let walletToken = Uuid::new_v4().to_string();
-        self.tokens.insert(walletToken.clone(), entry);
+        // deterministic token from auth token
+        let mut hasher = Sha256::new();
+        hasher.update(id.as_bytes());
+        let walletToken: String = format!("{:x}", hasher.finalize());
+        // no duplication
+        self.tokens.entry(walletToken.clone()).or_insert(entry);
         self.save(app).await;
         walletToken
     }
@@ -223,14 +226,25 @@ impl Wallet {
             *self = Wallet::load(app).await;
         }
 
-        Ok(self.tokens.iter().map(|(walletToken, entry)| {
-            TokenFace {
+        Ok(self
+            .tokens
+            .iter()
+            .map(|(walletToken, entry)| TokenFace {
                 walletToken: walletToken.clone(),
                 userID: entry.userID.clone(),
                 consentedAt: entry.consentedAt,
                 meta: entry.meta.clone(),
-            }
-        }).collect())
+            })
+            .collect())
     }
 
+    pub async fn setMeta(&mut self, walletToken: &str, meta: String, app: AppHandle) {
+        if (self.isEmpty()) {
+            *self = Wallet::load(&app).await;
+        }
+        if let Some(entry) = self.tokens.get_mut(walletToken) {
+            entry.meta = Some(meta);
+            self.save(app).await;
+        }
+    }
 }

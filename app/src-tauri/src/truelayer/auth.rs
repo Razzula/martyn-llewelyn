@@ -78,7 +78,7 @@ pub async fn exchangeToken(
     };
 
     let mut wallet = wallet.lock().await;
-    let walletToken = wallet.insert(entry, app.clone()).await;
+    let walletToken = wallet.insert(code, entry, app.clone()).await;
 
     let face = wallet.see(&walletToken, &app).await
         .ok_or("Failed to retrieve newly inserted token")?;

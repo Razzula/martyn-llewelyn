@@ -126,7 +126,7 @@ button,
     flex: 0 0 auto;
 }
 
-.headerLeft {
+.userRow {
     grid-column: 1;
     grid-row: 1;
     align-self: start;
@@ -376,7 +376,7 @@ h3 {
 }
 
 @media (max-width: 600px) {
-    .headerLeft {
+    .userRow {
         grid-template-columns: repeat(auto-fill, minmax(30px, 1fr));
     }
 }

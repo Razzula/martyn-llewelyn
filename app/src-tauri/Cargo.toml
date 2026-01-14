@@ -38,6 +38,7 @@ aes-gcm = "0.10"
 tokio = { version = "1.38", features = ["rt", "sync"] }
 tauri-plugin-os = "2"
 tauri-plugin-sql = { version = "2", features = ["sqlite"] }
+sha2 = "0.10"
 
 [target.'cfg(not(target_os = "android"))'.dependencies]
 # not Android

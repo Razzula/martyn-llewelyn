@@ -3,7 +3,7 @@
 
 use tokio::sync::Mutex;
 
-use crate::{truelayer::{auth::refreshToken, utils::{getTrueLayerApiUrl, getTrueLayerAuthUrl}}};
+use crate::truelayer::{auth::refreshToken, utils::{getTrueLayerApiUrl, getTrueLayerAuthUrl, parseAndUpdateWalletMeta}};
 use crate::{wallet};
 use wallet::{Wallet};
 
@@ -24,7 +24,9 @@ pub async fn fetchAccountsData(
     wallet: tauri::State<'_, Mutex<Wallet>>,
     walletToken: &str,
 ) -> Result<String, String> {
-    fetchFromTrueLayerUsingWallet(app, walletToken, "data/v1/accounts", wallet).await
+    let resultText = fetchFromTrueLayerUsingWallet(app.clone(), walletToken, "data/v1/accounts", wallet.clone()).await?;
+    parseAndUpdateWalletMeta(app, wallet, walletToken, &resultText).await; // XXX: should fire and forget
+    Ok(resultText)
 }
 
 #[tauri::command]
@@ -33,7 +35,9 @@ pub async fn fetchCardsData(
     wallet: tauri::State<'_, Mutex<Wallet>>,
     walletToken: &str,
 ) -> Result<String, String> {
-    fetchFromTrueLayerUsingWallet(app, walletToken, "data/v1/cards", wallet).await
+    let resultText = fetchFromTrueLayerUsingWallet(app.clone(), walletToken, "data/v1/cards", wallet.clone()).await?;
+    parseAndUpdateWalletMeta(app, wallet, walletToken, &resultText).await; // XXX: should fire and forget
+    Ok(resultText)
 }
 
 #[tauri::command]

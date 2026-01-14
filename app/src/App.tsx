@@ -44,8 +44,11 @@ import List from './assets/icons/List.svg?react';
 import GridView from './assets/icons/GridView.svg?react';
 import Waterfall from './assets/icons/Waterfall.svg?react';
 import Category from './assets/icons/Category.svg?react';
+import Wallet from './assets/icons/Wallet.svg?react';
+
 import { defaultChannels, defaultExpenditures, defaultIncomes } from './data/categories.tsx';
 import DashboardPanel from './components/DashboardPanel.tsx';
+import WalletEntryCard from './components/WalletEntryCard.tsx';
 
 enum ResponseState {
     LOADING = 'LOADING',
@@ -103,6 +106,8 @@ function App() {
     const [openEditUser, setOpenEditUser] = useState<((userID: string, userEmail: string) => void) | null>(null); // holds a function to redirect after user creation
     const [openEditAccount, setOpenEditAccount] = useState<BankAccount | null>(null);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
+
+    const [openWallet, setOpenWallet] = useState<boolean>(false);
 
     const [appSettings, setAppSettings] = useState<AppSettings>(defaultAppSettings());
 
@@ -166,16 +171,7 @@ function App() {
                 });
 
             // XXX
-            invoke('loadWalletTokens')
-                .then((walletEntries: unknown) => {
-                    const walletEntriesArr = walletEntries as WalletEntry[];
-                    if (walletEntriesArr.length > 0) {
-                        setWalletEntries(walletEntriesArr);
-                    }
-                })
-                .catch(err => {
-                    console.error('Failed to load wallet tokens:', err);
-                });
+            loadWalletTokens();
 
             // SQLite
             getDatabaseManager().then(dbm => {
@@ -229,7 +225,8 @@ function App() {
             if (code && state) {
                 TrueLayerClient.handleTokenExchange(code, state)
                     .then((walletEntry: WalletEntry) => {
-                        setWalletEntries(prev => [...prev, walletEntry]);
+                        console.log('Loaded WalletEntry', walletEntry.walletToken);
+                        loadWalletTokens();
                     })
                     .catch(err => {
                         console.error('Token exchange failed:', err);
@@ -415,6 +412,19 @@ function App() {
         }
     }, [categoryStats])
 
+    function loadWalletTokens() {
+        invoke('loadWalletTokens')
+            .then((walletEntries: unknown) => {
+                const walletEntriesArr = walletEntries as WalletEntry[];
+                if (walletEntriesArr.length > 0) {
+                    setWalletEntries(walletEntriesArr);
+                }
+            })
+            .catch(err => {
+                console.error('Failed to load wallet tokens:', err);
+            });
+    }
+
     function redirectToTrueLayer(userID: string, userEmail: string) {
         if (userID !== null) {
             TrueLayerClient.getTrueLayerAuthURL(userID, userEmail)
@@ -499,6 +509,9 @@ function App() {
      */
     async function updateAccountsTransactions(from: string, to: string) {
         await Promise.all(Object.entries(accounts).map(([accountID, account]: [string, BankAccount]) => {
+            if (account.source === 'Bagel') {
+                return;
+            }
             const walletToken = account.users?.[0]?.walletToken || walletEntries[0]?.walletToken; // XXX: use the first token if not specified
             const isCard = account.cardNetwork !== undefined;
             return updateAccountTransactions(walletToken, accountID, isCard, from, to);
@@ -815,6 +828,61 @@ function App() {
                 />
             </ResponsiveModal>
 
+            {/* WALLET MODAL */}
+            <ResponsiveModal title='Your Credentials'
+                open={openWallet}
+                onClose={() => {
+                    setOpenWallet(false);
+                }}
+                forceMode='centreModal'
+            >
+                <div className='column'>
+
+                    {walletEntries.length > 0 ? (
+                        <div className='column'>
+                            {
+                                walletEntries.map((walletEntry: WalletEntry) =>
+                                    <WalletEntryCard
+                                        walletEntry={walletEntry}
+                                        users={users}
+                                        providers={providers}
+                                    />
+                                )
+                            }
+                            <span>
+                                Removing an account here only deletes it from this app. To fully revoke access, please do so in your bank's portal.
+                            </span>
+
+                        </div>
+                    ) : (
+                        <div className='column'>
+                            <h4>You don't have any linked accounts.</h4>
+                        </div>
+                    )
+                    }
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <button
+                                className='column'
+                                onClick={() => startLinkAccount()}
+                                disabled={!isTauri}
+                            >
+                                <img
+                                    src='./TrueLayer/Banks/BankLogos_UnitedKingdom_5icons.svg'
+                                    alt='All Major UK Banks Supported'
+                                    height={24}
+                                />
+                                <span>Connect with {Object.values(accounts)?.length === 0 || !isTauri ? 'your' : 'another'} Bank</span>
+                            </button>
+                        </TooltipTrigger>
+                        {!isTauri &&
+                            <TooltipContent>This feature is unavailable in limited demo mode.</TooltipContent>
+                        }
+                    </Tooltip>
+                    {footend}
+                </div>
+            </ResponsiveModal>
+
             <div className='header'>
 
                 {!isTauri &&
@@ -835,47 +903,65 @@ function App() {
 
                     {/* USER BUTTONS */}
                     <div className='headerLeft'>
-                        {users &&
-                            users.map((user, index) => (
-                                <Tooltip key={user.id}>
-                                    <TooltipTrigger>
-                                        <button
-                                            key={index}
-                                            className='userButton'
-                                            onClick={() => {
-                                                setOpenEditUser(() => { });
-                                                setSelectedUser(user);
-                                            }}
-                                        >
-                                            {user.icon ?
-                                                <img
-                                                    className='userIcon'
-                                                    src={user.icon}
-                                                    alt={user.name}
-                                                    style={{ width: '32px', height: '32px' }}
-                                                /> : <span>{user.name.charAt(0).toUpperCase()}</span>
-                                            }
-                                        </button>
-                                    </TooltipTrigger>
+                        <div className='userRow'>
+                            {users &&
+                                users.map((user, index) => (
+                                    <Tooltip key={user.id}>
+                                        <TooltipTrigger>
+                                            <button
+                                                key={index}
+                                                className='userButton'
+                                                onClick={() => {
+                                                    setOpenEditUser(() => { });
+                                                    setSelectedUser(user);
+                                                }}
+                                            >
+                                                {user.icon ?
+                                                    <img
+                                                        className='userIcon'
+                                                        src={user.icon}
+                                                        alt={user.name}
+                                                        style={{ width: '32px', height: '32px' }}
+                                                    /> : <span>{user.name.charAt(0).toUpperCase()}</span>
+                                                }
+                                            </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            {user.name}
+                                        </TooltipContent>
+                                    </Tooltip>
+                                ))
+                            }
+
+                            <Tooltip>
+                                <TooltipTrigger>
+                                    <button
+                                        className={users && users.length > 0 ? 'userButton' : ''}
+                                        onClick={() => setOpenEditUser(() => { })}
+                                    >
+                                        {users && users.length > 0 ? '+' : 'Setup Profile'}
+                                    </button>
+                                </TooltipTrigger>
+                                {users && users.length > 0 &&
                                     <TooltipContent>
-                                        {user.name}
+                                        Create a profile
                                     </TooltipContent>
-                                </Tooltip>
-                            ))
-                        }
+                                }
+                            </Tooltip>
+                        </div>
 
                         <Tooltip>
                             <TooltipTrigger>
                                 <button
                                     className={users && users.length > 0 ? 'userButton' : ''}
-                                    onClick={() => setOpenEditUser(() => { })}
+                                    onClick={() => setOpenWallet(true)}
                                 >
-                                    {users && users.length > 0 ? '+' : 'Setup Profile'}
+                                    <Wallet />
                                 </button>
                             </TooltipTrigger>
                             {users && users.length > 0 &&
                                 <TooltipContent>
-                                    Create a profile
+                                    Credentials Wallet
                                 </TooltipContent>
                             }
                         </Tooltip>

@@ -123,13 +123,13 @@ function DashboardPanel({
                                         data={categoryChart} dataKey='value' nameKey='name'
                                         cx='50%' cy='50%' outerRadius={225} innerRadius={125}
                                         startAngle={90} endAngle={-270}
-                                        label
+                                        label={!modesty}
                                     >
                                         {categoryChart.map((entry, i) => (
                                             <Cell key={i} fill={entry.colour ?? '#cccccc'} />
                                         ))}
                                     </Pie>
-                                    <Tooltip />
+                                    { !modesty && <Tooltip /> }
                                 </PieChart>
                             </ResponsiveContainer>
                         </div>
