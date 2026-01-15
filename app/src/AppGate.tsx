@@ -43,7 +43,12 @@ function AppGate() {
         if (platform() === 'android' && !isAuthenticated) {
             return (
                 <div id='app'>
-                    <div className='column' style={{ flexGrow: 1, justifyContent: 'center' }}>
+                    <div className='column' style={{
+                        flexGrow: 1,
+                        justifyContent: 'center',
+                        marginTop: '2.5rem',
+                        padding: '1rem',
+                    }}>
                         <img
                             src={failedAuthentication ? './ConfusedBagel-alt.png' : './MasterBagel.png'}
                             alt='Authentication Required'

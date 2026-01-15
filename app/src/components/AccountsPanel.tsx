@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { BankAccount, getAccountLogoSrc, User } from "../types/Bagel";
+import { BankAccount, getAccountLogoSrc, User, WalletEntry } from "../types/Bagel";
 import { TrueLayerProvider } from "../types/TrueLayer";
 import { isTauri } from "../utils/tauri";
 import { toFinancialString } from "../utils/finance";
@@ -21,6 +21,7 @@ type AccountsPanelProps = {
     accounts: Record<string, BankAccount>;
     users: User[] | null;
     providers: Record<string, TrueLayerProvider>;
+    walletEntries: WalletEntry[],
     modesty: boolean;
     windowSettings: AppSettings['accounts'];
     setOpenEditAccount: (account: BankAccount) => void;
@@ -33,6 +34,7 @@ function AccountsPanel({
     accounts,
     users,
     providers,
+    walletEntries,
     modesty,
     windowSettings,
     setOpenEditAccount,
@@ -267,7 +269,7 @@ function AccountsPanel({
                                     alt='All Major UK Banks Supported'
                                     height={24}
                                 />
-                                <span>Connect with {Object.values(accounts)?.length === 0 || !isTauri ? 'your' : 'another'} Bank</span>
+                                <span>Connect with {walletEntries.length === 0 || !isTauri ? 'your' : 'another'} Bank</span>
                             </button>
                         </TooltipTrigger>
                         {!isTauri &&

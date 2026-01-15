@@ -6,6 +6,7 @@ import { BankAccount, CategoryStat, Channel, TransactionCategory } from '../type
 import { getAccountBalance } from '../utils/utils';
 
 import './DashboardPanel.css'
+import Spinner from './common/Spinner';
 
 type DashboardPanelProps = {
     accounts: Record<string, BankAccount>;
@@ -96,7 +97,13 @@ function DashboardPanel({
             </div>
             <div className='dashboard'>
                 <div className='leftPane'>
+                    <h4>Breakdown of Expenditure</h4>
                     <div className='chartStack'>
+                        <div className='chartLayer'>
+                            {/* Show loading spinner for when Pie has not rendered */}
+                            <Spinner/>
+                        </div>
+
                         <div className='chartLayer'>
                             <ResponsiveContainer width='100%' height='100%'>
                                 {/* smaller pie (channelChart) */}
@@ -136,6 +143,7 @@ function DashboardPanel({
                     </div>
                 </div>
                 <div className='rightPane'>
+                    <h4>Comparison of Expenditure</h4>
                     <ResponsiveContainer width='100%' height='100%'>
                         <BarChart data={categoryChart} margin={{ top: 20, right: 20, left: 0, bottom: 60 }}>
                             <CartesianGrid strokeDasharray='3 3' />

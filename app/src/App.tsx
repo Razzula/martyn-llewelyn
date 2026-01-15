@@ -79,7 +79,7 @@ const defaultAppSettings = (): AppSettings => ({
         displayAs: 'list',
     },
     global: {
-        modesty: true,
+        modesty: false,
     },
 });
 
@@ -865,7 +865,7 @@ function App() {
                         </div>
                     ) : (
                         <div className='column'>
-                            <h4>You don't have any linked accounts.</h4>
+                            <span>You don't have any accounts.</span>
                         </div>
                     )
                     }
@@ -881,7 +881,7 @@ function App() {
                                     alt='All Major UK Banks Supported'
                                     height={24}
                                 />
-                                <span>Connect with {Object.values(accounts)?.length === 0 || !isTauri ? 'your' : 'another'} Bank</span>
+                                <span>Connect with {walletEntries.length === 0 || !isTauri ? 'your' : 'another'} Bank</span>
                             </button>
                         </TooltipTrigger>
                         {!isTauri &&
@@ -953,7 +953,7 @@ function App() {
                                 </TooltipTrigger>
                                 {users && users.length > 0 &&
                                     <TooltipContent>
-                                        Create a profile
+                                        Create new profile
                                     </TooltipContent>
                                 }
                             </Tooltip>
@@ -1223,6 +1223,7 @@ function App() {
                         accounts={accounts}
                         users={users}
                         providers={providers}
+                        walletEntries={walletEntries}
                         modesty={appSettings.global.modesty}
                         windowSettings={appSettings.accounts}
                         setOpenEditAccount={setOpenEditAccount}
@@ -1237,6 +1238,7 @@ function App() {
                         accounts={accounts}
                         users={users}
                         providers={providers}
+                        walletEntries={walletEntries}
                         modesty={appSettings.global.modesty}
                         windowSettings={appSettings.transactions}
                         footend={footend}

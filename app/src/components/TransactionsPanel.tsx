@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useRef, useState } from "react";
 import { isTauri } from "../utils/tauri";
 
-import { BankAccount, CardNetwork, Channel, getAccountLogoSrc, Transaction, TransactionCategory, User } from "../types/Bagel";
+import { BankAccount, CardNetwork, Channel, getAccountLogoSrc, Transaction, TransactionCategory, User, WalletEntry } from "../types/Bagel";
 import TransactionCard from "./TransactionCard";
 import { TrueLayerProvider } from "../types/TrueLayer";
 import { OrderedDateTreeStruct } from "../types/OrderedDateTree";
@@ -16,6 +16,7 @@ type TransactionsPanelProps = {
     accounts: Record<string, BankAccount>;
     users: User[] | null;
     providers: Record<string, TrueLayerProvider>;
+    walletEntries: WalletEntry[];
     modesty: boolean;
     windowSettings: AppSettings['transactions'];
     footend?: React.ReactNode;
@@ -32,6 +33,7 @@ function TransactionsPanel({
     accounts,
     users,
     providers,
+    walletEntries,
     modesty,
     windowSettings,
     footend,
@@ -249,6 +251,7 @@ function TransactionsPanel({
                             onClick={() => {
                                 document.querySelector('.body')?.scrollTo({ top: 0, behavior: 'smooth' });
                             }}
+                            disabled={Object.keys(transactionsTree).length === 0}
                         >
                             Back to Top
                         </button>
@@ -257,7 +260,7 @@ function TransactionsPanel({
                                 <button
                                     style={{ marginTop: '0.5rem' }}
                                     onClick={loadMoreTransactions}
-                                    disabled={!isTauri || loadingTransactions}
+                                    disabled={!isTauri || loadingTransactions || walletEntries.length === 0}
                                 >
                                     {/* TODO: possibly render what (amount / timespan) is to be loaded */}
                                     {loadingTransactions ? <div className='spinner' /> : 'Load More...'}
