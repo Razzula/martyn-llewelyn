@@ -2,6 +2,7 @@ import { User, WalletEntry } from "../types/Bagel";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./common/Tooltip";
 import { TrueLayerProvider } from "../types/TrueLayer";
 import { isTauri } from "../utils/tauri";
+import { TrueLayerClient } from "../lib/TrueLayer";
 
 import './TransactionCard.css'
 import '../styles/CommonCard.css'
@@ -23,6 +24,19 @@ function WalletEntryCard({
     const consentDate = new Date(walletEntry.consentedAt * 1000);
     const expirationDate = new Date(consentDate);
     expirationDate.setDate(expirationDate.getDate() + 90); // 90 days after consent
+
+    function renewConsent() {
+        if (!user) {
+            return;
+        }
+        TrueLayerClient.handleExtendConnection(
+            walletEntry.walletToken,
+            { id: user.id, name: user.name, email: user.email },
+            true,
+        ).then(res => {
+            console.log('Jack', res);
+        });
+    }
 
     return (
         <div
@@ -80,7 +94,7 @@ function WalletEntryCard({
                         <TooltipTrigger>
                             <button
                                 className='column'
-                                // onClick={() => startLinkAccount()}
+                                onClick={renewConsent}
                                 disabled={!isTauri}
                             >
                                 Renew Consent

@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 
-import { TrueLayerAccount, TrueLayerAccountBalance, TrueLayerCard, TrueLayerCardBalance, TrueLayerProvider } from "../types/TrueLayer.ts";
+import { TrueLayerAccount, TrueLayerAccountBalance, TrueLayerCard, TrueLayerCardBalance, TrueLayerProvider, TrueLayerUser } from "../types/TrueLayer.ts";
 import { generateCodeChallenge, generateCodeVerifier } from "../utils/PKCE.ts";
 import { BankAccount, WalletEntry } from "../types/Bagel.ts";
 import { fromTrueLayerAccount, fromTrueLayerCard } from "../types/TrueLayerAdapters.ts";
@@ -20,6 +20,7 @@ import {
 interface TrueLayerAPI {
     getTrueLayerAuthURL(userID: string, userEmail: string): Promise<string>;
     handleTokenExchange(code: string, state: string): Promise<WalletEntry>;
+    handleExtendConnection(walletToken: string, user: TrueLayerUser, userHasReconfirmedConsent: boolean): Promise<String | boolean>;
 
     fetchProviders(): Promise<TrueLayerProvider[]>;
 
@@ -72,6 +73,19 @@ class RealTrueLayerAPI implements TrueLayerAPI {
 
         const walletToken: WalletEntry = await invoke('exchangeToken', { code, userId: state, verifier });
         return walletToken;
+    }
+
+    async handleExtendConnection(walletToken: string, user: TrueLayerUser, userHasReconfirmedConsent: boolean) {
+        const res: Record<string, string> = await invoke('extendConnection', { 
+            walletToken,
+            user,
+            userHasReconfirmedConsent,
+        });
+        const actionNeeded= res?.['action_needed'];
+        if (actionNeeded) {
+            console.log(res?.['user_input_link']);
+        }
+        return actionNeeded;
     }
 
     async fetchProviders(): Promise<TrueLayerProvider[]> {
@@ -140,6 +154,10 @@ class MockTrueLayerAPI implements TrueLayerAPI {
         };
     }
 
+    async handleExtendConnection(_walletToken: string, _user: TrueLayerUser, _userHasReconfirmedConsent: boolean) {
+        return false;
+    }
+
     async fetchProviders(): Promise<TrueLayerProvider[]> {
         return mockProviders();
     }
@@ -190,6 +208,11 @@ export class TrueLayerClient {
     static async handleTokenExchange(code: string, state: string): Promise<WalletEntry> {
         return TrueLayerClient.api.handleTokenExchange(code, state);
     }
+
+    static async handleExtendConnection(walletToken: string, user: TrueLayerUser, userHasReconfirmedConsent: boolean) {
+        return TrueLayerClient.api.handleExtendConnection(walletToken, user, userHasReconfirmedConsent);
+    }
+
 
     static async fetchProviders(): Promise<TrueLayerProvider[]> {
         return TrueLayerClient.api.fetchProviders();

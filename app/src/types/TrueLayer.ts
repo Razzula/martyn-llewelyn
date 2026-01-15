@@ -1,3 +1,9 @@
+export type TrueLayerUser = {
+    id: string,
+    name: string,
+    email: string,
+}
+
 export type TrueLayerAccount = {
     update_timestamp: string;
     account_id: string;
@@ -142,4 +148,3 @@ export enum TrueLayerTransactionCategory {
     DEBIT = 'DEBIT',
     UNKNOWN = 'UNKNOWN',
 }
-

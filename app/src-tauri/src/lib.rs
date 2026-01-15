@@ -63,6 +63,7 @@ pub fn run() {
             utils::saveJSON,
             // TRUELAYER
             truelayer::auth::exchangeToken,
+            truelayer::auth::extendConnection,
             truelayer::api::fetchUserData,
             truelayer::api::fetchAccountsData,
             truelayer::api::fetchCardsData,

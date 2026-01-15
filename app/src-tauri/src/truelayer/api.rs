@@ -25,7 +25,7 @@ pub async fn fetchAccountsData(
     walletToken: &str,
 ) -> Result<String, String> {
     let resultText = fetchFromTrueLayerUsingWallet(app.clone(), walletToken, "data/v1/accounts", wallet.clone()).await?;
-    parseAndUpdateWalletMeta(app, wallet, walletToken, &resultText).await; // XXX: should fire and forget
+    let _ = parseAndUpdateWalletMeta(app, wallet, walletToken, &resultText).await; // XXX: should fire and forget
     Ok(resultText)
 }
 
@@ -36,7 +36,7 @@ pub async fn fetchCardsData(
     walletToken: &str,
 ) -> Result<String, String> {
     let resultText = fetchFromTrueLayerUsingWallet(app.clone(), walletToken, "data/v1/cards", wallet.clone()).await?;
-    parseAndUpdateWalletMeta(app, wallet, walletToken, &resultText).await; // XXX: should fire and forget
+    let _ = parseAndUpdateWalletMeta(app, wallet, walletToken, &resultText).await; // XXX: should fire and forget
     Ok(resultText)
 }
 
