@@ -70,11 +70,11 @@ function WalletEntryCard({
                                 <img
                                     key={user?.id}
                                     className='bankLogo'
-                                    src={user?.icon}
+                                    src={user?.icon || './Serenity/unknown.png'}
                                 />
                             </TooltipTrigger>
                             <TooltipContent>
-                                {user?.name}
+                                {user?.name ?? 'Unknown Profile'}
                             </TooltipContent>
                         </Tooltip>
                     </div>

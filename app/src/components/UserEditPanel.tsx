@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { User } from "../types/Bagel";
 import { isTauri } from "../utils/tauri";
+import { validateUser } from "../utils/user";
 
 type UserEditPanelProps = {
     user: User | null;
@@ -34,6 +35,7 @@ function UserEditPanel({
         email: user ? user.email : emptyUser.email,
         icon: user ? user.icon : emptyUser.icon,
     });
+    const [userErrors, setUserErrors] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
         if (user) {
@@ -51,6 +53,10 @@ function UserEditPanel({
         }
     }, [user]);
 
+    useEffect(() => {
+        setUserErrors(validateUser(ephemeralUser, existingUsers));
+    }, [ephemeralUser, existingUsers]);
+
     const icons = [
         './Serenity/bagel.png',
         './Serenity/nim.png',
@@ -61,20 +67,7 @@ function UserEditPanel({
         // './Serenity/trex.png',
     ]
 
-    const invalidName = (
-        // non-nulls
-        ephemeralUser.name.trim() === ''
-        // unique
-        || existingUsers?.some((existingUser) => existingUser.name === ephemeralUser.name && existingUser.id !== ephemeralUser.id)
-    );
-    const invalidEmail = (
-        // non-nulls
-        ephemeralUser.email.trim() === ''
-        // email format (basic check)
-        || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ephemeralUser.email)
-    ) && isTauri; // email only needs to be valid in Tauri context
 
-    const invalidForm = invalidName || invalidEmail;
 
     return (
         <div className='column'>
@@ -95,7 +88,7 @@ function UserEditPanel({
 
             <div className='formRow'>
                 <input
-                    className={`${invalidName ? 'invalid' : ''}`}
+                    className={`${userErrors?.invalidName ? 'invalid' : ''}`}
                     type='text'
                     placeholder='User Name'
                     value={ephemeralUser.name}
@@ -107,7 +100,7 @@ function UserEditPanel({
             {isTauri &&
                 <div className='formRow'>
                     <input
-                        className={`${invalidEmail ? 'invalid' : ''}`}
+                        className={`${userErrors?.invalidEmail ? 'invalid' : ''}`}
                         type='text'
                         placeholder='Email Address'
                         value={ephemeralUser.email}
@@ -126,7 +119,7 @@ function UserEditPanel({
                             onClose(ephemeralUser.id, ephemeralUser.email);
                         }
                     }}
-                    disabled={invalidForm}
+                    disabled={userErrors?.invalidForm}
                 >
                     {user ? 'Update' : 'Add'}
                 </button>

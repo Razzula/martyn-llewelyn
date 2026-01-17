@@ -1,38 +1,27 @@
 import { RefObject, useEffect, useRef, useState } from 'react';
 import { onOpenUrl } from '@tauri-apps/plugin-deep-link';
-import { invoke } from '@tauri-apps/api/core';
 
 import { TrueLayerClient } from './lib/TrueLayer.ts';
 
-import { BankAccount, BankAccountBalance, BankAccountPatch, CategoryStat, Channel, generatePatchFromAccount, WalletEntry, Transaction, TransactionCategory, User } from './types/Bagel.ts';
+import { BankAccount, WalletEntry, User } from './types/Bagel.ts';
 import { ResponsiveModal } from './components/common/ResponsiveModal.tsx';
-import { AccountManager } from './utils/AccountManager.ts';
-import { fromTrueLayerAccountBalance, fromTrueLayerAccountTransaction, fromTrueLayerCardBalance, fromTrueLayerCardTransaction } from './types/TrueLayerAdapters.ts';
 import { Tooltip, TooltipContent, TooltipTrigger } from './components/common/Tooltip.tsx';
-import { TrueLayerAccountBalance, TrueLayerAccountTransaction, TrueLayerCardBalance, TrueLayerCardTransaction, TrueLayerProvider } from './types/TrueLayer.ts';
-import { closedProviders, providerPatches } from './data/providers.ts';
 import { isTauri, openInBrowser } from './utils/tauri.ts';
 import AccountEditPanel from './components/AccountEditPanel.tsx';
 
 import './styles/App.css';
-import { emptyBankAccount } from './data/stubs.ts';
 import UserEditPanel from './components/UserEditPanel.tsx';
 import SegmentedControl from './components/common/SegmentedControl.tsx';
 import AccountsPanel from './components/AccountsPanel.tsx';
 import TransactionsPanel from './components/TransactionsPanel.tsx';
-import { newOrderedDateTreeFromList, OrderedDateTree } from './types/OrderedDateTree.ts';
 import { ToggleSwitch } from './components/common/ToggleSwitch.tsx';
 import { WiggleWrapper } from './components/common/WiggleWrapper.tsx';
 import Spinner from './components/common/Spinner.tsx';
 import { RadioButtons, ToggleButton } from './components/common/RadioButtons.tsx';
-import { categoryStats as defaultCategoryStats, channelStats as defaultChannelStats } from './data/TrueLayerMock.ts';
 
 import VisibilityIcon from './assets/icons/Visibility.svg?react';
 import VisibilityOffIcon from './assets/icons/VisibilityOff.svg?react';
-import { getMostRecentSunday, isMobile, toYYYYMMDD } from './utils/utils.ts';
-
-import requestGate from './utils/RequestGate.ts';
-import { getDatabaseManager } from './utils/DatabaseManager.ts';
+import { isMobile } from './utils/utils.ts';
 
 import Ascending from './assets/icons/Ascending.svg?react';
 import Descending from './assets/icons/Descending.svg?react';
@@ -46,11 +35,12 @@ import Waterfall from './assets/icons/Waterfall.svg?react';
 import Category from './assets/icons/Category.svg?react';
 import Wallet from './assets/icons/Wallet.svg?react';
 
-import { defaultChannels, defaultExpenditures, defaultIncomes } from './data/categories.tsx';
 import DashboardPanel from './components/DashboardPanel.tsx';
 import WalletEntryCard from './components/WalletEntryCard.tsx';
 
-enum ResponseState {
+import { accountsLoadStateStore, accountsStore, Engine, providersStore, transactionsLoadedRangeStore, transactionsTreeStore, usersStore, useSyncExternalStoreFromBagelStore, walletEntriesStore } from './Engine.ts';
+
+export enum ResponseState {
     LOADING = 'LOADING',
     SUCCESS = 'SUCCESS',
     ERROR = 'ERROR',
@@ -85,140 +75,32 @@ const defaultAppSettings = (): AppSettings => ({
 
 function App() {
 
+    // ENGINE STATES
+    const walletEntries = useSyncExternalStoreFromBagelStore(walletEntriesStore);
+    const users = useSyncExternalStoreFromBagelStore(usersStore);
+
+    const providers = useSyncExternalStoreFromBagelStore(providersStore);
+    const accounts = useSyncExternalStoreFromBagelStore(accountsStore);
+    const accountsLoadState = useSyncExternalStoreFromBagelStore(accountsLoadStateStore);
+    const transactionsTree = useSyncExternalStoreFromBagelStore(transactionsTreeStore);
+    const transactionsLoadedRange = useSyncExternalStoreFromBagelStore(transactionsLoadedRangeStore);
+
+    // TODO: remove these
+    const [appSettings, setAppSettings] = useState<AppSettings>(defaultAppSettings());
+    
+    // UI STATES
     const [panel, setPanel] = useState<'dashboard' | 'accounts' | 'transactions' | 'standing'>('dashboard');
-
-    const [users, setUsers] = useState<User[] | null>(null);
-    const [providers, setProviders] = useState<Record<string, TrueLayerProvider>>({});
-
-    const [accounts, setAccounts] = useState<Record<string, (BankAccount)>>({});
-    const [accountsState, setAccountsState] = useState<ResponseState | null>(null);
-
-    const [accountsDataLive, setAccountsDataLive] = useState<Record<string, BankAccount>>({});
-    const [accountsDataOffline, setAccountsDataOffline] = useState<Record<string, BankAccount> | null>(null);
-    const [accountsDataPatches, setAccountsDataPatches] = useState<Record<string, BankAccountPatch> | null>(null);
-
-    const [transactionsTree, setTransactionsTree] = useState<OrderedDateTree<Transaction>>(new OrderedDateTree<Transaction>());
-    const [transactionsLoadedRange, setTransactionsLoadedRange] = useState<Date>(getMostRecentSunday());
-
-    const [walletEntries, setWalletEntries] = useState<WalletEntry[]>([]);
-
+    
     const [openSelectUser, setOpenSelectUser] = useState<((userID: string, userEmail: string) => void) | null>(null); // holds a function to redirect after user selection
     const [openEditUser, setOpenEditUser] = useState<((userID: string, userEmail: string) => void) | null>(null); // holds a function to redirect after user creation
     const [openEditAccount, setOpenEditAccount] = useState<BankAccount | null>(null);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
-
+    
     const [openWallet, setOpenWallet] = useState<boolean>(false);
 
-    const [appSettings, setAppSettings] = useState<AppSettings>(defaultAppSettings());
-
-    const [categories, setCategories] = useState<TransactionCategory[]>([]);
-    const [channels, setChannels] = useState<Channel[]>([]);
-
-    const [categoryStats, setCategoryStats] = useState<CategoryStat[]>([]);
-    const [channelStats, setChannelStats] = useState<Record<string, number>>({});
-
     useEffect(() => {
-        // HANDLE SETUP
-
-        // LOAD PROVIDERS
-        TrueLayerClient.fetchProviders()
-            .then((providers: TrueLayerProvider[]) => {
-                const providersMap: Record<string, TrueLayerProvider> = {};
-                // unify TrueLayer's and Bagel's Provider lists
-                [...providers, ...closedProviders]
-                    .filter(provider =>
-                        (provider.provider_id !== 'mock' || !isTauri) // remove mock if not needed
-                        && provider.country === 'uk' // XXX: restrict to UK for now
-                    )
-                    .sort((a, b) => a.display_name.localeCompare(b.display_name))
-                    .forEach(provider => {
-                        providersMap[provider.provider_id] = provider;
-                    });
-                // apply Bagel's patches
-                Object.entries(providersMap).forEach(([providerID, provider]) => {
-                    const patch = providerPatches[providerID];
-                    if (patch) {
-                        Object.assign(provider, patch);
-                    }
-                });
-                // save
-                setProviders(providersMap);
-            })
-            .catch(err => {
-                console.error('Failed to fetch providers:', err);
-            });
-
-        if (isTauri) {
-            // LOAD USERS
-            invoke('loadJSON', { filename: 'users.json' })
-                .then((raw: unknown) => {
-                    const data: User[] = JSON.parse(raw as string);
-                    setUsers(data);
-                })
-                .catch(() => {
-                    setUsers([]);
-                });
-
-            // LOAD OFFLINE ACCOUNTS
-            invoke('loadJSON', { filename: 'accounts.offline.json' })
-                .then((raw: unknown) => {
-                    const data: Record<string, BankAccount> = JSON.parse(raw as string);
-                    setAccountsDataOffline(data);
-                })
-                .catch(() => {
-                    setAccountsDataOffline({});
-                });
-
-            // LOAD ACCOUNT PATCHES
-            invoke('loadJSON', { filename: 'accounts.patches.json' })
-                .then((raw: unknown) => {
-                    const data: Record<string, BankAccount> = JSON.parse(raw as string);
-                    setAccountsDataPatches(data);
-                })
-                .catch(() => {
-                    setAccountsDataPatches({});
-                });
-
-            // XXX
-            loadWalletTokens();
-
-            // SQLite
-            getDatabaseManager().then(dbm => {
-                dbm.init().catch(err => {
-                    console.error('Failed to initialise database:', err);
-                })
-                dbm.getCategories().then(setCategories);
-                dbm.getChannels().then(setChannels);
-                dbm.getCategoryStats().then(setCategoryStats);
-            });
-        }
-        else {
-            // in browser, use a demo token
-            setUsers([
-                {
-                    id: 'mock-user-1',
-                    name: 'Demo User 1',
-                    icon: './Serenity/rubberducky.png',
-                    email: 'martyn-llewelyn@razzula.github.io',
-                },
-                {
-                    id: 'mock-user-2',
-                    name: 'Demo User 2',
-                    icon: './Serenity/hwyaden.png',
-                    email: 'martyn-llewelyn@razzula.github.io',
-                },
-            ]);
-            setWalletEntries([
-                { walletToken: 'mock-user-1', userID: 'mock-user-1', consentedAt: 0, meta: 'mock' },
-                { walletToken: 'mock-user-2', userID: 'mock-user-2', consentedAt: 0, meta: 'mock' },
-            ]);
-            setCategories([...defaultExpenditures, ...defaultIncomes]);
-            setChannels([...defaultChannels]);
-            setCategoryStats(defaultCategoryStats);
-            setChannelStats(defaultChannelStats);
-        }
-
-    }, []);
+        Engine.get();
+    });
 
     useEffect(() => {
         // LISTEN FOR DEEP LINKS
@@ -235,7 +117,7 @@ function App() {
                 TrueLayerClient.handleTokenExchange(code, state)
                     .then((walletEntry: WalletEntry) => {
                         console.log('Loaded WalletEntry', walletEntry.walletToken);
-                        loadWalletTokens();
+                        Engine.get().loadWalletEntries();
                     })
                     .catch(err => {
                         console.error('Token exchange failed:', err);
@@ -251,295 +133,10 @@ function App() {
         };
     }, []);
 
-    useEffect(() => {
-        // SAVE USERS
-        if (users !== null) {
-            saveUsers();
-        }
-    }, [users])
-
-    useEffect(() => {
-        // SAVE ACCOUNTS
-        if (accountsDataOffline !== null) {
-            saveOfflineAccounts();
-        }
-    }, [accountsDataOffline]);
-
-    useEffect(() => {
-        // SAVE ACCOUNTS
-        if (accountsDataPatches !== null) {
-            saveAccountPatches();
-        }
-    }, [accountsDataPatches]);
-
-    useEffect(() => {
-        setAccounts(_prev => {
-            // start with offline and live data
-            const merged: Record<string, BankAccount> = {
-                ...(accountsDataOffline || {}),
-                ...(accountsDataLive || {}),
-            };
-            // apply patches if present
-            if (accountsDataPatches !== null) {
-                Object.entries(accountsDataPatches).forEach(([id, patch]) => {
-                    if (merged[id]) {
-                        merged[id] = { ...merged[id], ...patch };
-                    }
-                });
-            }
-            return merged;
-        });
-    }, [accountsDataLive, accountsDataOffline, accountsDataPatches]);
-
-    useEffect(() => {
-        if (accountsDataLive) {
-            setProviders(prev => {
-                // cache account logos for providers
-                const newAccounts = { ...accountsDataLive };
-                Object.values(newAccounts).forEach(account => {
-                    const providerID = account.provider?.id || undefined;
-                    if (providerID && account.provider?.logoURI !== undefined) {
-                        if (
-                            prev?.[providerID]
-                            && prev?.[providerID].accountLogo === undefined
-                        ) {
-                            // if provider has no account logo, set it to the default
-                            prev[providerID].accountLogo = account.provider.logoURI;
-                        }
-                    }
-                });
-                return prev;
-            })
-        }
-    }, [accountsDataLive]);
-
-    useEffect(() => {
-        // FETCH ACCOUNTS
-        if (walletEntries.length > 0) {
-            console.debug('Wallet Entries:', walletEntries);
-            setAccountsDataLive({});
-            setAccountsState(ResponseState.LOADING); // reset accounts while fetching
-
-            const accountManager = new AccountManager();
-
-            walletEntries.forEach(walletEntry => {
-                Promise.all([
-                    // fetch accounts and cards data
-                    TrueLayerClient.fetchAccountsData(walletEntry.walletToken),
-                    TrueLayerClient.fetchCardsData(walletEntry.walletToken)
-                ])
-                    .then(([accounts, cards]) => {
-                        [...accounts, ...cards].forEach(account => {
-                            // merge into the manager's instance
-                            accountManager.merge(account);
-                        });
-
-                        // apply partial update, to not block UI
-                        setAccountsDataLive(prev => accountManager.applyTo(prev));
-
-                        if (accountsState !== ResponseState.ERROR) {
-                            setAccountsState(ResponseState.SUCCESS);
-                        }
-                    })
-                    .catch(err => {
-                        console.error(`Failed to fetch for token ${walletEntry}:`, err);
-                        setAccountsState(ResponseState.ERROR);
-                    });
-            });
-        }
-        else {
-            setAccountsDataLive({});
-        }
-    }, [walletEntries]);
-
-    useEffect(() => {
-        // FETCH ACCOUNT BALANCES
-        if (walletEntries.length === 0 || !accounts) return;
-
-        if (Object.keys(accounts).length > 0) {
-
-            Object.entries(accounts).forEach(([accountID, account]: [string, BankAccount]) => {
-                if (account.source !== 'TrueLayer') {
-                    // only fetch balances for TrueLayer accounts
-                    return;
-                }
-
-                const isCard = account.cardNetwork !== undefined;
-                const walletToken = account.users?.[0]?.walletToken || walletEntries[0]?.walletToken; // XXX: use the first token if not specified
-
-                // FETCH ACCOUNT BALANCE
-                if (account.balance === undefined) {
-                    const request = isCard
-                        ? () => TrueLayerClient.fetchCardBalance(walletToken, accountID)
-                        : () => TrueLayerClient.fetchAccountBalance(walletToken, accountID);
-
-                    requestGate.run<TrueLayerCardBalance[] | TrueLayerAccountBalance[]>(
-                        `bl:${accountID}`,
-                        request,
-                        10 * 60 * 1000,
-                    )
-                        .then((data) => {
-                            if (data) {
-                                const entry = data[0];
-                                updateAccountBalance(
-                                    accountID,
-                                    isCard
-                                        ? fromTrueLayerCardBalance(entry as TrueLayerCardBalance)
-                                        : fromTrueLayerAccountBalance(entry as TrueLayerAccountBalance)
-                                );
-                            }
-                        })
-                        .catch(err => {
-                            console.error(`Failed to fetch balance for ${isCard ? 'card' : 'account'} ${accountID}:`, err);
-                            setAccountsState(ResponseState.ERROR);
-                        });
-                }
-
-                // FETCH ACCOUNT TRANSACTIONS
-                if (account.transactions === undefined) {
-                    const from = toYYYYMMDD(transactionsLoadedRange);
-                    const to = toYYYYMMDD(new Date());
-                    updateAccountTransactions(walletToken, accountID, isCard, from, to);
-                }
-
-            });
-        }
-    }, [accounts, walletEntries]);
-
-    useEffect(() => {
-        if (categoryStats) {
-            const channelStats: Record<string, number> = {};
-            categoryStats.forEach(stat => {
-                if (channelStats?.[stat.channelID]) {
-                    channelStats[stat.channelID] += stat.totalAmount;
-                }
-                else {
-                    channelStats[stat.channelID] = stat.totalAmount;
-                }
-            });
-            setChannelStats(channelStats);
-        }
-    }, [categoryStats])
-
-    function loadWalletTokens() {
-        invoke('loadWalletTokens')
-            .then((walletEntries: unknown) => {
-                const walletEntriesArr = walletEntries as WalletEntry[];
-                if (walletEntriesArr.length > 0) {
-                    setWalletEntries(walletEntriesArr);
-                }
-            })
-            .catch(err => {
-                console.error('Failed to load wallet tokens:', err);
-            });
-    }
-
     function redirectToTrueLayer(userID: string, userEmail: string) {
         if (userID !== null) {
             TrueLayerClient.getTrueLayerAuthURL(userID, userEmail)
                 .then(redirectURI => openInBrowser(redirectURI));
-        }
-    }
-
-    function updateAccountBalance(accountID: string, balance: BankAccountBalance) {
-        if (accounts && accounts[accountID]) {
-            const account = accounts[accountID];
-            setAccountsDataLive(prev => ({
-                ...prev,
-                [accountID]: {
-                    ...account,
-                    balance: balance,
-                    updateTimestamp: balance.updateTimestamp,
-                },
-            }));
-        }
-    }
-
-    /**
-     * Given a new set of transactions for an account, graft them into the existing tree.
-     */
-    function updateAccountTransactionsTree(accountID: string, transactions: OrderedDateTree<Transaction>) {
-        if (accounts && accounts[accountID]) {
-            setAccountsDataLive(prev => {
-                const transactionTree = prev[accountID]?.transactions || new OrderedDateTree<Transaction>();
-                transactionTree.graft(transactions);
-
-                return ({
-                    ...prev,
-                    [accountID]: {
-                        ...prev[accountID],
-                        transactions: transactionTree,
-                    }
-                })
-            });
-        }
-        updateTransactions(transactions);
-    }
-
-    /**
-     * For a given account (or card), fetch the required transactions.
-     * Make use of RequestGate's request coalescing, to reduce network load.
-     */
-    async function updateAccountTransactions(walletToken: string, accountID: string, isCard: boolean, from: string, to: string) {
-        const request = isCard
-            ? () => TrueLayerClient.fetchCardTransactions(walletToken, accountID, from, to)
-            : () => TrueLayerClient.fetchAccountTransactions(walletToken, accountID, from, to);
-        const mapping = isCard
-            ? (tx: TrueLayerCardTransaction, accountID: string | undefined) => fromTrueLayerCardTransaction(tx, accountID)
-            : (tx: TrueLayerAccountTransaction, accountID: string | undefined) => fromTrueLayerAccountTransaction(tx, accountID);
-
-        try {
-            const data = await requestGate.run(
-                `tx:${accountID}:${from}:${to}`,
-                request,
-                10 * 60 * 1000,
-            );
-
-            if (!data) {
-                return null;
-            }
-            const tree = newOrderedDateTreeFromList(
-                data.map(tx => mapping(tx, accountID)),
-                tx => new Date(tx.timestamp)
-            );
-
-            handleTransactionLoading(accountID, tree, from, to);
-            return tree;
-        }
-        catch (err) {
-            console.error(`Failed to fetch transactions for ${isCard ? 'card' : 'account'} ${accountID}:`, err);
-            setAccountsState(ResponseState.ERROR);
-            return null;
-        }
-    }
-
-    /**
-     * For all accounts and cards, fetch the required transactions.
-     */
-    async function updateAccountsTransactions(from: string, to: string) {
-        await Promise.all(Object.entries(accounts).map(([accountID, account]: [string, BankAccount]) => {
-            if (account.source === 'Bagel') {
-                return;
-            }
-            const walletToken = account.users?.[0]?.walletToken || walletEntries[0]?.walletToken; // XXX: use the first token if not specified
-            const isCard = account.cardNetwork !== undefined;
-            return updateAccountTransactions(walletToken, accountID, isCard, from, to);
-        }));
-    }
-
-    function updateTransactions(newTransactions: OrderedDateTree<Transaction>) {
-        /// XXX: this certainly breaks some React rules
-        setTransactionsTree(prev => prev.graft(newTransactions));
-    }
-
-    function handleTransactionLoading(accountID: string, tree: OrderedDateTree<Transaction>, from: string, to: string) {
-        if (isTauri) {
-            getDatabaseManager().then(dbm => dbm.insertTransactions(tree));
-            getDatabaseManager().then(dbm => dbm.getTransactions(from, to).then(dbTree => updateAccountTransactionsTree(accountID, dbTree)));
-        }
-        else {
-            // demo has no access to db
-            updateAccountTransactionsTree(accountID, tree);
         }
     }
 
@@ -571,136 +168,6 @@ function App() {
             // user selection handled by panel
             redirect('', '');
         }
-    }
-
-    function updateOrAddUser(user: User) {
-        if (users !== null) {
-            setUsers(prev => {
-                const existingUserIndex = prev ? prev.findIndex(u => u.id === user.id) : -1;
-
-                if (existingUserIndex !== -1) {
-                    // update existing user
-                    const updatedUsers = [...(prev || [])];
-                    updatedUsers[existingUserIndex] = { ...updatedUsers[existingUserIndex], ...user };
-                    return updatedUsers;
-                } else {
-                    // add new user
-                    return [...(prev || []), { ...user }];
-                }
-            });
-        }
-    }
-
-    async function deleteUser(userID: string) {
-        if (users !== null) {
-            const user = users.find(u => u.id === userID);
-            if (!user) {
-                console.warn(`User with ID ${userID} not found.`);
-                return;
-            }
-
-            // check if user has any linked accounts
-            const linkedAccounts = Object.values(accounts).filter(account => account.users.some(u => u.id === userID));
-            if (linkedAccounts.length > 0) {
-                // get walletTokens of accounts linked to this user
-                const linkedWalletTokens: string[] = [];
-                linkedAccounts.forEach(account => {
-                    const userSignature = account.users.find(u => u.id === userID);
-                    if (userSignature?.walletToken) {
-                        linkedWalletTokens.push(userSignature.walletToken);
-                    }
-                });
-
-                // confirm with user before unlinking
-                const userConfirmation = await confirm(
-                    `${user.name} has ${linkedAccounts.length} linked accounts. Are you sure you want to unlink them?`
-                ); // XXX: ugly, but gets the job done
-
-                if (!userConfirmation) {
-                    return; // user cancelled
-                }
-                await invoke('removeWalletTokens', { walletTokens: linkedWalletTokens });
-                setWalletEntries(prev =>
-                    prev.filter(walletEntry => !linkedWalletTokens.includes(walletEntry.walletToken))
-                );
-            }
-
-            // remove user from the list
-            setUsers(prev => (prev ? prev.filter(user => user.id !== userID) : []));
-        }
-    }
-
-    function saveUsers() {
-        if (users !== null) {
-            invoke('saveJSON', { filename: 'users.json', json: JSON.stringify(users) })
-                .catch(err => {
-                    console.error('Failed to save users:', err);
-                });
-        }
-    }
-
-    function saveOfflineAccounts() {
-        if (accountsDataOffline !== null) {
-            invoke('saveJSON', { filename: 'accounts.offline.json', json: JSON.stringify(accountsDataOffline) })
-                .catch(err => {
-                    console.error('Failed to save offline accounts:', err);
-                });
-        }
-    }
-
-    function saveAccountPatches() {
-        if (accountsDataPatches !== null) {
-            invoke('saveJSON', { filename: 'accounts.patches.json', json: JSON.stringify(accountsDataPatches) })
-                .catch(err => {
-                    console.error('Failed to save account patches:', err);
-                });
-        }
-    }
-
-    function updateOrAddAccount(account: BankAccount) {
-        if (account.source === 'Bagel') {
-            // if it's a manual account, update the offline data
-            setAccountsDataOffline(prev => ({
-                ...(prev || {}),
-                [account.id]: account,
-            }));
-        }
-        else {
-            const patch = generatePatchFromAccount(account, accountsDataLive[account.id] || emptyBankAccount);
-            // if it's a TrueLayer account, patch the live data
-            setAccountsDataPatches(prev => {
-                const prevObj = prev ?? {};
-                return {
-                    ...prevObj,
-                    [account.id]: {
-                        ...prevObj[account.id],
-                        ...patch,
-                    }
-                };
-            });
-        }
-    }
-
-    function deleteAccount(accountID: string) {
-        const account = accountsDataOffline?.[accountID];
-        if (account) {
-            // if it's an offline account, remove it from the offline data
-            setAccountsDataOffline(prev => {
-                const newData = { ...prev };
-                delete newData[accountID];
-                return newData;
-            });
-        }
-        const patch = accountsDataPatches?.[accountID];
-        if (patch) {
-            // if it's a TrueLayer account, remove the patch
-            setAccountsDataPatches(prev => {
-                const newData = { ...prev };
-                delete newData[accountID];
-                return newData;
-            });
-        }
-        // currently, we ignore trying to delete a linked account
     }
 
     // refs for SegmentedControl segments
@@ -807,8 +274,8 @@ function App() {
             >
                 <UserEditPanel
                     user={selectedUser}
-                    updateOrAddUser={updateOrAddUser}
-                    deleteUser={deleteUser}
+                    updateOrAddUser={Engine.get().updateOrAddUser}
+                    deleteUser={Engine.get().deleteUser}
                     onClose={openEditUser}
                     close={() => {
                         setOpenEditUser(null);
@@ -828,8 +295,8 @@ function App() {
             >
                 <AccountEditPanel
                     account={openEditAccount}
-                    updateOrAddAccount={updateOrAddAccount}
-                    deleteAccount={deleteAccount}
+                    updateOrAddAccount={Engine.get().updateOrAddAccount}
+                    deleteAccount={Engine.get().deleteOfflineAccount}
                     close={() => setOpenEditAccount(null)}
                     existingAccounts={accounts}
                     users={users || []}
@@ -978,7 +445,7 @@ function App() {
 
                     {/* BAGEL ICON */}
                     <div className='headerCentre'>
-                        {accountsState === ResponseState.ERROR &&
+                        {accountsLoadState === ResponseState.ERROR &&
                             <div className='column'>
                                 <img
                                     src='./ConfusedBagel-alt.png'
@@ -988,7 +455,7 @@ function App() {
                                 <h4>An error occurred!</h4>
                             </div>
                         }
-                        {accountsState === ResponseState.LOADING &&
+                        {accountsLoadState === ResponseState.LOADING &&
                             <div className='column'>
                                 <img
                                     src='./ConfusedBagel-alt.png'
@@ -999,7 +466,7 @@ function App() {
                                 <Spinner useOverlay />
                             </div>
                         }
-                        {accountsState === ResponseState.SUCCESS &&
+                        {accountsLoadState === ResponseState.SUCCESS &&
                             <div className='column'>
                                 <div
                                     className='floatBubble'
@@ -1029,7 +496,7 @@ function App() {
                                 {/* <h4>Your Accounts</h4> */}
                             </div>
                         }
-                        {accountsState === null &&
+                        {accountsLoadState === null &&
                             <div className='column'>
                                 <img
                                     src='./ConfusedBagel.png'
@@ -1212,10 +679,8 @@ function App() {
                     <DashboardPanel
                         accounts={accounts}
                         modesty={appSettings.global.modesty}
-                        categories={categories}
-                        channels={channels}
-                        categoryStats={categoryStats}
-                        channelStats={channelStats}
+                        // categoryStats={categoryStats}
+                        // channelStats={channelStats}
                     />
                 }
                 {panel === 'accounts' &&
@@ -1242,10 +707,8 @@ function App() {
                         modesty={appSettings.global.modesty}
                         windowSettings={appSettings.transactions}
                         footend={footend}
-                        updateAccountsTransactions={updateAccountsTransactions}
-                        transactionsLoadedRange={transactionsLoadedRange} setTransactionsLoadedRange={setTransactionsLoadedRange}
-
-                        categories={categories} channels={channels}
+                        updateAccountsTransactions={Engine.get().updateAccountsTransactions}
+                        transactionsLoadedRange={transactionsLoadedRange} setTransactionsLoadedRange={transactionsLoadedRangeStore.set}
                     />
                 }
                 {panel === 'standing' &&

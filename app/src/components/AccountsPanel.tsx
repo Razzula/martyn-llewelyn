@@ -7,7 +7,7 @@ import { toFinancialString } from "../utils/finance";
 import AccountCard from "./AccountCard";
 import { AppSettings } from "../App";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./common/Tooltip";
-import { getAccountBalance } from "../utils/utils";
+import { getAccountBalance } from "../utils/accounts";
 
 import './AccountsPanel.css'
 import { getInstrumentTypeIcon } from "../utils/icons";

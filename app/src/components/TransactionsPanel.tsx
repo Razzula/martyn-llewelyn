@@ -1,13 +1,14 @@
 import { forwardRef, useEffect, useRef, useState } from "react";
-import { isTauri } from "../utils/tauri";
 
-import { BankAccount, CardNetwork, Channel, getAccountLogoSrc, Transaction, TransactionCategory, User, WalletEntry } from "../types/Bagel";
+import { categoriesStore, channelsStore, useSyncExternalStoreFromBagelStore } from "../Engine";
+import { BankAccount, CardNetwork, getAccountLogoSrc, Transaction, User, WalletEntry } from "../types/Bagel";
 import TransactionCard from "./TransactionCard";
 import { TrueLayerProvider } from "../types/TrueLayer";
 import { OrderedDateTreeStruct } from "../types/OrderedDateTree";
 import { getMonthName, getMostRecentSunday, getOrdinalSuffix, toYYYYMMDD } from "../utils/utils";
 import { AppSettings } from "../App";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./common/Tooltip";
+import { isTauri } from "../utils/tauri";
 
 import './TransactionsPanel.css';
 
@@ -23,9 +24,6 @@ type TransactionsPanelProps = {
     updateAccountsTransactions: (from: string, to: string) => Promise<void>;
     transactionsLoadedRange: Date;
     setTransactionsLoadedRange: (range: Date) => void;
-
-    categories: TransactionCategory[];
-    channels: Channel[];
 }
 
 function TransactionsPanel({
@@ -39,9 +37,10 @@ function TransactionsPanel({
     footend,
     updateAccountsTransactions,
     transactionsLoadedRange, setTransactionsLoadedRange,
-
-    categories, channels,
 }: TransactionsPanelProps) {
+
+    const categories = useSyncExternalStoreFromBagelStore(categoriesStore);
+    const channels = useSyncExternalStoreFromBagelStore(channelsStore);
 
     const [loadingTransactions, setLoadingTransactions] = useState(false);
     const [minCardWidth, setMinCardWidth] = useState<number>(Infinity);

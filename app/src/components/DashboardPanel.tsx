@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Bar } from 'recharts';
 
+import { categoriesStore, categoryStatsStore, channelsStore, channelStatsStore, useSyncExternalStoreFromBagelStore } from '../Engine';
 import { toFinancialString } from '../utils/finance';
-import { BankAccount, CategoryStat, Channel, TransactionCategory } from '../types/Bagel';
-import { getAccountBalance } from '../utils/utils';
+import { BankAccount, CategoryStat } from '../types/Bagel';
+import { getAccountBalance } from '../utils/accounts';
 
 import './DashboardPanel.css'
 import Spinner from './common/Spinner';
@@ -11,23 +12,21 @@ import Spinner from './common/Spinner';
 type DashboardPanelProps = {
     accounts: Record<string, BankAccount>;
     modesty: boolean;
-    categories: TransactionCategory[];
-    channels: Channel[];
-    categoryStats: CategoryStat[];
-    channelStats: Record<string, number>;
 };
 
 function DashboardPanel({
     accounts,
     modesty,
-    categories,
-    channels,
-    categoryStats,
-    channelStats,
 
 }: DashboardPanelProps) {
 
     const [accountsSum, setAccountsSum] = useState<number>(0);
+
+    const categories = useSyncExternalStoreFromBagelStore(categoriesStore);
+    const channels = useSyncExternalStoreFromBagelStore(channelsStore);
+
+    const categoryStats = useSyncExternalStoreFromBagelStore(categoryStatsStore);
+    const channelStats = useSyncExternalStoreFromBagelStore(channelStatsStore);
 
     const [channelChart, setChannelChart] = useState<{ name?: string; value?: number; colour?: string }[]>([]);
     const [categoryChart, setCategoryChart] = useState<{ name?: string; value?: number; colour?: string }[]>([]);

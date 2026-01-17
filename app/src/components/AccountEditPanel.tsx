@@ -7,6 +7,7 @@ import Select from "./common/Select";
 import { asSortCode } from "../utils/finance";
 import { emptyBankAccount } from "../data/stubs";
 import { fromTrueLayerCardNetwork } from "../types/TrueLayerAdapters";
+import { validateAccount } from "../utils/accounts";
 
 type AccountEditPanelProps = {
     account: BankAccount | null;
@@ -29,10 +30,15 @@ function AccountEditPanel({
 }: AccountEditPanelProps) {
 
     const [ephemeralAccount, setEphemeralAccount] = useState<BankAccount>(constructAccount());
+    const [accountErrors, setAccountErrors] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
         setEphemeralAccount(constructAccount());
     }, [account]);
+
+    useEffect(() => {
+        setAccountErrors(validateAccount(ephemeralAccount, existingAccounts));
+    }, [ephemeralAccount, existingAccounts]);
 
     function constructAccount(): BankAccount {
         return {
@@ -46,92 +52,6 @@ function AccountEditPanel({
     const isAccount = ephemeralAccount?.instrumentType === InstrumentType.ACCOUNT;
     const isBankCard = ephemeralAccount?.instrumentType === InstrumentType.CARD;
     const isCard = isBankCard || ephemeralAccount?.instrumentType === InstrumentType.GIFTCARD;
-
-    const invalidUsers = (
-        // non-null
-        ephemeralAccount?.users?.length === 0
-    );
-    const invalidName = (
-        // non-null
-        ephemeralAccount?.name?.trim() === ''
-    );
-    const invalidIntrumentType = (
-        // non-null
-        ephemeralAccount?.instrumentType === undefined
-        || ephemeralAccount?.instrumentType.trim() === ''
-    );
-    const invalidType = (
-        // non-null
-        ephemeralAccount?.type === undefined
-        || ephemeralAccount?.type.trim() === ''
-    );
-    const invalidNumber = (
-        // non-null
-        ephemeralAccount?.number?.number?.trim() === ''
-        // unique
-        || (existingAccounts && Object.values(existingAccounts).some(existingAccount =>
-            existingAccount.id !== ephemeralAccount.id
-            && existingAccount.number?.number === ephemeralAccount.number?.number
-        ))
-        // format
-        || ( isBankCard ?
-            !/^\d{4}$/.test(ephemeralAccount?.number?.number || '')
-            : !/^\d{8,10}$/.test(ephemeralAccount?.number?.number || '')
-        )
-    );
-    const invalidSortCode = !isCard && (
-        // non-null
-        ephemeralAccount?.number?.sortCode === undefined
-        || ephemeralAccount?.number?.sortCode?.trim() === ''
-        // format
-        || ( isAccount &&
-            !/^\d{2}-\d{2}-\d{2}$/.test(ephemeralAccount?.number?.sortCode || '')
-        )
-    );
-    const invalidCardNetwork = isBankCard && (
-        // non-null
-        ephemeralAccount?.cardNetwork === undefined
-        || ephemeralAccount?.cardNetwork.trim() === ''
-    );
-
-    const invalidInterestRate = (
-        // if not empty, must be a number between 0 and 100
-        ephemeralAccount?.interest?.rate === undefined
-        || ephemeralAccount?.interest?.rate === null
-        || isNaN(ephemeralAccount.interest?.rate)
-        || ephemeralAccount.interest?.rate < 0
-        || ephemeralAccount.interest?.rate > 10
-    );
-    const invalidInterestType = (
-        ephemeralAccount?.interest?.type === undefined
-        || ephemeralAccount?.interest?.type?.trim() === ''
-    );
-    const invalidInterestInterval = (
-        ephemeralAccount?.interest?.interval === undefined
-        || ephemeralAccount?.interest?.interval === null
-        || isNaN(ephemeralAccount.interest?.interval)
-        || ephemeralAccount.interest?.interval < 0
-    );
-    const invalidInterestDate = (
-        ephemeralAccount?.interest?.lastApplied === undefined
-        || ephemeralAccount?.interest?.lastApplied === null
-        || isNaN(Date.parse(ephemeralAccount.interest?.lastApplied))
-        // cannot be in the future
-        || new Date(ephemeralAccount.interest?.lastApplied) > new Date()
-    );
-    const invalidInterest = (
-        invalidInterestRate
-        || (!invalidInterestRate && (ephemeralAccount?.interest?.rate !== undefined && ephemeralAccount?.interest?.rate > 0)
-            // only validate if we care about interest
-            && (invalidInterestType || invalidInterestInterval || invalidInterestDate)
-        )
-    )
-
-    const invalidForm = (
-        invalidUsers || invalidName || invalidIntrumentType || invalidType || invalidNumber || invalidSortCode || invalidCardNetwork
-        || isAccount && (invalidInterest)
-    );
-
 
     const providerList = Object.entries(providers ?? []);
     const providerEntries = (providerList.map(([id, provider]) => ({
@@ -181,7 +101,7 @@ function AccountEditPanel({
             {/* INPUTS */}
             <div className='row'
                 style={{
-                    borderBottom: invalidUsers ? '2px solid #ff0000' : 'none',
+                    borderBottom: accountErrors?.invalidUsers ? '2px solid #ff0000' : 'none',
                     marginBottom: '-2px',
                     zIndex: 1,
                 }}
@@ -256,7 +176,7 @@ function AccountEditPanel({
                     <TooltipContent>{providers?.[ephemeralAccount?.provider?.id]?.display_name || 'Unknown Provider'}</TooltipContent>
                 </Tooltip>
                 <input
-                    className={`centre ${invalidName ? 'invalid' : ''}`}
+                    className={`centre ${accountErrors?.invalidName ? 'invalid' : ''}`}
                     type='text'
                     placeholder='Account Name'
                     value={ephemeralAccount?.name}
@@ -267,7 +187,7 @@ function AccountEditPanel({
                     }}
                 />
                 <Select
-                    className={invalidType ? 'invalid' : ''}
+                    className={accountErrors?.invalidType ? 'invalid' : ''}
                     entries={Object.values(BankAccountType).map((name) => ({
                         key: name, name, element:
                         <span>{name.charAt(0).toUpperCase() + name.slice(1)}</span>
@@ -278,7 +198,7 @@ function AccountEditPanel({
                     disabled={isAccountOnline}
                 />
                 <Select
-                    className={invalidType ? 'invalid' : ''}
+                    className={accountErrors?.invalidType ? 'invalid' : ''}
                     entries={Object.values(InstrumentType).map((name) => ({
                         key: name, name, element:
                             <span>{name.charAt(0).toUpperCase() + name.slice(1)}</span>
@@ -294,7 +214,7 @@ function AccountEditPanel({
                 { isBankCard && 
                     <>
                         <Select
-                            className={invalidCardNetwork ? 'invalid' : ''}
+                            className={accountErrors?.invalidCardNetwork ? 'invalid' : ''}
                             entries={Object.entries(CardNetwork).map(([key, network]) => ({
                                 key,
                                 name: network.name,
@@ -328,7 +248,7 @@ function AccountEditPanel({
                         <span className='ghostPrefix'>{cardPrefix}*** **** **** </span>
                     }
                     <input
-                        className={`centre ${isBankCard ? 'ghostInput' : ''} ${invalidNumber ? 'invalid' : ''}`}
+                        className={`centre ${isBankCard ? 'ghostInput' : ''} ${accountErrors?.invalidNumber ? 'invalid' : ''}`}
                         type='text'
                         placeholder={`${isCard ? 'Card' : 'Account Number'}`}
                         value={ephemeralAccount?.number?.number}
@@ -339,7 +259,7 @@ function AccountEditPanel({
 
                 { !isCard &&
                     <input
-                        className={`centre ${invalidSortCode ? 'invalid' : ''}`}
+                        className={`centre ${accountErrors?.invalidSortCode ? 'invalid' : ''}`}
                         type='text'
                         placeholder={isAccount ? 'Sort Code' : 'Group ID'}
                         value={ephemeralAccount?.number?.sortCode}
@@ -383,7 +303,7 @@ function AccountEditPanel({
                     {/* INTEREST RATE */}
                     <div className='row'>
                         <input
-                            className={`centre ${invalidInterestRate ? 'invalid' : ''}`}
+                            className={`centre ${accountErrors?.invalidInterestRate ? 'invalid' : ''}`}
                             type='number'
                             placeholder='Interest Rate'
                             value={ephemeralAccount?.interest?.rate}
@@ -406,7 +326,7 @@ function AccountEditPanel({
                             <div className='row'>
                                 {/* INTEREST TYPE */}
                                 <Select
-                                    className={invalidInterestType ? 'invalid' : ''}
+                                    className={accountErrors?.invalidInterestType ? 'invalid' : ''}
                                     entries={Object.values(InterestType).map((name) => ({
                                         key: name, name, element:
                                             <span>{name.charAt(0).toUpperCase() + name.slice(1)}</span>
@@ -419,7 +339,7 @@ function AccountEditPanel({
 
                                 {/* INTEREST INTERVAL */}
                                 <input
-                                    className={`centre ${invalidInterestInterval ? 'invalid' : ''}`}
+                                    className={`centre ${accountErrors?.invalidInterestInterval ? 'invalid' : ''}`}
                                     type='number'
                                     placeholder='Interest Interval'
                                     value={ephemeralAccount?.interest?.interval}
@@ -437,7 +357,7 @@ function AccountEditPanel({
 
                                 {/* INTEREST OFFSET */}
                                 <input
-                                    className={`centre ${invalidInterestDate ? 'invalid' : ''}`}
+                                    className={`centre ${accountErrors?.invalidInterestDate ? 'invalid' : ''}`}
                                     type='date'
                                     placeholder='Last Interest Date'
                                     value={ephemeralAccount?.interest?.lastApplied}
@@ -477,7 +397,7 @@ function AccountEditPanel({
                         updateOrAddAccount(ephemeralAccount);
                         close();
                     }}
-                    disabled={invalidForm}
+                    disabled={accountErrors?.invalidForm}
                 >
                     {account?.id ? 'Update' : 'Add'}
                 </button>

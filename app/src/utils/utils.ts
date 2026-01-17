@@ -1,5 +1,3 @@
-import { BankAccount } from "../types/Bagel";
-
 export function isMobile() {
     return /Mobi|Android/i.test(navigator.userAgent);
 }
@@ -47,11 +45,10 @@ export function toYYYYMMDD(date: Date): string {
     return date.toISOString().slice(0, 10);
 }
 
-export function getAccountBalance(account: BankAccount) {
-    // TODO cards are negative, others are positive; this needs to be done pre-db
-    const isCard = account.cardNetwork !== undefined;
-    const current = account.balance?.current ?? 0;
-    const available = account.balance?.available ?? 0;
-    const balance = isCard ? current : available;
-    return balance;
+export function isEmptyString(value?: string): boolean {
+    return !value || value.trim() === '';
+}
+
+export function isFutureDate(date?: string | null): boolean {
+    return !date || isNaN(Date.parse(date)) || new Date(date) > new Date();
 }

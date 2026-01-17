@@ -31,8 +31,10 @@ function AppGate() {
             })
                 .then(() => {
                     setIsAuthenticated(true);
+                    setFailedAuthentication(false);
                 })
                 .catch((err) => {
+                    setIsAuthenticated(false);
                     setFailedAuthentication(true);
                     console.error('Biometric authentication failed:', err?.message ?? err);
                 });

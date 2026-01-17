@@ -4,7 +4,7 @@
  * cannot be done safely in a browser environment.
  */
 
-import { CategoryStat } from '../types/Bagel';
+import { CategoryStat, User, WalletEntry } from '../types/Bagel';
 import {
   TrueLayerAccount,
   TrueLayerAccountBalance,
@@ -397,3 +397,23 @@ export const channelStats: Record<string, number> = {
   'NON-ESSENTIAL': 40,
   'GIVING': 15.86,
 };
+
+export const users: User[] = [
+  {
+    id: 'mock-user-1',
+    name: 'Demo User 1',
+    icon: './Serenity/rubberducky.png',
+    email: 'martyn-llewelyn@razzula.github.io',
+  },
+  {
+    id: 'mock-user-2',
+    name: 'Demo User 2',
+    icon: './Serenity/hwyaden.png',
+    email: 'martyn-llewelyn@razzula.github.io',
+  },
+];
+
+export const walletEntries: WalletEntry[] = [
+  { walletToken: 'mock-user-1', userID: 'mock-user-1', consentedAt: 0, meta: 'mock' },
+  { walletToken: 'mock-user-2', userID: 'mock-user-2', consentedAt: 0, meta: 'mock' },
+];
