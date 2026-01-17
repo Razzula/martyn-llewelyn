@@ -3,7 +3,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, CartesianG
 
 import { categoriesStore, categoryStatsStore, channelsStore, channelStatsStore, useSyncExternalStoreFromBagelStore } from '../Engine';
 import { toFinancialString } from '../utils/finance';
-import { BankAccount, CategoryStat } from '../types/Bagel';
+import { BankAccount } from '../types/Bagel';
 import { getAccountBalance } from '../utils/accounts';
 
 import './DashboardPanel.css'
