@@ -218,7 +218,7 @@ export class Engine {
             [...providers, ...closedProviders]
                 .filter(provider =>
                     (provider.provider_id !== 'mock' || !isTauri) // remove mock if not needed
-                    && provider.country === 'uk' // XXX: restrict to UK for now
+                    && (provider.country === 'uk' || provider.country === 'ch') // XXX: restrict to UK for now
                 )
                 .sort((a, b) => a.display_name.localeCompare(b.display_name))
                 .forEach(provider => {

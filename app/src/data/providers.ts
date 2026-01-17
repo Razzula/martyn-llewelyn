@@ -48,6 +48,41 @@ export const closedProviders: TrueLayerProvider[] = [
             updated_at: ""
         },
     },
+    {
+        provider_id: "bagel-chip",
+        display_name: "Chip",
+        country: "uk",
+        logo_url: "/Finance/Banks/chip.svg",
+        accountLogo: "/Finance/Banks/chipSquare.png",
+        scopes: [],
+        availability: {
+            recommended_status: "",
+            updated_at: ""
+        },
+    },
+    {
+        provider_id: "bagel-ukpo",
+        display_name: "Post Office",
+        country: "uk",
+        logo_url: "/Finance/Banks/PostOffice.svg",
+        scopes: [],
+        availability: {
+            recommended_status: "",
+            updated_at: ""
+        },
+    },
+    {
+        provider_id: "bagel-ubs",
+        display_name: "Union Bank of Switzerland",
+        country: "ch",
+        logo_url: "/Finance/Banks/UBS.png",
+        accountLogo: "/Finance/Banks/UBSSquare.png",
+        scopes: [],
+        availability: {
+            recommended_status: "",
+            updated_at: ""
+        },
+    },
     // PENSION SCHEMES
     {
         provider_id: "bagel-landg",

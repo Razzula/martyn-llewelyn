@@ -204,14 +204,12 @@ function AccountsPanel({
                                             Object.entries(group.accounts)
                                                 .sort(([, a], [, b]) => {
                                                     // order accounts in (ascending || descending) order by (balance || name)
-                                                    const aIsCard = a.cardNetwork !== undefined;
                                                     const aValue = (windowSettings.sortBy === 'name')
                                                         ? a.name.toLowerCase() // name
-                                                        : (aIsCard ? a.balance?.current : a.balance?.available) || 0; // balance
-                                                    const bIsCard = b.cardNetwork !== undefined;
+                                                        : (Math.abs(getAccountBalance(a)) || 0); // balance
                                                     const bValue = (windowSettings.sortBy === 'name')
                                                         ? b.name.toLowerCase() // name
-                                                        : (bIsCard ? b.balance?.current : b.balance?.available) || 0; // balance
+                                                        : (Math.abs(getAccountBalance(b)) || 0); // balance
 
                                                     if (windowSettings.sortOrder == 'desc') {
                                                         // desc
