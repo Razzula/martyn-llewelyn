@@ -29,12 +29,11 @@ function AccountCard({
 
     const balance = 'balance' in account ? account.balance : null;
 
-    const available = balance ? toFinancialString(balance?.available) : null;
-    const current = balance ? toFinancialString(balance?.current) : null;
+    const available = (modesty ? '***' : balance?.available) ?? '???';
+    const current = (modesty ? '***' : balance?.current) ?? '???';
 
-    const currency = balance?.currency === 'GBP' ? '£' : balance?.currency;
-    const displayBalance = current ? (`${currency}\u00A0${modesty ? '***' : current}`) : null;
-    const displayAvailable = available ? `${currency}\u00A0${modesty ? '***' : available}` : null;
+    const displayAvailable = (balance ? toFinancialString(available, balance?.currency) : null);
+    const displayBalance = (balance ? toFinancialString(current, balance?.currency) : null);
 
     const accountUsers = users?.filter(user => account.users.some(u => u.id === user.id));
 
@@ -160,11 +159,11 @@ function AccountCard({
                 </div>
                 <div className='row'>
                     {/* ACCOUNT / CARD NUMBERS */}
-                    {!isBankCard ? account.number.number : `${account?.cardNetwork === 'MASTERCARD' ? 5 : 4}*** **** **** ${account.number.number}`}
+                    {!isBankCard ? account.number.accountNumber : `${account?.cardNetwork === 'MASTERCARD' ? 5 : 4}*** **** **** ${account.number.accountNumber}`}
                     {!isCard &&
                         <>
                             <div className='verticalSeparator' />
-                            {account.number.sortCode}
+                            {account.number.bankNumber}
                         </>
                     }
                 </div>

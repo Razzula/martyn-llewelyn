@@ -4,7 +4,7 @@ import { BankAccount, BankAccountType, CardNetwork, InstrumentType, InterestType
 import { TrueLayerProvider } from "../types/TrueLayer";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./common/Tooltip";
 import Select from "./common/Select";
-import { asSortCode } from "../utils/finance";
+import { asSortCode, getCurrencySymbol, getCurrencySymbolFromCountry } from "../utils/finance";
 import { emptyBankAccount } from "../data/stubs";
 import { fromTrueLayerCardNetwork } from "../types/TrueLayerAdapters";
 import { validateAccount } from "../utils/accounts";
@@ -30,6 +30,7 @@ function AccountEditPanel({
 }: AccountEditPanelProps) {
 
     const [ephemeralAccount, setEphemeralAccount] = useState<BankAccount>(constructAccount());
+    const [selectedProvider, setSelectedProvider] = useState<TrueLayerProvider | null>(null);
     const [accountErrors, setAccountErrors] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
@@ -37,7 +38,23 @@ function AccountEditPanel({
     }, [account]);
 
     useEffect(() => {
-        setAccountErrors(validateAccount(ephemeralAccount, existingAccounts));
+        const provider = providers?.[ephemeralAccount.provider.id] || null;
+        setSelectedProvider(provider);
+        if (provider) {
+            const currency = getCurrencySymbolFromCountry(provider.country);
+            setEphemeralAccount(prev => ({
+                ...prev,
+                nationalCurrency: currency ?? prev.nationalCurrency,
+                balance: {
+                    ...prev.balance,
+                    currency: currency ?? undefined,
+                },
+            }));
+        }
+    }, [ephemeralAccount.provider]);
+
+    useEffect(() => {
+        setAccountErrors(validateAccount(ephemeralAccount, selectedProvider, existingAccounts));
     }, [ephemeralAccount, existingAccounts]);
 
     function constructAccount(): BankAccount {
@@ -248,22 +265,22 @@ function AccountEditPanel({
                         <span className='ghostPrefix'>{cardPrefix}*** **** **** </span>
                     }
                     <input
-                        className={`centre ${isBankCard ? 'ghostInput' : ''} ${accountErrors?.invalidNumber ? 'invalid' : ''}`}
+                        className={`centre ${isBankCard ? 'ghostInput' : ''} ${accountErrors?.invalidAccountNumber ? 'invalid' : ''}`}
                         type='text'
                         placeholder={`${isCard ? 'Card' : 'Account Number'}`}
-                        value={ephemeralAccount?.number?.number}
-                        onChange={(e) => setEphemeralAccount({ ...ephemeralAccount, number: { ...ephemeralAccount.number, number: e.target.value } })}
+                        value={ephemeralAccount?.number?.accountNumber}
+                        onChange={(e) => setEphemeralAccount({ ...ephemeralAccount, number: { ...ephemeralAccount.number, accountNumber: e.target.value } })}
                         disabled={isAccountOnline}
                     />
                 </div>
 
                 { !isCard &&
                     <input
-                        className={`centre ${accountErrors?.invalidSortCode ? 'invalid' : ''}`}
+                        className={`centre ${accountErrors?.invalidBankNumber ? 'invalid' : ''}`}
                         type='text'
                         placeholder={isAccount ? 'Sort Code' : 'Group ID'}
-                        value={ephemeralAccount?.number?.sortCode}
-                        onChange={(e) => setEphemeralAccount({ ...ephemeralAccount, number: { ...ephemeralAccount.number, sortCode: isAccount ? asSortCode(e.target.value) : e.target.value } })}
+                        value={ephemeralAccount?.number?.bankNumber}
+                        onChange={(e) => setEphemeralAccount({ ...ephemeralAccount, number: { ...ephemeralAccount.number, bankNumber: isAccount ? asSortCode(e.target.value) : e.target.value } })}
                         disabled={isAccountOnline}
                     />
                 }
@@ -271,7 +288,10 @@ function AccountEditPanel({
 
             { !isAccountOnline &&
                 <div className='row'>
-                    <span>£</span>
+                    { ephemeralAccount?.balance?.currency
+                        ? <span>{getCurrencySymbol(ephemeralAccount?.balance?.currency)}</span>
+                        : <span>{getCurrencySymbol(ephemeralAccount?.nationalCurrency)}</span>
+                    }
                     <input
                         className='centre'
                         type='number'
@@ -283,7 +303,7 @@ function AccountEditPanel({
                                 ...ephemeralAccount.balance,
                                 current: parseFloat(e.target.value) || 0,
                                 available: parseFloat(e.target.value) || 0,
-                                currency: 'GBP',
+                                currency: ephemeralAccount?.balance?.currency,
                                 updateTimestamp: new Date().toISOString(),
                             }
                         })}

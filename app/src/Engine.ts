@@ -7,6 +7,8 @@ import { TrueLayerAccountBalance, TrueLayerAccountTransaction, TrueLayerCardBala
 import { isTauri } from "./utils/tauri";
 import { getDatabaseManager } from './utils/DatabaseManager';
 import {
+    loadLiveAccountCacheFromTauri,
+    loadOfflineAccountArchivesFromTauri,
     loadOfflineAccountPatchesFromTauri,
     loadOfflineAccountsFromTauri,
     loadUsersFromTauri,
@@ -41,6 +43,8 @@ export const accountsStore = createSignal<Record<string, BankAccount>>({});
 export const accountsDataLiveStore = createSignal<Record<string, BankAccount>>({});
 export const accountsDataOfflineStore = createSignal<Record<string, BankAccount>>({});
 export const accountsDataPatchesStore = createSignal<Record<string, BankAccountPatch>>({});
+export const accountsDataArchiveStore = createSignal<Record<string, BankAccount>>({});
+export const accountsDataLiveCacheStore = createSignal<Record<string, BankAccount>>({});
 export const accountsLoadStateStore = createSignal<ResponseState | null>(null);
 export const transactionsTreeStore = createSignal(new OrderedDateTree<Transaction>());
 export const transactionsLoadedRangeStore = createSignal<Date>(getMostRecentSunday());
@@ -75,6 +79,8 @@ export class Engine extends Boulangerie {
     private accountsDataLive = accountsDataLiveStore;
     private accountsDataOffline = accountsDataOfflineStore;
     private accountsDataPatches = accountsDataPatchesStore;
+    private accountsDataArchive = accountsDataArchiveStore;
+    private accountsDataLiveCache = accountsDataLiveCacheStore;
     private accountsLoadState = accountsLoadStateStore;
     private transactionsTree = transactionsTreeStore;
     private transactionsLoadedRange = transactionsLoadedRangeStore;
@@ -101,6 +107,8 @@ export class Engine extends Boulangerie {
         this.fetchProviders();
         this.loadOfflineAccounts();
         this.loadOfflineAccountPatches();
+        this.loadOfflineAccountArchives();
+        this.loadLiveAccountCache();
 
         this.reactToSignal(() => {
             // use TrueLayer tokens to fetch account data
@@ -110,7 +118,7 @@ export class Engine extends Boulangerie {
         this.reactToSignal(() => {
             // maintain unified accounts from all data partitions
             this.unifyAccounts();
-        }, [this.accountsDataLive, this.accountsDataOffline, this.accountsDataPatches]);
+        }, [this.accountsDataLive, this.accountsDataOffline, this.accountsDataPatches, this.accountsDataArchive, this.accountsDataLiveCache]);
 
         this.reactToSignal(() => {
             // use TrueLayer tokens to fetch accounts' balances
@@ -267,14 +275,34 @@ export class Engine extends Boulangerie {
         }
     }
 
+    private async loadOfflineAccountArchives() {
+        if (isTauri) {
+            const archiveAccounts = await loadOfflineAccountArchivesFromTauri();
+            this.accountsDataArchive.set(archiveAccounts);
+        }
+    }
+
+    private async loadLiveAccountCache() {
+        if (isTauri) {
+            const liveAccountsCache = await loadLiveAccountCacheFromTauri();
+            this.accountsDataLiveCache.set(liveAccountsCache);
+        }
+    }
+
     private unifyAccounts() {
         this.accounts.set(_prev => {
             // start with offline and live data
             const merged: Record<string, BankAccount> = {
                 ...(this.accountsDataOffline.get() || {}),
-                ...(this.accountsDataLive.get() || {}),
+                ...(this.accountsDataLiveCache.get() || {}),
             };
-            // apply patches if present
+            // patch live data on top of cached data
+            if (this.accountsDataLive.get() !== null) {
+                Object.entries(this.accountsDataLive.get()).forEach(([id, account]) => {
+                    merged[id] = { ...merged[id], ...account };
+                });
+            }
+            // aapply patches on top of merged data
             if (this.accountsDataPatches.get() !== null) {
                 Object.entries(this.accountsDataPatches.get()).forEach(([id, patch]) => {
                     if (merged[id]) {
@@ -348,7 +376,7 @@ export class Engine extends Boulangerie {
                 [accountID]: {
                     ...account,
                     balance: balance,
-                    updateTimestamp: balance.updateTimestamp,
+                    updateTimestamp: balance.updateTimestamp || new Date().toISOString(),
                 },
             }));
         }

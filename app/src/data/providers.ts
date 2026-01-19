@@ -76,7 +76,7 @@ export const closedProviders: TrueLayerProvider[] = [
         display_name: 'Union Bank of Switzerland',
         country: 'ch',
         logo_url: '/Finance/Banks/UBS.png',
-        accountLogo: '/Finance/Banks/UBSSquare.png',
+        accountLogo: '/Finance/Banks/UBSSquare.jpeg',
         scopes: [],
         availability: {
             recommended_status: '',

@@ -8,16 +8,15 @@ export function fromTrueLayerAccount(input: TrueLayerAccount): BankAccount {
         instrumentType: InstrumentType.ACCOUNT,
         type: input.account_type as BankAccount['type'],
         number: {
-            number: input.account_number.number,
-            iban: input.account_number.iban,
-            swiftBIC: input.account_number.swift_bic,
-            sortCode: input.account_number.sort_code,
+            accountNumber: getAccountNumber(input),
+            bankNumber: getBankNumber(input),
         },
         provider: {
             id: input.provider.provider_id,
             name: input.provider.display_name,
             logoURI: input.provider.logo_uri,
         },
+        nationalCurrency: input.currency,
         updateTimestamp: input.update_timestamp,
         users: [],
         source: 'TrueLayer',
@@ -36,7 +35,7 @@ export function fromTrueLayerCard(input: TrueLayerCard): BankAccount {
         instrumentType: InstrumentType.CARD,
         type: input.card_type as BankAccount['type'],
         number: {
-            number: input.partial_card_number,
+            accountNumber: getCardNumber(input),
         },
         cardNetwork: fromTrueLayerCardNetwork(input.card_network),
         provider: {
@@ -44,6 +43,7 @@ export function fromTrueLayerCard(input: TrueLayerCard): BankAccount {
             name: input.provider.display_name,
             logoURI: input.provider.logo_uri,
         },
+        nationalCurrency: input.currency,
         updateTimestamp: input.update_timestamp,
         users: [],
         source: 'TrueLayer',
@@ -124,4 +124,40 @@ export function fromTrueLayerCardTransaction(input: TrueLayerCardTransaction, ac
 export function fromTrueLayerCardNetwork(trueLayerCardNetwork: string): CardNetworkKey | undefined {
     const cardNetworkKey = trueLayerCardNetwork as CardNetworkKey;
     return cardNetworkKey in CardNetwork ? cardNetworkKey : undefined;
+}
+
+function getAccountNumber(account: TrueLayerAccount) {
+    if (account.currency === 'GBP') {
+        // UK
+        return account.account_number.number;
+    }
+    else if (
+        account.currency === 'EUR'
+        || account.currency === 'CHF'
+    ) {
+        // EU, CH
+        return account.account_number.iban;
+    }
+    // AU and US not supported yet
+    return 'error';
+}
+
+function getCardNumber(card: TrueLayerCard) {
+    return card.partial_card_number;
+}
+
+function getBankNumber(account: TrueLayerAccount) {
+    if (account.currency === 'GBP') {
+        // UK
+        return account.account_number.sort_code;
+    }
+    else if (
+        account.currency === 'EUR'
+        || account.currency === 'CHF'
+    ) {
+        // EU, CH
+        return account.account_number.swift_bic;
+    }
+    // AU and US not supported yet
+    return undefined;
 }

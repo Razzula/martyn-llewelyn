@@ -1,13 +1,17 @@
+import { TrueLayerProvider } from "src/types/TrueLayer";
 import { BankAccount, InstrumentType } from "../types/Bagel";
 import { isEmptyString, isFutureDate } from "./utils";
 
 export function validateAccount(
     account: BankAccount,
+    provider: TrueLayerProvider | null,
     existingAccounts?: Record<string, BankAccount> | null,
 ): Record<string, boolean> {
     const errors: Record<string, boolean> = {};
 
     const { users, name, instrumentType, type, number, cardNetwork, interest, id } = account;
+    const country = account?.nationalCurrency ?? provider?.country;
+    const isUK = ['UK', 'GBP'].includes((country ?? '').toUpperCase());
 
     const isAccount = instrumentType === InstrumentType.ACCOUNT;
     const isBankCard = instrumentType === InstrumentType.CARD;
@@ -20,24 +24,28 @@ export function validateAccount(
     errors.invalidType = isEmptyString(type);
 
     // ACCOUNT DETAILS
-    errors.invalidNumber = (
-        isEmptyString(number?.number)
+    errors.invalidAccountNumber = (
+        isEmptyString(number?.accountNumber)
         // unique
         || (existingAccounts && Object.values(existingAccounts).some(acc =>
             acc.id !== id
-            && acc.number?.number === number?.number
+            && acc.number?.accountNumber === number?.accountNumber
         ))
         // format
         || (isBankCard ?
-            !/^\d{4}$/.test(number?.number || '')
-            : !/^\d{8,10}$/.test(number?.number || '')
+            !/^\d{4}$/.test(number?.accountNumber || '')
+            : (isUK &&
+                !/^\d{8,10}$/.test(number?.accountNumber || '')
+            )
         )
     );
-    errors.invalidSortCode = !isCard && (
-        isEmptyString(number?.sortCode)
-        // format
-        || (isAccount &&
-            !/^\d{2}-\d{2}-\d{2}$/.test(number?.sortCode || '')
+    errors.invalidBankNumber = !isCard && (
+        isEmptyString(number?.bankNumber)
+        || (isUK
+            && (isAccount &&
+                // SORT CODE
+                !/^\d{2}-\d{2}-\d{2}$/.test(number?.bankNumber || '')
+            )
         )
     );
 
@@ -73,8 +81,8 @@ export function validateAccount(
         errors.invalidName ||
         errors.invalidInstrumentType ||
         errors.invalidType ||
-        errors.invalidNumber ||
-        errors.invalidSortCode ||
+        errors.invalidAccountNumber ||
+        errors.invalidBankNumber ||
         errors.invalidCardNetwork ||
         errors.invalidInterest // only the top-level interest validity, not subfields
     );

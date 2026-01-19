@@ -6,12 +6,13 @@ export const emptyBankAccount: BankAccount = {
     instrumentType: InstrumentType.ACCOUNT,
     type: BankAccountType.NULL,
     number: {
-        number: '',
+        accountNumber: '',
     },
     provider: {
         id: 'Unknown',
     },
     updateTimestamp: '',
     users: [],
+    nationalCurrency: 'GBP',
     source: 'Bagel',
 };

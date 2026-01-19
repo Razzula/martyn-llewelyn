@@ -50,7 +50,7 @@ export async function loadOfflineAccountPatchesFromTauri() {
     return loadJSONFromTauri(accountsPatchesFile);
 }
 
-export async function loadOfflineArchiveAccountsFromTauri() {
+export async function loadOfflineAccountArchivesFromTauri() {
     return loadJSONFromTauri(accountsArchiveFile);
 }
 

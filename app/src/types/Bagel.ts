@@ -8,11 +8,12 @@ export interface BankAccount {
     instrumentType: InstrumentType;
     type: BankAccountType;
     number: {
-        number: string;
-        // TrueLayerAccount
-        iban?: string;
-        swiftBIC?: string;
-        sortCode?: string;
+        accountNumber: string;
+        bankNumber?: string;
+        // XXX: TrueLayerAccount
+        // iban?: string;
+        // swiftBIC?: string;
+        // sortCode?: string;
     }
     cardNetwork?: CardNetworkKey; // TrueLayerCard
     provider: {
@@ -21,6 +22,7 @@ export interface BankAccount {
         name?: string;
         logoURI?: string;
     }
+    nationalCurrency: string;
 
     updateTimestamp: string; // ISO timestamp
 
@@ -86,10 +88,10 @@ export const CardNetwork = {
 export type CardNetworkKey = keyof typeof CardNetwork;
 
 export interface BankAccountBalance {
-    current: number;
-    available: number;
-    currency: string;
-    updateTimestamp: string; // ISO timestamp
+    current?: number;
+    available?: number;
+    currency?: string;
+    updateTimestamp?: string; // ISO timestamp
 
     // TrueLayerAccountBalance
     overdraft?: number;
