@@ -3,6 +3,12 @@ import { invoke } from '@tauri-apps/api/core';
 import { isTauri } from "../utils/tauri";
 import { BankAccount, BankAccountPatch, User, WalletEntry } from 'src/types/Bagel';
 
+const usersFile = 'users.json';
+const accountsOfflineFile = 'accounts.offline.json';
+const accountsPatchesFile = 'accounts.patches.json';
+const accountsArchiveFile = 'accounts.archive.json';
+const accountsCacheFile = 'accounts.cache.json';
+
 export async function loadWalletTokensFromTauri(): Promise<WalletEntry[]> {
     if (isTauri) {
         try {
@@ -19,74 +25,66 @@ export async function loadWalletTokensFromTauri(): Promise<WalletEntry[]> {
     return [];
 }
 
-export async function loadUsersFromTauri() {
+async function loadJSONFromTauri(filename: string) {
     if (isTauri) {
         try {
-            const raw: unknown = await invoke('loadJSON', { filename: 'users.json' });
+            const raw: unknown = await invoke('loadJSON', { filename });
             return JSON.parse(raw as string);
         }
         catch (err) {
-            console.error('Failed to load users:', err);
+            console.error(`Failed to load ${filename}:`, err);
         }
     }
-    return [];
+    return {};
+}
+
+export async function loadUsersFromTauri() {
+    return loadJSONFromTauri(usersFile);
 }
 
 export async function loadOfflineAccountsFromTauri() {
-    if (isTauri) {
-        try {
-            const raw: unknown = await invoke('loadJSON', { filename: 'accounts.offline.json' });
-            return JSON.parse(raw as string);
-        }
-        catch (err) {
-            console.error('Failed to load offline accounts:', err);
-        }
-    }
-    return {};
+    return loadJSONFromTauri(accountsOfflineFile);
 }
 
 export async function loadOfflineAccountPatchesFromTauri() {
-    if (isTauri) {
+    return loadJSONFromTauri(accountsPatchesFile);
+}
+
+export async function loadOfflineArchiveAccountsFromTauri() {
+    return loadJSONFromTauri(accountsArchiveFile);
+}
+
+export async function loadLiveAccountCacheFromTauri() {
+    return loadJSONFromTauri(accountsCacheFile);
+}
+
+function saveJSONToTauri(filename: string, json: Object) {
+    if (json !== null) {
         try {
-            const raw: unknown = await invoke('loadJSON', { filename: 'accounts.patches.json' });
-            return JSON.parse(raw as string);
+            invoke('saveJSON', { filename, json: JSON.stringify(json) })
         }
         catch (err) {
-            console.error('Failed to load account patches:', err);
+            console.error('Failed to save users:', err);
         }
     }
-    return {};
 }
 
 export function saveUsersToTauri(users: User[]) {
-    if (users !== null) {
-        try {
-            invoke('saveJSON', { filename: 'users.json', json: JSON.stringify(users) })
-        }
-        catch (err) {
-            console.error('Failed to save users:', err);
-        }
-    }
+    saveJSONToTauri(usersFile, users);
 }
 
 export function saveOfflineAccountsToTauri(accounts: Record<string, BankAccount>) {
-    if (accounts !== null) {
-        try {
-            invoke('saveJSON', { filename: 'accounts.offline.json', json: JSON.stringify(accounts) })
-        }
-        catch (err) {
-            console.error('Failed to save users:', err);
-        }
-    }
+    saveJSONToTauri(accountsOfflineFile, accounts);
 }
 
 export function saveOfflineAccountPatchesToTauri(patches: Record<string, BankAccountPatch>) {
-    if (patches !== null) {
-        try {
-            invoke('saveJSON', { filename: 'accounts.patches.json', json: JSON.stringify(patches) })
-        }
-        catch (err) {
-            console.error('Failed to save users:', err);
-        }
-    }
+    saveJSONToTauri(accountsPatchesFile, patches);
+}
+
+export function saveOfflineArchiveAccountsToTauri(archives: Record<string, BankAccount>) {
+    saveJSONToTauri(accountsArchiveFile, archives);
+}
+
+export function saveLiveAccountCacheToTauri(cache: Record<string, BankAccount>) {
+    saveJSONToTauri(accountsCacheFile, cache);
 }

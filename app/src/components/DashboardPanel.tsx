@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Bar } from 'recharts';
 
-import { categoriesStore, categoryStatsStore, channelsStore, channelStatsStore, useSyncExternalStoreFromBagelStore } from '../Engine';
+import { categoriesStore, categoryStatsStore, channelsStore, channelStatsStore } from '../Engine';
+import { useSyncExternalSignal } from '../utils/Boulangerie.ts';
 import { toFinancialString } from '../utils/finance';
 import { BankAccount } from '../types/Bagel';
 import { getAccountBalance } from '../utils/accounts';
@@ -22,11 +23,11 @@ function DashboardPanel({
 
     const [accountsSum, setAccountsSum] = useState<number>(0);
 
-    const categories = useSyncExternalStoreFromBagelStore(categoriesStore);
-    const channels = useSyncExternalStoreFromBagelStore(channelsStore);
+    const categories = useSyncExternalSignal(categoriesStore);
+    const channels = useSyncExternalSignal(channelsStore);
 
-    const categoryStats = useSyncExternalStoreFromBagelStore(categoryStatsStore);
-    const channelStats = useSyncExternalStoreFromBagelStore(channelStatsStore);
+    const categoryStats = useSyncExternalSignal(categoryStatsStore);
+    const channelStats = useSyncExternalSignal(channelStatsStore);
 
     const [channelChart, setChannelChart] = useState<{ name?: string; value?: number; colour?: string }[]>([]);
     const [categoryChart, setCategoryChart] = useState<{ name?: string; value?: number; colour?: string }[]>([]);

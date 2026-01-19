@@ -1,4 +1,3 @@
-import { useSyncExternalStore } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 
 import { TrueLayerClient } from "./lib/TrueLayer";
@@ -16,6 +15,7 @@ import {
     saveOfflineAccountsToTauri,
     saveUsersToTauri,
 } from './lib/localStorage.ts';
+import { Boulangerie, createSignal } from './utils/Boulangerie.ts';
 
 import { closedProviders, providerPatches } from './data/providers';
 
@@ -33,77 +33,32 @@ import requestGate from './utils/RequestGate.ts';
 import { fromTrueLayerAccountBalance, fromTrueLayerAccountTransaction, fromTrueLayerCardBalance, fromTrueLayerCardTransaction } from './types/TrueLayerAdapters.ts';
 import { emptyBankAccount } from './data/stubs.ts';
 
-interface BagelStore<T> {
-    get: () => T,
-    set: (next: T) => void,
-    subscribe: (fn: () => void) => () => boolean;
-}
+export const walletEntriesStore = createSignal<WalletEntry[]>([]);
+export const usersStore = createSignal<User[]>([]);
 
-function createBagelStore<T>(initial: T) {
-    let value = initial;
-    const listeners = new Set<() => void>();
+export const providersStore = createSignal<Record<string, TrueLayerProvider>>({});
+export const accountsStore = createSignal<Record<string, BankAccount>>({});
+export const accountsDataLiveStore = createSignal<Record<string, BankAccount>>({});
+export const accountsDataOfflineStore = createSignal<Record<string, BankAccount>>({});
+export const accountsDataPatchesStore = createSignal<Record<string, BankAccountPatch>>({});
+export const accountsLoadStateStore = createSignal<ResponseState | null>(null);
+export const transactionsTreeStore = createSignal(new OrderedDateTree<Transaction>());
+export const transactionsLoadedRangeStore = createSignal<Date>(getMostRecentSunday());
 
-    return {
-        get: () => value,
-        set: (next: T | ((prev: T) => T)) => {
-            const newValue =
-                typeof next === 'function' ? (next as (prev: T) => T)(value) : next;
+export const categoriesStore = createSignal<TransactionCategory[]>([]);
+export const channelsStore = createSignal<Channel[]>([]);
+export const categoryStatsStore = createSignal<CategoryStat[]>([]);
+export const channelStatsStore = createSignal<Record<string, number>>({});
 
-            if (newValue !== value) {
-                value = newValue;
-                listeners.forEach(fn => fn());
-            }
-        },
-        subscribe: (fn: () => void) => {
-            listeners.add(fn);
-            return () => listeners.delete(fn);
-        }
-    };
-}
-
-export function useSyncExternalStoreFromBagelStore<T>(store: BagelStore<T>) {
-    return useSyncExternalStore(store.subscribe, store.get);
-}
-
-function reactToBagelStore(
-    effect: () => void,
-    dependencies: BagelStore<any>[]
-): () => void {
-    const runEffect = () => effect(); // wrap effect to always pull fresh values
-
-    // Subscribe to all dependencies
-    const unsubscribers = dependencies.map(store => store.subscribe(runEffect));
-
-    runEffect(); // run once initially
-    return () => unsubscribers.forEach(unsub => unsub());
-}
-
-export const walletEntriesStore = createBagelStore<WalletEntry[]>([]);
-export const usersStore = createBagelStore<User[]>([]);
-
-export const providersStore = createBagelStore<Record<string, TrueLayerProvider>>({});
-export const accountsStore = createBagelStore<Record<string, BankAccount>>({});
-export const accountsDataLiveStore = createBagelStore<Record<string, BankAccount>>({});
-export const accountsDataOfflineStore = createBagelStore<Record<string, BankAccount>>({});
-export const accountsDataPatchesStore = createBagelStore<Record<string, BankAccountPatch>>({});
-export const accountsLoadStateStore = createBagelStore<ResponseState | null>(null);
-export const transactionsTreeStore = createBagelStore(new OrderedDateTree<Transaction>());
-export const transactionsLoadedRangeStore = createBagelStore<Date>(getMostRecentSunday());
-
-export const categoriesStore = createBagelStore<TransactionCategory[]>([]);
-export const channelsStore = createBagelStore<Channel[]>([]);
-export const categoryStatsStore = createBagelStore<CategoryStat[]>([]);
-export const channelStatsStore = createBagelStore<Record<string, number>>({});
-
-export class Engine {
+export class Engine extends Boulangerie {
     /**
-     * Singleton instance of the database manager.
+     * Singleton instance of the Engine.
      */
     private static instance: Engine | null = null;
 
     /**
-     * Get singleton instance of the database manager, creating and initialising it if needed.
-     * @returns DatabaseManager instance
+     * Get singleton instance of the Engine, creating and initialising it if needed.
+     * @returns Engine instance
      */
     public static get(): Engine {
         if (!Engine.instance) {
@@ -130,6 +85,7 @@ export class Engine {
     private channelStats = channelStatsStore;
 
     constructor() {
+        super();
         this.init();
 
         this.updateOrAddUser = this.updateOrAddUser.bind(this);
@@ -146,27 +102,27 @@ export class Engine {
         this.loadOfflineAccounts();
         this.loadOfflineAccountPatches();
 
-        reactToBagelStore(() => {
+        this.reactToSignal(() => {
             // use TrueLayer tokens to fetch account data
             this.fetchLiveAccounts();
         }, [this.walletEntries]);
 
-        reactToBagelStore(() => {
+        this.reactToSignal(() => {
             // maintain unified accounts from all data partitions
             this.unifyAccounts();
         }, [this.accountsDataLive, this.accountsDataOffline, this.accountsDataPatches]);
 
-        reactToBagelStore(() => {
+        this.reactToSignal(() => {
             // use TrueLayer tokens to fetch accounts' balances
             this.fetchAccountsBalances();
         }, [this.walletEntries, this.accounts]);
 
-        reactToBagelStore(() => {
+        this.reactToSignal(() => {
             // use stored account data to update Providers
             this.updateProviders();
         }, [this.accountsDataLive]);
 
-        reactToBagelStore(() => {
+        this.reactToSignal(() => {
             this.calculateChannelStats();
         }, [this.categoryStats]);
     }

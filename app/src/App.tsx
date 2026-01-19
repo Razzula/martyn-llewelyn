@@ -1,13 +1,15 @@
 import { RefObject, useEffect, useRef, useState } from 'react';
 import { onOpenUrl } from '@tauri-apps/plugin-deep-link';
 
+import { accountsLoadStateStore, accountsStore, Engine, providersStore, transactionsLoadedRangeStore, transactionsTreeStore, usersStore, walletEntriesStore } from './Engine.ts';
+import { useSyncExternalSignal } from './utils/Boulangerie.ts';
 import { TrueLayerClient } from './lib/TrueLayer.ts';
-
 import { BankAccount, WalletEntry, User } from './types/Bagel.ts';
 import { ResponsiveModal } from './components/common/ResponsiveModal.tsx';
 import { Tooltip, TooltipContent, TooltipTrigger } from './components/common/Tooltip.tsx';
 import { isTauri, openInBrowser } from './utils/tauri.ts';
 import AccountEditPanel from './components/AccountEditPanel.tsx';
+import { isMobile } from './utils/utils.ts';
 
 import './styles/App.css';
 import UserEditPanel from './components/UserEditPanel.tsx';
@@ -18,11 +20,11 @@ import { ToggleSwitch } from './components/common/ToggleSwitch.tsx';
 import { WiggleWrapper } from './components/common/WiggleWrapper.tsx';
 import Spinner from './components/common/Spinner.tsx';
 import { RadioButtons, ToggleButton } from './components/common/RadioButtons.tsx';
+import DashboardPanel from './components/DashboardPanel.tsx';
+import WalletEntryCard from './components/WalletEntryCard.tsx';
 
 import VisibilityIcon from './assets/icons/Visibility.svg?react';
 import VisibilityOffIcon from './assets/icons/VisibilityOff.svg?react';
-import { isMobile } from './utils/utils.ts';
-
 import Ascending from './assets/icons/Ascending.svg?react';
 import Descending from './assets/icons/Descending.svg?react';
 import MoneyBag from './assets/icons/MoneyBag.svg?react';
@@ -34,11 +36,6 @@ import GridView from './assets/icons/GridView.svg?react';
 import Waterfall from './assets/icons/Waterfall.svg?react';
 import Category from './assets/icons/Category.svg?react';
 import Wallet from './assets/icons/Wallet.svg?react';
-
-import DashboardPanel from './components/DashboardPanel.tsx';
-import WalletEntryCard from './components/WalletEntryCard.tsx';
-
-import { accountsLoadStateStore, accountsStore, Engine, providersStore, transactionsLoadedRangeStore, transactionsTreeStore, usersStore, useSyncExternalStoreFromBagelStore, walletEntriesStore } from './Engine.ts';
 
 export enum ResponseState {
     LOADING = 'LOADING',
@@ -76,14 +73,14 @@ const defaultAppSettings = (): AppSettings => ({
 function App() {
 
     // ENGINE STATES
-    const walletEntries = useSyncExternalStoreFromBagelStore(walletEntriesStore);
-    const users = useSyncExternalStoreFromBagelStore(usersStore);
+    const walletEntries = useSyncExternalSignal(walletEntriesStore);
+    const users = useSyncExternalSignal(usersStore);
 
-    const providers = useSyncExternalStoreFromBagelStore(providersStore);
-    const accounts = useSyncExternalStoreFromBagelStore(accountsStore);
-    const accountsLoadState = useSyncExternalStoreFromBagelStore(accountsLoadStateStore);
-    const transactionsTree = useSyncExternalStoreFromBagelStore(transactionsTreeStore);
-    const transactionsLoadedRange = useSyncExternalStoreFromBagelStore(transactionsLoadedRangeStore);
+    const providers = useSyncExternalSignal(providersStore);
+    const accounts = useSyncExternalSignal(accountsStore);
+    const accountsLoadState = useSyncExternalSignal(accountsLoadStateStore);
+    const transactionsTree = useSyncExternalSignal(transactionsTreeStore);
+    const transactionsLoadedRange = useSyncExternalSignal(transactionsLoadedRangeStore);
 
     // TODO: remove these
     const [appSettings, setAppSettings] = useState<AppSettings>(defaultAppSettings());

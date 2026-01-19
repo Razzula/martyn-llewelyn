@@ -1,6 +1,7 @@
 import { forwardRef, useEffect, useRef, useState } from "react";
 
-import { categoriesStore, channelsStore, useSyncExternalStoreFromBagelStore } from "../Engine";
+import { categoriesStore, channelsStore } from "../Engine";
+import { useSyncExternalSignal } from '../utils/Boulangerie.ts';
 import { BankAccount, CardNetwork, getAccountLogoSrc, Transaction, User, WalletEntry } from "../types/Bagel";
 import TransactionCard from "./TransactionCard";
 import { TrueLayerProvider } from "../types/TrueLayer";
@@ -39,8 +40,8 @@ function TransactionsPanel({
     transactionsLoadedRange, setTransactionsLoadedRange,
 }: TransactionsPanelProps) {
 
-    const categories = useSyncExternalStoreFromBagelStore(categoriesStore);
-    const channels = useSyncExternalStoreFromBagelStore(channelsStore);
+    const categories = useSyncExternalSignal(categoriesStore);
+    const channels = useSyncExternalSignal(channelsStore);
 
     const [loadingTransactions, setLoadingTransactions] = useState(false);
     const [minCardWidth, setMinCardWidth] = useState<number>(Infinity);

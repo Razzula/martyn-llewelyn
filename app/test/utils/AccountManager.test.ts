@@ -1,12 +1,13 @@
 import { describe, test, expect } from 'bun:test';
 
-import { AccountManager } from '../src/utils/AccountManager.js';
-import { BankAccountType, type BankAccount, type UserSignature } from '../src/types/Bagel.js';
+import { AccountManager } from '../../src/utils/AccountManager.js';
+import { BankAccountType, InstrumentType, type BankAccount, type UserSignature } from '../../src/types/Bagel.js';
 
 const user = (id: string): UserSignature => ({ id });
 const account = (id: string, users: UserSignature[] = []): BankAccount => ({
     id,
     name: id,
+    instrumentType: InstrumentType.ACCOUNT,
     type: BankAccountType.TRANSACTION,
     users,
     number: {
@@ -21,7 +22,7 @@ const account = (id: string, users: UserSignature[] = []): BankAccount => ({
         logoURI: undefined
     },
     updateTimestamp: '',
-    source: 'TrueLayer'
+    source: 'TrueLayer',
 });
 
 describe('AccountManager', () => {
