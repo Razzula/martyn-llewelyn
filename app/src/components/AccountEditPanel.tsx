@@ -13,6 +13,7 @@ type AccountEditPanelProps = {
     account: BankAccount | null;
     updateOrAddAccount: (newAccount: BankAccount) => void;
     deleteAccount: (accountID: string) => void;
+    archiveAccount: (accountID: string) => void;
     close: () => void;
     existingAccounts?: Record<string, BankAccount> | null;
     users?: User[];
@@ -23,6 +24,7 @@ function AccountEditPanel({
     account,
     updateOrAddAccount,
     deleteAccount,
+    archiveAccount,
     close,
     existingAccounts,
     users,
@@ -66,6 +68,8 @@ function AccountEditPanel({
     }
 
     const isAccountOnline = ephemeralAccount?.source === 'TrueLayer';
+    const isAccountCached = ephemeralAccount?.source === 'TrueLayer.cache';
+    const isAccountExternal = isAccountOnline || isAccountCached;
     const isAccount = ephemeralAccount?.instrumentType === InstrumentType.ACCOUNT;
     const isBankCard = ephemeralAccount?.instrumentType === InstrumentType.CARD;
     const isCard = isBankCard || ephemeralAccount?.instrumentType === InstrumentType.GIFTCARD;
@@ -105,7 +109,7 @@ function AccountEditPanel({
     return (
         <div className='column'>
 
-            {isAccountOnline &&
+            {isAccountExternal &&
                 <div className='small'>
                     <p>
                         This account is served directly by your bank.
@@ -186,7 +190,7 @@ function AccountEditPanel({
                                     }
                                 />
                             }
-                            disabled={isAccountOnline}
+                            disabled={isAccountExternal}
                             mode={providerList.length <= 10 ? 'list' : 'grid'}
                         />
                     </TooltipTrigger>
@@ -212,7 +216,7 @@ function AccountEditPanel({
                     forcedIndex={ephemeralAccount?.type ? Object.values(BankAccountType).indexOf(ephemeralAccount.type) : -1}
                     setSelected={(key) => setEphemeralAccount({ ...ephemeralAccount, type: key as BankAccountType })}
                     emptyText='Select Type'
-                    disabled={isAccountOnline}
+                    disabled={isAccountExternal}
                 />
                 <Select
                     className={accountErrors?.invalidType ? 'invalid' : ''}
@@ -223,7 +227,7 @@ function AccountEditPanel({
                     forcedIndex={ephemeralAccount?.type ? Object.values(InstrumentType).indexOf(ephemeralAccount.instrumentType) : -1}
                     setSelected={(key) => setEphemeralAccount({ ...ephemeralAccount, instrumentType: key as InstrumentType })}
                     emptyText='Select Type'
-                    disabled={isAccountOnline}
+                    disabled={isAccountExternal}
                 />
             </div>
 
@@ -255,7 +259,7 @@ function AccountEditPanel({
                             }
                             setSelected={(key) => setEphemeralAccount({ ...ephemeralAccount, cardNetwork: fromTrueLayerCardNetwork(key) })}
                             emptyText='Card Network'
-                            disabled={isAccountOnline}
+                            disabled={isAccountExternal}
                         />
                     </>
                 }
@@ -270,7 +274,7 @@ function AccountEditPanel({
                         placeholder={`${isCard ? 'Card' : 'Account Number'}`}
                         value={ephemeralAccount?.number?.accountNumber}
                         onChange={(e) => setEphemeralAccount({ ...ephemeralAccount, number: { ...ephemeralAccount.number, accountNumber: e.target.value } })}
-                        disabled={isAccountOnline}
+                        disabled={isAccountExternal}
                     />
                 </div>
 
@@ -281,7 +285,7 @@ function AccountEditPanel({
                         placeholder={isAccount ? 'Sort Code' : 'Group ID'}
                         value={ephemeralAccount?.number?.bankNumber}
                         onChange={(e) => setEphemeralAccount({ ...ephemeralAccount, number: { ...ephemeralAccount.number, bankNumber: isAccount ? asSortCode(e.target.value) : e.target.value } })}
-                        disabled={isAccountOnline}
+                        disabled={isAccountExternal}
                     />
                 }
             </div>
@@ -354,7 +358,6 @@ function AccountEditPanel({
                                     forcedIndex={ephemeralAccount?.interest?.type ? Object.values(InterestType).indexOf(ephemeralAccount.interest.type) : -1}
                                     setSelected={(key) => setEphemeralAccount({ ...ephemeralAccount, interest: { ...ephemeralAccount.interest, type: key as InterestType } })}
                                     emptyText='Interest Type'
-                                    disabled={isAccountOnline}
                                 />
 
                                 {/* INTEREST INTERVAL */}
@@ -421,6 +424,17 @@ function AccountEditPanel({
                 >
                     {account?.id ? 'Update' : 'Add'}
                 </button>
+                {account?.id && account?.source !== 'TrueLayer' && (
+                    <button
+                        className={`centre ${account?.archived ? '' : 'threat'}`}
+                        onClick={() => {
+                            archiveAccount(account.id);
+                            close();
+                        }}
+                    >
+                        {account?.archived ? 'Restore' : 'Archive'}
+                    </button>
+                )}
                 {account?.id && (
                     <button
                         className='centre threat'

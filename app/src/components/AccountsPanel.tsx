@@ -66,23 +66,31 @@ function AccountsPanel({
             }
         };
 
-        Object.entries(accounts).forEach(([key, account]) => {
-            const groupKey = getGroupKey(account);
+        Object.entries(accounts)
+            .filter(([, account]) => {
+                // hide archived accounts if setting is 'hid'
+                if (windowSettings.archiveVisibility === 'hid') {
+                    return !account.archived;
+                }
+                return true;
+            })
+            .forEach(([key, account]) => {
+                const groupKey = getGroupKey(account);
 
-            if (!groups[groupKey]) {
-                groups[groupKey] = { accounts: {}, sum: 0 };
-            }
+                if (!groups[groupKey]) {
+                    groups[groupKey] = { accounts: {}, sum: 0 };
+                }
 
-            groups[groupKey].accounts[key] = account;
-            groups[groupKey].sum += getAccountBalance(account);
-        });
+                groups[groupKey].accounts[key] = account;
+                groups[groupKey].sum += getAccountBalance(account);
+            });
         setGroupedAccounts(groups);
     }, [accounts, windowSettings])
 
     useEffect(() => {
         setAccountsSum(
             Object.values(accounts || {}).reduce((sum, account) => sum + getAccountBalance(account), 0)
-        )
+        );
     }, [accounts])
 
     function getGroupIcons(

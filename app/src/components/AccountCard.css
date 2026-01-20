@@ -18,3 +18,7 @@
     background-color: #ebf0dd;
     transform: translateY(-5px);
 }
+
+.archived {
+    opacity: 0.6;
+}

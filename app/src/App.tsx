@@ -36,6 +36,7 @@ import GridView from './assets/icons/GridView.svg?react';
 import Waterfall from './assets/icons/Waterfall.svg?react';
 import Category from './assets/icons/Category.svg?react';
 import Wallet from './assets/icons/Wallet.svg?react';
+import Archive from './assets/icons/Archive.svg?react';
 
 export enum ResponseState {
     LOADING = 'LOADING',
@@ -48,6 +49,7 @@ export type AppSettings = {
         sortBy: 'name' | 'balance',
         sortOrder: 'asc' | 'desc',
         groupBy?: 'bank' | 'user' | 'type',
+        archiveVisibility?: 'vis' | 'hid',
     },
     transactions: {
         displayAs: 'list' | 'grid' | 'waterfall',
@@ -61,6 +63,7 @@ const defaultAppSettings = (): AppSettings => ({
     accounts: {
         sortBy: 'balance',
         sortOrder: 'desc',
+        archiveVisibility: 'hid',
     },
     transactions: {
         displayAs: 'list',
@@ -84,15 +87,15 @@ function App() {
 
     // TODO: remove these
     const [appSettings, setAppSettings] = useState<AppSettings>(defaultAppSettings());
-    
+
     // UI STATES
     const [panel, setPanel] = useState<'dashboard' | 'accounts' | 'transactions' | 'standing'>('dashboard');
-    
+
     const [openSelectUser, setOpenSelectUser] = useState<((userID: string, userEmail: string) => void) | null>(null); // holds a function to redirect after user selection
     const [openEditUser, setOpenEditUser] = useState<((userID: string, userEmail: string) => void) | null>(null); // holds a function to redirect after user creation
     const [openEditAccount, setOpenEditAccount] = useState<BankAccount | null>(null);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
-    
+
     const [openWallet, setOpenWallet] = useState<boolean>(false);
 
     useEffect(() => {
@@ -294,6 +297,7 @@ function App() {
                     account={openEditAccount}
                     updateOrAddAccount={Engine.get().updateOrAddAccount}
                     deleteAccount={Engine.get().deleteOfflineAccount}
+                    archiveAccount={Engine.get().archiveAccount}
                     close={() => setOpenEditAccount(null)}
                     existingAccounts={accounts}
                     users={users || []}
@@ -569,39 +573,61 @@ function App() {
                                 />
                             </div>
                         }
-
                         {panel === 'accounts' &&
-                            <RadioButtons
-                                options={[
-                                    {
-                                        key: 'bank',
-                                        desc: `${appSettings.accounts.groupBy === 'bank' ? 'Grouped' : 'Group'} by Provider`,
-                                        icon: <Bank />,
-                                    },
-                                    {
-                                        key: 'user',
-                                        desc: `${appSettings.accounts.groupBy === 'user' ? 'Grouped' : 'Group'} by User`,
-                                        icon: <Users />,
-                                    },
-                                    {
-                                        key: 'type',
-                                        desc: `${appSettings.accounts.groupBy === 'bank' ? 'Grouped' : 'Group'} by Type`,
-                                        icon: <Category />,
-                                    },
-                                ]}
-                                selected={appSettings.accounts.groupBy}
-                                setSelected={(key: string) => setAppSettings(prev => ({
-                                    ...prev,
-                                    accounts: {
-                                        ...prev.accounts,
-                                        groupBy: (prev.accounts.groupBy === key ? undefined : key) as AppSettings['accounts']['groupBy']
-                                    },
-                                }))}
-                                tooltipPlacement='bottom'
-                                iconOnColour='green'
-                                iconOffColour='#e3e3e3'
-                            />
+
+                            <div>
+                                <RadioButtons
+                                    options={[
+                                        {
+                                            key: 'bank',
+                                            desc: `${appSettings.accounts.groupBy === 'bank' ? 'Grouped' : 'Group'} by Provider`,
+                                            icon: <Bank />,
+                                        },
+                                        {
+                                            key: 'user',
+                                            desc: `${appSettings.accounts.groupBy === 'user' ? 'Grouped' : 'Group'} by User`,
+                                            icon: <Users />,
+                                        },
+                                        {
+                                            key: 'type',
+                                            desc: `${appSettings.accounts.groupBy === 'bank' ? 'Grouped' : 'Group'} by Type`,
+                                            icon: <Category />,
+                                        },
+                                    ]}
+                                    selected={appSettings.accounts.groupBy}
+                                    setSelected={(key: string) => setAppSettings(prev => ({
+                                        ...prev,
+                                        accounts: {
+                                            ...prev.accounts,
+                                            groupBy: (prev.accounts.groupBy === key ? undefined : key) as AppSettings['accounts']['groupBy']
+                                        },
+                                    }))}
+                                    tooltipPlacement='bottom'
+                                    iconOnColour='green'
+                                    iconOffColour='#e3e3e3'
+                                />
+                            </div>
                         }
+                        {panel === 'accounts' &&
+                            <div>
+                                <ToggleButton
+                                    options={[
+                                        { key: 'vis', desc: 'Archives Shown', icon: <Archive />, iconColour: 'green' },
+                                        { key: 'hid', desc: 'Archives Hidden', icon: <Archive />, iconColour: 'red' },
+                                    ]}
+                                    selected={appSettings.accounts.archiveVisibility}
+                                    setSelected={(key: string) => setAppSettings(prev => ({
+                                        ...prev,
+                                        accounts: {
+                                            ...prev.accounts,
+                                            archiveVisibility: key as AppSettings['accounts']['archiveVisibility']
+                                        },
+                                    }))}
+                                    tooltipPlacement='bottom'
+                                />
+                            </div>
+                        }
+
                         {panel === 'transactions' && !isMobile() &&
                             <RadioButtons
                                 options={[
@@ -676,8 +702,8 @@ function App() {
                     <DashboardPanel
                         accounts={accounts}
                         modesty={appSettings.global.modesty}
-                        // categoryStats={categoryStats}
-                        // channelStats={channelStats}
+                    // categoryStats={categoryStats}
+                    // channelStats={channelStats}
                     />
                 }
                 {panel === 'accounts' &&

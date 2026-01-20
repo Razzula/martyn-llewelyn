@@ -60,7 +60,7 @@ function WalletEntryCard({
                                 />
                             </TooltipTrigger>
                             <TooltipContent>
-                                {provider?.display_name ?? 'Unknown Provider'}
+                                {provider?.display_name ?? `Unknown Provider (${walletEntry.meta})`}
                             </TooltipContent>
                         </Tooltip>
                         <div className='verticalSeparator' />

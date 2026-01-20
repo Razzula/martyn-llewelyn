@@ -16,6 +16,9 @@ import {
 } from '../types/TrueLayer';
 import { toYYYYMMDD } from '../utils/utils';
 
+const nowISO = new Date().toISOString();
+const nowEpochSeconds = Math.floor(Date.now() / 1000);
+
 export const providers = (): TrueLayerProvider[] => [
   {
     provider_id: 'mock',
@@ -65,7 +68,7 @@ export const accounts = (): TrueLayerAccount[] => [
       display_name: 'Not A Real Bank',
       logo_uri: 'https://truelayer-client-logos.s3-eu-west-1.amazonaws.com/banks/banks-icons/mock-icon.svg',
     },
-    update_timestamp: '2025-08-28T18:29:09.1682758Z',
+    update_timestamp: nowISO,
   },
   {
     account_id: '3c6edb9484ecd581dc1cedde8bedb1f1',
@@ -83,7 +86,7 @@ export const accounts = (): TrueLayerAccount[] => [
       display_name: 'Not A Real Bank',
       logo_uri: 'https://truelayer-client-logos.s3-eu-west-1.amazonaws.com/banks/banks-icons/mock-icon.svg',
     },
-    update_timestamp: '2025-08-28T18:29:09.1682828Z',
+    update_timestamp: nowISO,
   },
   {
     account_id: '89c3139784a055b9b47998f9dce9122e',
@@ -101,7 +104,7 @@ export const accounts = (): TrueLayerAccount[] => [
       display_name: 'Not A Real Bank',
       logo_uri: 'https://truelayer-client-logos.s3-eu-west-1.amazonaws.com/banks/banks-icons/mock-icon.svg',
     },
-    update_timestamp: '2025-08-28T18:29:09.1682863Z',
+    update_timestamp: nowISO,
   },
   {
     account_id: '328df3a40b828340fa4c3100e17de121',
@@ -119,7 +122,7 @@ export const accounts = (): TrueLayerAccount[] => [
       display_name: 'Not A Real Bank',
       logo_uri: 'https://truelayer-client-logos.s3-eu-west-1.amazonaws.com/banks/banks-icons/mock-icon.svg',
     },
-    update_timestamp: '2025-08-28T18:29:09.1682895Z',
+    update_timestamp: nowISO,
   },
   {
     account_id: '8de2de9eab01b935b21abcbed11adf26',
@@ -137,7 +140,7 @@ export const accounts = (): TrueLayerAccount[] => [
       display_name: 'Not A Real Bank',
       logo_uri: 'https://truelayer-client-logos.s3-eu-west-1.amazonaws.com/banks/banks-icons/mock-icon.svg',
     },
-    update_timestamp: '2025-08-28T18:29:09.1682937Z',
+    update_timestamp: nowISO,
   },
 ];
 
@@ -169,7 +172,7 @@ export const cards = (): TrueLayerCard[] => [
       display_name: 'Not A Real Bank',
       logo_uri: 'https://truelayer-client-logos.s3-eu-west-1.amazonaws.com/banks/banks-icons/mock-icon.svg',
     },
-    update_timestamp: '2025-08-28T18:29:09.1663258Z',
+    update_timestamp: nowISO,
   },
   {
     account_id: '328f557c68aebd532cbbd05ce5bcb6c8',
@@ -184,7 +187,7 @@ export const cards = (): TrueLayerCard[] => [
       display_name: 'Not A Real Bank',
       logo_uri: 'https://truelayer-client-logos.s3-eu-west-1.amazonaws.com/banks/banks-icons/mock-icon.svg',
     },
-    update_timestamp: '2025-08-28T18:29:09.1663319Z',
+    update_timestamp: nowISO,
   },
 ];
 
@@ -194,42 +197,42 @@ export const accountBalances = (): Record<string, TrueLayerAccountBalance[]> => 
     currency: 'GBP',
     current: 29,
     overdraft: 100,
-    update_timestamp: '2025-08-28T19:32:14.2473658Z',
+    update_timestamp: nowISO,
   }],
   '56c7b029e0f8ec5a2334fb0ffc2fface': [{
     available: 37.26,
     currency: 'GBP',
     current: 29,
     overdraft: 100,
-    update_timestamp: '2025-08-28T19:32:14.2473658Z',
+    update_timestamp: nowISO,
   }],
   '3c6edb9484ecd581dc1cedde8bedb1f1': [{
     available: 166.26,
     currency: 'GBP',
     current: 58,
     overdraft: 200,
-    update_timestamp: '2025-08-28T19:32:14.2455894Z',
+    update_timestamp: nowISO,
   }],
   '89c3139784a055b9b47998f9dce9122e': [{
     available: 295.26,
     currency: 'GBP',
     current: 87,
     overdraft: 300,
-    update_timestamp: '2025-08-28T19:32:14.3066553Z',
+    update_timestamp: nowISO,
   }],
   '328df3a40b828340fa4c3100e17de121': [{
     available: 424.26,
     currency: 'GBP',
     current: 116,
     overdraft: 400,
-    update_timestamp: '2025-08-28T19:32:14.2924166Z',
+    update_timestamp: nowISO,
   }],
   '8de2de9eab01b935b21abcbed11adf26': [{
     available: 553.26,
     currency: 'GBP',
     current: 145,
     overdraft: 500,
-    update_timestamp: '2025-08-28T19:32:14.2565614Z',
+    update_timestamp: nowISO,
   }],
 });
 
@@ -243,7 +246,7 @@ export const cardBalances = (): Record<string, TrueLayerCardBalance[]> => ({
     last_statement_date: '2025-08-06T00:00:00Z',
     payment_due: 8,
     payment_due_date: '2025-09-01T00:00:00Z',
-    update_timestamp: '2025-08-28T19:32:14.32429Z',
+    update_timestamp: nowISO,
   }],
   '328f557c68aebd532cbbd05ce5bcb6c8': [{
     available: 172,
@@ -254,7 +257,7 @@ export const cardBalances = (): Record<string, TrueLayerCardBalance[]> => ({
     last_statement_date: '2025-08-06T00:00:00Z',
     payment_due: 16,
     payment_due_date: '2025-09-01T00:00:00Z',
-    update_timestamp: '2025-08-28T19:32:14.3095517Z',
+    update_timestamp: nowISO,
   }],
 });
 
@@ -414,6 +417,6 @@ export const users: User[] = [
 ];
 
 export const walletEntries: WalletEntry[] = [
-  { walletToken: 'mock-user-1', userID: 'mock-user-1', consentedAt: 0, meta: 'mock' },
-  { walletToken: 'mock-user-2', userID: 'mock-user-2', consentedAt: 0, meta: 'mock' },
+  { walletToken: 'mock-user-1', userID: 'mock-user-1', consentedAt: nowEpochSeconds, meta: 'mock' },
+  { walletToken: 'mock-user-2', userID: 'mock-user-2', consentedAt: nowEpochSeconds, meta: 'mock' },
 ];

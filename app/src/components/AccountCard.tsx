@@ -35,7 +35,7 @@ function AccountCard({
     const displayAvailable = (balance ? toFinancialString(available, balance?.currency) : null);
     const displayBalance = (balance ? toFinancialString(current, balance?.currency) : null);
 
-    const accountUsers = users?.filter(user => account.users.some(u => u.id === user.id));
+    const accountUsers = users?.filter(user => account.users?.some(u => u.id === user.id));
 
     const updateDate = new Date(account.updateTimestamp);
     const now = new Date();
@@ -46,7 +46,7 @@ function AccountCard({
     const accountAER = calculateAER(account.interest?.rate || 0, account.interest?.interval || 12).toFixed(2);
 
     return (
-        <div className='accountCard' key={accountID}
+        <div className={`accountCard ${account?.archived ? 'archived' : ''}`} key={accountID}
             style={{ position: 'relative' }}
             onClick={() => setOpenEditAccount(account)}
         >
@@ -62,14 +62,14 @@ function AccountCard({
                             width: '8px',
                             height: '8px',
                             borderRadius: '50%',
-                            backgroundColor: account.source === 'TrueLayer' ? (isRecent ? '#4CAF50' : '#eea342ff') : '#dadada',
+                            backgroundColor: account.source === 'TrueLayer' ? (isRecent ? '#4CAF50' : '#eea342ff') : (account.source === 'TrueLayer.cache' ? '#d96868ff' : '#dadada'),
                             margin: '0.4rem',
                             cursor: 'help',
                         }}
                     />
                 </TooltipTrigger>
                 <TooltipContent>
-                    {account.source === 'TrueLayer' &&
+                    {(account.source === 'TrueLayer' || account.source === 'TrueLayer.cache') &&
                         <img
                             className='bankLogo'
                             src='./TrueLayer/TrueLayerLogo/TrueLayer-LOGO-white-transp-horizontal.svg'

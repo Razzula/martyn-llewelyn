@@ -28,7 +28,8 @@ export interface BankAccount {
 
     // BAGEL
     users: UserSignature[];
-    source: 'TrueLayer' | 'Bagel';
+    source: 'TrueLayer' | 'Bagel' | 'TrueLayer.cache';
+    archived?: boolean;
 
     balance?: BankAccountBalance;
     transactions?: OrderedDateTree<Transaction>;

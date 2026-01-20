@@ -8,11 +8,11 @@ import { isTauri } from "./utils/tauri";
 import { getDatabaseManager } from './utils/DatabaseManager';
 import {
     loadLiveAccountCacheFromTauri,
-    loadOfflineAccountArchivesFromTauri,
     loadOfflineAccountPatchesFromTauri,
     loadOfflineAccountsFromTauri,
     loadUsersFromTauri,
     loadWalletTokensFromTauri as loadWalletEntriesFromTauri,
+    saveLiveAccountCacheToTauri,
     saveOfflineAccountPatchesToTauri,
     saveOfflineAccountsToTauri,
     saveUsersToTauri,
@@ -43,7 +43,6 @@ export const accountsStore = createSignal<Record<string, BankAccount>>({});
 export const accountsDataLiveStore = createSignal<Record<string, BankAccount>>({});
 export const accountsDataOfflineStore = createSignal<Record<string, BankAccount>>({});
 export const accountsDataPatchesStore = createSignal<Record<string, BankAccountPatch>>({});
-export const accountsDataArchiveStore = createSignal<Record<string, BankAccount>>({});
 export const accountsDataLiveCacheStore = createSignal<Record<string, BankAccount>>({});
 export const accountsLoadStateStore = createSignal<ResponseState | null>(null);
 export const transactionsTreeStore = createSignal(new OrderedDateTree<Transaction>());
@@ -79,7 +78,6 @@ export class Engine extends Boulangerie {
     private accountsDataLive = accountsDataLiveStore;
     private accountsDataOffline = accountsDataOfflineStore;
     private accountsDataPatches = accountsDataPatchesStore;
-    private accountsDataArchive = accountsDataArchiveStore;
     private accountsDataLiveCache = accountsDataLiveCacheStore;
     private accountsLoadState = accountsLoadStateStore;
     private transactionsTree = transactionsTreeStore;
@@ -98,6 +96,7 @@ export class Engine extends Boulangerie {
         this.deleteUser = this.deleteUser.bind(this);
         this.updateOrAddAccount = this.updateOrAddAccount.bind(this);
         this.deleteOfflineAccount = this.deleteOfflineAccount.bind(this);
+        this.archiveAccount = this.archiveAccount.bind(this);
     }
 
     private async init() {
@@ -107,7 +106,6 @@ export class Engine extends Boulangerie {
         this.fetchProviders();
         this.loadOfflineAccounts();
         this.loadOfflineAccountPatches();
-        this.loadOfflineAccountArchives();
         this.loadLiveAccountCache();
 
         this.reactToSignal(() => {
@@ -118,7 +116,7 @@ export class Engine extends Boulangerie {
         this.reactToSignal(() => {
             // maintain unified accounts from all data partitions
             this.unifyAccounts();
-        }, [this.accountsDataLive, this.accountsDataOffline, this.accountsDataPatches, this.accountsDataArchive, this.accountsDataLiveCache]);
+        }, [this.accountsDataLive, this.accountsDataOffline, this.accountsDataPatches, this.accountsDataLiveCache]);
 
         this.reactToSignal(() => {
             // use TrueLayer tokens to fetch accounts' balances
@@ -133,6 +131,10 @@ export class Engine extends Boulangerie {
         this.reactToSignal(() => {
             this.calculateChannelStats();
         }, [this.categoryStats]);
+
+        this.reactToSignal(() => {
+            this.saveLiveAccountCache();
+        }, [this.accountsDataLive]);
     }
 
     public async loadWalletEntries() {
@@ -275,17 +277,27 @@ export class Engine extends Boulangerie {
         }
     }
 
-    private async loadOfflineAccountArchives() {
-        if (isTauri) {
-            const archiveAccounts = await loadOfflineAccountArchivesFromTauri();
-            this.accountsDataArchive.set(archiveAccounts);
-        }
-    }
-
     private async loadLiveAccountCache() {
         if (isTauri) {
             const liveAccountsCache = await loadLiveAccountCacheFromTauri();
             this.accountsDataLiveCache.set(liveAccountsCache);
+        }
+    }
+
+    private async saveLiveAccountCache() {
+        if (isTauri) {
+            const accountsLiveDataCache = {
+                ...this.accountsDataLiveCache.get(),
+                ...this.accountsDataLive.get(),
+            };
+            Object.entries(accountsLiveDataCache).forEach(([id, account]) => {
+                // flag as cached data
+                accountsLiveDataCache[id] = { ...account, source: 'TrueLayer.cache' };
+            });
+            // only cache real data
+            if (Object.keys(accountsLiveDataCache).length > 0) {
+                saveLiveAccountCacheToTauri(accountsLiveDataCache);
+            }
         }
     }
 
@@ -302,7 +314,7 @@ export class Engine extends Boulangerie {
                     merged[id] = { ...merged[id], ...account };
                 });
             }
-            // aapply patches on top of merged data
+            // apply patches on top of merged data
             if (this.accountsDataPatches.get() !== null) {
                 Object.entries(this.accountsDataPatches.get()).forEach(([id, patch]) => {
                     if (merged[id]) {
@@ -541,7 +553,9 @@ export class Engine extends Boulangerie {
             saveOfflineAccountsToTauri(this.accountsDataOffline.get());
         }
         else {
-            const patch = generatePatchFromAccount(account, this.accountsDataLive.get()[account.id] || emptyBankAccount);
+            // PATCH ACCOUNT
+            const originalAccount = account.source === 'TrueLayer' ? this.accountsDataLive.get()[account.id] : this.accountsDataLiveCache.get()[account.id];
+            const patch = generatePatchFromAccount(account, originalAccount || emptyBankAccount);
             // if it's a TrueLayer account, patch the live data
             this.accountsDataPatches.set(prev => {
                 const prevObj = prev ?? {};
@@ -554,6 +568,18 @@ export class Engine extends Boulangerie {
                 };
             });
             saveOfflineAccountPatchesToTauri(this.accountsDataPatches.get());
+
+            if (account.source === 'TrueLayer.cache') {
+                // also update the live cache
+                this.accountsDataLiveCache.set(prev => ({
+                    ...(prev || {}),
+                    [account.id]: {
+                        ...prev?.[account.id],
+                        ...account,
+                    },
+                }));
+                saveLiveAccountCacheToTauri(this.accountsDataLiveCache.get());
+            }
         }
     }
 
@@ -577,6 +603,36 @@ export class Engine extends Boulangerie {
                 return newData;
             });
             saveOfflineAccountPatchesToTauri(this.accountsDataPatches.get());
+        }
+        // currently, we ignore trying to delete a linked account
+    }
+
+    public archiveAccount(accountID: string) {
+        const account = this.accountsDataOffline.get()?.[accountID];
+        if (account) {
+            // if it's an offline account, update it
+            this.accountsDataOffline.set(prev => {
+                const newData = { ...prev };
+                newData[accountID] = {
+                    ...newData[accountID],
+                    archived: !newData[accountID].archived,
+                };
+                return newData;
+            });
+            saveOfflineAccountsToTauri(this.accountsDataOffline.get());
+        }
+        const cache = this.accountsDataLiveCache.get()?.[accountID];
+        if (cache) {
+            // if it's a cached account, update it
+            this.accountsDataLiveCache.set(prev => {
+                const newData = { ...prev };
+                newData[accountID] = {
+                    ...newData[accountID],
+                    archived: !newData[accountID].archived,
+                };
+                return newData;
+            });
+            this.saveLiveAccountCache();
         }
         // currently, we ignore trying to delete a linked account
     }

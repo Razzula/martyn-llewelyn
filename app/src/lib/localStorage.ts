@@ -6,7 +6,6 @@ import { BankAccount, BankAccountPatch, User, WalletEntry } from 'src/types/Bage
 const usersFile = 'users.json';
 const accountsOfflineFile = 'accounts.offline.json';
 const accountsPatchesFile = 'accounts.patches.json';
-const accountsArchiveFile = 'accounts.archive.json';
 const accountsCacheFile = 'accounts.cache.json';
 
 export async function loadWalletTokensFromTauri(): Promise<WalletEntry[]> {
@@ -50,10 +49,6 @@ export async function loadOfflineAccountPatchesFromTauri() {
     return loadJSONFromTauri(accountsPatchesFile);
 }
 
-export async function loadOfflineAccountArchivesFromTauri() {
-    return loadJSONFromTauri(accountsArchiveFile);
-}
-
 export async function loadLiveAccountCacheFromTauri() {
     return loadJSONFromTauri(accountsCacheFile);
 }
@@ -79,10 +74,6 @@ export function saveOfflineAccountsToTauri(accounts: Record<string, BankAccount>
 
 export function saveOfflineAccountPatchesToTauri(patches: Record<string, BankAccountPatch>) {
     saveJSONToTauri(accountsPatchesFile, patches);
-}
-
-export function saveOfflineArchiveAccountsToTauri(archives: Record<string, BankAccount>) {
-    saveJSONToTauri(accountsArchiveFile, archives);
 }
 
 export function saveLiveAccountCacheToTauri(cache: Record<string, BankAccount>) {
