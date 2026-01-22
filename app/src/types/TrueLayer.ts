@@ -43,8 +43,11 @@ export type TrueLayerAccountTransaction = {
     transaction_category: TrueLayerTransactionCategory;
     transaction_classification: string[];
     merchant_name?: string;
-    running_balance?: TrueLayerAccountBalance;
-    meta?: Record<string, string | string[]>;
+    running_balance?: {
+        amount: number;
+        currency: string;
+    };
+    meta?: Record<string, string>;
 };
 
 export type TrueLayerCard = {
@@ -89,8 +92,11 @@ export type TrueLayerCardTransaction = {
     transaction_category: TrueLayerTransactionCategory;
     transaction_classification: string[];
     merchant_name?: string;
-    running_balance?: TrueLayerCardTransactionRunningBalance;
-    meta?: Record<string, string | string[]>;
+    running_balance?: {
+        amount: number;
+        currency: string;
+    };
+    meta?: Record<string, string>;
 };
 
 export interface TrueLayerProvider {
@@ -121,11 +127,6 @@ export interface TrueLayerProvider {
     // BAGEL
     accountLogo?: string;
 }
-
-export type TrueLayerCardTransactionRunningBalance = {
-    amount: number;
-    currency: string;
-};
 
 export type TrueLayerTransactionType = 'DEBIT' | 'CREDIT' | string;
 

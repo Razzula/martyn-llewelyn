@@ -76,6 +76,6 @@ export function saveOfflineAccountPatchesToTauri(patches: Record<string, BankAcc
     saveJSONToTauri(accountsPatchesFile, patches);
 }
 
-export function saveLiveAccountCacheToTauri(cache: Record<string, BankAccount>) {
+export function saveLiveAccountCacheToTauri(cache: Record<string, Partial<BankAccount>>) {
     saveJSONToTauri(accountsCacheFile, cache);
 }

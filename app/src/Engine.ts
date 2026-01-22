@@ -97,6 +97,7 @@ export class Engine extends Boulangerie {
         this.updateOrAddAccount = this.updateOrAddAccount.bind(this);
         this.deleteOfflineAccount = this.deleteOfflineAccount.bind(this);
         this.archiveAccount = this.archiveAccount.bind(this);
+        this.updateAccountsTransactions = this.updateAccountsTransactions.bind(this);
     }
 
     private async init() {
@@ -120,7 +121,7 @@ export class Engine extends Boulangerie {
 
         this.reactToSignal(() => {
             // use TrueLayer tokens to fetch accounts' balances
-            this.fetchAccountsBalances();
+            this.fetchAccountsBalancesAndTransactions();
         }, [this.walletEntries, this.accounts]);
 
         this.reactToSignal(() => {
@@ -290,13 +291,35 @@ export class Engine extends Boulangerie {
                 ...this.accountsDataLiveCache.get(),
                 ...this.accountsDataLive.get(),
             };
-            Object.entries(accountsLiveDataCache).forEach(([id, account]) => {
-                // flag as cached data
-                accountsLiveDataCache[id] = { ...account, source: 'TrueLayer.cache' };
+
+            const minimalCache: Record<string, Partial<BankAccount>> = {};
+            Object.entries(accountsLiveDataCache).forEach(([id, account]: [string, BankAccount]) => {
+                // only store minimal data in the cache (i.e. no relational data)
+                minimalCache[id] = {
+                    id: account.id,
+                    name: account.name,
+                    instrumentType: account.instrumentType,
+                    type: account.type,
+                    number: account.number,
+                    cardNetwork: account.cardNetwork,
+                    provider: account.provider,
+                    nationalCurrency: account.nationalCurrency,
+                    updateTimestamp: account.updateTimestamp,
+                    users: account.users,
+                    archived: account.archived,
+                    interest: account.interest,
+                    url: account.url,
+                    
+                    balance: account.balance,
+                    last: account.last,
+                    cached: account.cached,
+
+                    source: 'TrueLayer.cache', // flag cached data
+                };
             });
             // only cache real data
-            if (Object.keys(accountsLiveDataCache).length > 0) {
-                saveLiveAccountCacheToTauri(accountsLiveDataCache);
+            if (Object.keys(minimalCache).length > 0) {
+                saveLiveAccountCacheToTauri(minimalCache);
             }
         }
     }
@@ -326,7 +349,7 @@ export class Engine extends Boulangerie {
         });
     }
 
-    private async fetchAccountsBalances() {
+    private async fetchAccountsBalancesAndTransactions() {
         if (this.walletEntries.get().length === 0 || !this.accounts.get()) {
             return;
         }
@@ -399,6 +422,7 @@ export class Engine extends Boulangerie {
      * Make use of RequestGate's request coalescing, to reduce network load.
      */
     private async updateAccountTransactions(walletToken: string, accountID: string, isCard: boolean, from: string, to: string) {
+        console.log(`Fetching transactions for ${isCard ? 'card' : 'account'} ${accountID} from ${from} to ${to}`);
         const request = isCard
             ? () => TrueLayerClient.fetchCardTransactions(walletToken, accountID, from, to)
             : () => TrueLayerClient.fetchAccountTransactions(walletToken, accountID, from, to);
@@ -578,7 +602,7 @@ export class Engine extends Boulangerie {
                         ...account,
                     },
                 }));
-                saveLiveAccountCacheToTauri(this.accountsDataLiveCache.get());
+                this.saveLiveAccountCache();
             }
         }
     }

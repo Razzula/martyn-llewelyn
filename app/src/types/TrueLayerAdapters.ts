@@ -79,9 +79,8 @@ export function fromTrueLayerCardBalance(input: TrueLayerCardBalance): BankAccou
 
 export function fromTrueLayerAccountTransaction(input: TrueLayerAccountTransaction, accountID?: string): Transaction {
     return {
-        transactionID: input.transaction_id,
-        normalisedProviderTransactionID: input.normalised_provider_transaction_id,
-        providerTransactionID: input.provider_transaction_id,
+        // TrueLayer required
+        transactionID: input.normalised_provider_transaction_id ?? input.transaction_id,
         timestamp: input.timestamp,
         description: input.description?.trim() ?? '',
         amount: input.amount,
@@ -89,22 +88,24 @@ export function fromTrueLayerAccountTransaction(input: TrueLayerAccountTransacti
         transactionType: input.transaction_type,
         transactionCategory: input.transaction_category,
         transactionClassification: input.transaction_classification ?? [],
+        // TrueLayer optional
         merchantName: input.merchant_name,
+        runningBalance: input.running_balance?.amount,
         meta: input.meta,
-
+        // Bagel
         accountID,
-        annotation: input.meta?.bagel_category ?? undefined,
+        annotations: input.meta?.bagel_category
+            ? [{ categoryID: input.meta.bagel_category, amount: input.amount }]
+            : [],
         source: 'TrueLayer',
     };
 }
 
 export function fromTrueLayerCardTransaction(input: TrueLayerCardTransaction, accountID?: string): Transaction {
-    console.log(input);
     const amount = -input.amount; // cards display inverted amounts
     return {
-        transactionID: input.transaction_id,
-        normalisedProviderTransactionID: input.normalised_provider_transaction_id,
-        providerTransactionID: input.provider_transaction_id,
+        // TrueLayer required
+        transactionID: input.normalised_provider_transaction_id ?? input.transaction_id,
         timestamp: input.timestamp,
         description: input.description?.trim() ?? '',
         amount: amount,
@@ -112,11 +113,15 @@ export function fromTrueLayerCardTransaction(input: TrueLayerCardTransaction, ac
         transactionType: input.transaction_type,
         transactionCategory: input.transaction_category,
         transactionClassification: input.transaction_classification ?? [],
+        // TrueLayer optional
         merchantName: input.merchant_name,
+        runningBalance: input.running_balance?.amount,
         meta: input.meta,
-
+        // Bagel
         accountID,
-        annotation: input.meta?.bagel_category ?? undefined,
+        annotations: input.meta?.bagel_category
+            ? [{ categoryID: input.meta.bagel_category, amount: input.amount }]
+            : [],
         source: 'TrueLayer',
     };
 }

@@ -134,7 +134,6 @@ class RealTrueLayerAPI implements TrueLayerAPI {
         const res = JSON.parse(
             await invoke('fetchCardTransactions', { walletToken, cardId, from, to })
         );
-        console.log(cardId, res.results);
         return res.results || [];
     }
 

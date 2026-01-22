@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS accounts (
+CREATE TABLE IF NOT EXISTS accounts(
     id TEXT PRIMARY KEY,
     type TEXT, -- BankAccountType
     providerID TEXT,

@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS transactions (
+CREATE TABLE IF NOT EXISTS transactions(
     id TEXT PRIMARY KEY, -- TrueLayer transaction_id
     accountID TEXT NOT NULL,
     amount REAL NOT NULL, -- encrypted
@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS transactions (
     transactionType TEXT,
     transactionCategory TEXT,
     timestamp TEXT NOT NULL,
+    runningBalance REAL,
     source TEXT NOT NULL,
     recordTimestamp TEXT NOT NULL
 );

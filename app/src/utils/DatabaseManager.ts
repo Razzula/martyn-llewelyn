@@ -1,12 +1,14 @@
+import { compare } from 'semver-ts';
 import Database, { QueryResult } from '@tauri-apps/plugin-sql';
 import { appDataDir } from '@tauri-apps/api/path';
 
-import { getSQL } from '../sql/SQLRegistry.js';
-
 import { defaultChannels, defaultExpenditures, defaultIncomes } from '../data/categories.js';
-import { Channel, Transaction, TransactionCategory } from '../types/Bagel.js';
+import { Channel, Transaction, TransactionAnnotation, TransactionCategory } from '../types/Bagel.js';
 import { newOrderedDateTreeFromList, OrderedDateTree } from '../types/OrderedDateTree.js';
 import { toYYYYMMDD } from './utils.js';
+import { TrueLayerTransactionCategory } from '../types/TrueLayer.js';
+
+import { getSQL, SCHEMA_VERSION } from '../sql/SQLRegistry.js';
 
 /**
  * Singleton instance of the database manager.
@@ -48,21 +50,48 @@ export class DatabaseManager {
         this.db = await Database.load(path);
         await this.db.execute(`PRAGMA journal_mode=WAL;`);
 
-        // dummy
-        await this.executeScript('init_test');
+        const liveSchemaVersion = await this.getSchemaVersion();
+        console.log(`Live schema version: ${liveSchemaVersion}`);
+        if (liveSchemaVersion === null) {
+            // dummy
+            await this.executeScript('init_test');
 
-        // initialise tables
-        await this.executeScript('init_accounts');
-        await this.executeScript('init_transactions');
-        await this.executeScript('init_channels');
-        await this.executeScript('init_categories');
-        await this.executeScript('init_transaction2category');
+            // initialise meta
+            await this.executeScript('init__schema');
+            await this.executeScript('init__schemaGuard');
+            // initialise tables
+            await this.executeScript('init_accounts');
+            await this.executeScript('init_transactions');
+            await this.executeScript('init_channels');
+            await this.executeScript('init_categories');
+            await this.executeScript('init_transaction2category');
+            await this.executeScript('init_transactionGroups');
+            // initialise indexes
+            // TODO
 
-        // default channels/categories
-        await this.insertDefaults()
+            // default channels/categories
+            await this.insertDefaults()
 
+            await this.writeSchemaVersion(SCHEMA_VERSION);
+            console.log(`Database initialised (${path})`);
+        }
+        else if (liveSchemaVersion !== SCHEMA_VERSION) {
+            // TODO: migration updates
+            await this.update(liveSchemaVersion);
+            await this.writeSchemaVersion(SCHEMA_VERSION);
+            console.log(`Database updated (${path})`);
+        }
+        console.log(`Database connected (${path})`);
         this.initialised = true;
-        console.log(`Database initialised (${path})`);
+    }
+
+    /**
+     * Migrate a database initialised from an older version of the schema.
+     */
+    private async update(liveSchemaVersion: string) {
+        if (compare(liveSchemaVersion, '0.0.2') < 0) {
+            // TODO: currently nothing to migrate
+        }
     }
 
     async close() {
@@ -79,8 +108,8 @@ export class DatabaseManager {
         try {
             return await this.execute(getSQL(script), bindValues);
         }
-        catch {
-            console.error(script);
+        catch (err) {
+            console.error(script, err);
         }
         return null;
     }
@@ -108,6 +137,29 @@ export class DatabaseManager {
             );
         }
         console.log('Default channels and categories inserted.');
+    }
+
+    async getSchemaVersion(): Promise<string | null> {
+        try {
+            const rows: unknown[] = await this.db.select('SELECT * FROM _schema');
+            if (rows.length === 0) {
+                return null;
+            }
+            const row: any = rows[0];
+            return row.version;
+        }
+        catch (err) {
+            console.error('Error checking schema version:', err);
+            return null;
+        }
+    }
+
+    async writeSchemaVersion(version: string) {
+        await this.db.execute(`
+            INSERT INTO _schema(version)
+            VALUES (?)
+            ON CONFLICT(rowid) DO UPDATE SET version = excluded.version;
+        `, [version]);
     }
 
     async getChannels(): Promise<Channel[]> {
@@ -145,8 +197,8 @@ export class DatabaseManager {
 
         const sql = `
             INSERT OR IGNORE INTO transactions
-            (id, accountID, amount, currency, description, transactionType, transactionCategory, timestamp, source, recordTimestamp)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (id, accountID, amount, currency, description, transactionType, transactionCategory, timestamp, runningBalance, source, recordTimestamp)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
         // flatten tree
         for (const year in tree) {
@@ -162,6 +214,7 @@ export class DatabaseManager {
                             tx.transactionType ?? '',
                             tx.transactionCategory ?? '',
                             tx.timestamp,
+                            tx.runningBalance ?? null,
                             tx.source,
                             new Date().toISOString(), // recordTimestamp
                         ]);
@@ -178,58 +231,154 @@ export class DatabaseManager {
     }
 
     async getTransactions(from: string, to: string): Promise<OrderedDateTree<Transaction>> {
-        
-        // XXX: this is bit hacky, but since `to` will alwaysbe 00:00:00, we use the next day as the bound
+        // XXX: this is bit hacky, but since `to` will always be time 00:00:00, we use the next day as the bound
         const toUpperBound = new Date(to);
         toUpperBound.setDate(toUpperBound.getDate() + 1); // move to next day
         const toUpper = toYYYYMMDD(toUpperBound);
 
         const rows: any[] = await this.db.select(
             `SELECT t.*, 
-                GROUP_CONCAT(c.id) AS categoryIDs
+                GROUP_CONCAT(c.id) AS categoryIDs,
+                GROUP_CONCAT(t2c.amount) AS categoryAmounts,
+                g.id AS groupID
             FROM transactions t
-            LEFT JOIN transaction2category tc ON t.id = tc.transactionID
-            LEFT JOIN categories c ON tc.categoryID = c.id
+            LEFT JOIN transaction2category t2c
+                ON t.id = t2c.transactionID
+            LEFT JOIN categories c
+                ON t2c.categoryID = c.id
+            LEFT JOIN transactionGroups g 
+                ON t.id = g.transactionA OR t.id = g.transactionB
             WHERE t.timestamp >= ? AND t.timestamp <= ?
             GROUP BY t.id`,
             [from, toUpper]
         );
 
         // map DB rows to Transaction objects
-        const transactions: Transaction[] = rows.map(row => ({
-            transactionID: row.id,
-            accountID: row.accountID,
-            amount: row.amount,
-            currency: row.currency,
-            description: row.description,
-            transactionType: row.transactionType,
-            transactionCategory: row.transactionCategory,
-            timestamp: row.timestamp,
-            source: row.source,
-            recordTimestamp: row.recordTimestamp,
-            annotation: row.categoryIDs?.split(',') || [], // array of category names
-        }));
+        const transactions: Transaction[] = [];
+        const transactionGroups: Record<string, Transaction> = {};
+        rows.forEach(row => {
+            const transactionAmount: number = row.amount;
+            // HANDLE MICRO SPLITS
+            const categoryIDs: string[] = row.categoryIDs ? row.categoryIDs.split(',') : [];
+            const categoryAmounts: string[] = row.categoryAmounts ? row.categoryAmounts.split(',') : [];
+            const annotations: TransactionAnnotation[] =
+                categoryIDs.length > 0
+                    ? categoryIDs.map((id, i) => ({
+                        categoryID: id,
+                        amount: categoryAmounts[i] ? Number(categoryAmounts[i]) : transactionAmount,
+                    }))
+                    : [];
+            // HANDLE TRANSACTION
+            const transaction: Transaction = {
+                transactionID: row.id,
+                accountID: row.accountID,
+                amount: row.amount,
+                currency: row.currency,
+                description: row.description,
+                transactionType: row.transactionType,
+                transactionCategory: row.transactionCategory,
+                timestamp: row.timestamp,
+                runningBalance: row.runningBalance,
+                source: row.source,
+                // recordTimestamp: row.recordTimestamp,
+                annotations: annotations,
+            };
+            // HANDLE MACRO GROUPS
+            const txGroupID: string | null = row.groupID || null;
+            if (txGroupID) {
+                // handle group
+                if (!transactionGroups[txGroupID]) {
+                    const transactionGroup: Transaction = {
+                        transactionID: txGroupID,
+                        amount: 0,
+                        timestamp: transaction.timestamp,
+                        runningBalance: row.runningBalance,
+                        source: 'GROUP',
+                        children: [transaction],
+                        // XXX: dummy values
+                        description: '',
+                        currency: '',
+                        transactionType: 'TRANSFER',
+                        transactionCategory: TrueLayerTransactionCategory.TRANSFER
+                    };
+                    transactionGroups[txGroupID] = transactionGroup;
+                }
+                else {
+                    transactionGroups[txGroupID].children!.push(transaction);
+                }
+            }
+            else {
+                // insert normal transaction
+                transactions.push(transaction);
+            }
+        });
+        // insert grouped transactions
+        Object.values(transactionGroups).forEach(group => {
+            if (group.children) {
+                if (group.children?.length === 2) {
+                    transactions.push(group);
+                }
+                else {
+                    // insufficient children
+                    // just insert the children as normal transaction
+                    group.children.forEach(child => transactions.push(child));
+                }
+            }
+            else {
+                // group is empty, should not happen
+                // return;
+            }
+        });
 
         // rebuild the OrderedDateTree
         return newOrderedDateTreeFromList(transactions, tx => new Date(tx.timestamp));
     }
 
-    async annotateTransaction(transactionID: string, categoryID: string) {
+    async createTransactionAnnotation(transactionID: string, annotation: TransactionAnnotation) {
         const sql = `
             INSERT OR IGNORE INTO transaction2category
-            (transactionID, categoryID)
-            VALUES (?, ?)
+            (transactionID, categoryID, amount)
+            VALUES (?, ?, ?)
         `;
-        await this.execute(sql, [transactionID, categoryID]);
+        await this.execute(sql, [transactionID, annotation.categoryID, annotation.amount]);
         console.log('Inserted 1 annotation');
+    }
+
+    async updateTransactionAnnotation(transactionID: string, categoryID: string, newAnnotation: TransactionAnnotation) {
+        const sql = `
+            UPDATE transaction2category
+            SET categoryID = ?, 
+                amount = ?
+            WHERE transactionID = ? AND categoryID = ?;
+        `;
+        await this.execute(sql, [
+            newAnnotation.categoryID, newAnnotation.amount,
+            transactionID, categoryID
+        ]);
+        console.log('Updated 1 annotation');
+    }
+
+    async clearTransactionAnnotations(transactionID: string) {
+        const sql = `
+            DELETE FROM transaction2category
+            WHERE transactionID = ?;
+        `;
+        await this.execute(sql, [transactionID]);
+        console.log('Cleared annotations for transaction', transactionID);
     }
 
     async getCategoryStats() {
         const rows: any[] = await this.db.select(
-            `SELECT c.id AS categoryID, c.channel AS channelID, COUNT(t.id) AS transactionCount, SUM(t.amount) AS totalAmount
+            `SELECT
+                c.id AS categoryID,
+                c.channel AS channelID,
+                COUNT(t.id) AS transactionCount,
+                SUM(t2c.amount) AS totalAmount
             FROM categories c
-            LEFT JOIN transaction2category tc ON c.id = tc.categoryID
-            LEFT JOIN transactions t ON t.id = tc.transactionID
+            LEFT JOIN transaction2category t2c
+                ON c.id = t2c.categoryID
+            LEFT JOIN transactions t
+                ON t.id = t2c.transactionID
             GROUP BY c.id, c.name`
         );
         return rows;

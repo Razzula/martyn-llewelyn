@@ -152,8 +152,6 @@ export function generatePatchFromAccount(account: BankAccount, live: BankAccount
 
 export interface Transaction {
     transactionID: string;
-    normalisedProviderTransactionID?: string;
-    providerTransactionID?: string;
     timestamp: string; // ISO timestamp
     description: string;
     amount: number;
@@ -162,12 +160,19 @@ export interface Transaction {
     transactionCategory: TrueLayerTransactionCategory;
     transactionClassification?: string[];
     merchantName?: string;
+    runningBalance?: number;
     meta?: Record<string, unknown>;
 
     // BAGEL
     accountID?: string; // the BankAccount.id this transaction belongs to
-    annotation?: string | string[];
+    annotations?: TransactionAnnotation[];
     source: string;
+    children?: Transaction[];
+}
+
+export interface TransactionAnnotation {
+    categoryID: string;
+    amount: number;
 }
 
 export interface Channel {

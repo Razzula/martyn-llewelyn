@@ -31,6 +31,7 @@ function DashboardPanel({
 
     const [channelChart, setChannelChart] = useState<{ name?: string; value?: number; colour?: string }[]>([]);
     const [categoryChart, setCategoryChart] = useState<{ name?: string; value?: number; colour?: string }[]>([]);
+    const [hasGraphData, setHasGraphData] = useState<boolean | null>(null);
 
     useEffect(() => {
         setAccountsSum(
@@ -88,6 +89,15 @@ function DashboardPanel({
         setCategoryChart(data);
     }, [categoryStats])
 
+    useEffect(() => {
+        if (channelChart.length > 0 || categoryChart.length > 0) {
+            setHasGraphData(true);
+        }
+        else {
+            setHasGraphData(false);
+        }
+    }, [categoryChart, channelChart])
+
     return (
         <>
             <div>
@@ -96,68 +106,81 @@ function DashboardPanel({
                 </h1>
             </div>
             <div className='dashboard'>
-                <div className='leftPane'>
-                    <h4>Breakdown of Expenditure</h4>
-                    <div className='chartStack'>
-                        <div className='chartLayer'>
-                            {/* Show loading spinner for when Pie has not rendered */}
-                            <Spinner/>
-                        </div>
+                {hasGraphData === null &&
+                    <Spinner useOverlay />
+                }
+                {hasGraphData === true &&
+                    <>
+                        <div className='leftPane'>
+                            <h4>Breakdown of Expenditure</h4>
+                            <div className='chartStack'>
+                                <div className='chartLayer'>
+                                    {/* Show loading spinner for when Pie has not rendered */}
+                                    <Spinner />
+                                </div>
 
-                        <div className='chartLayer'>
+                                <div className='chartLayer'>
+                                    <ResponsiveContainer width='100%' height='100%'>
+                                        {/* smaller pie (channelChart) */}
+                                        <PieChart>
+                                            <Pie
+                                                data={channelChart} dataKey='value' nameKey='name'
+                                                cx='50%' cy='50%' outerRadius={125}
+                                                startAngle={90} endAngle={-270}
+                                            >
+                                                {channelChart.map((entry, i) => (
+                                                    <Cell key={i} fill={entry.colour ?? '#cccccc'} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </div>
+
+                                <div className='chartLayer'>
+                                    <ResponsiveContainer width='100%' height='100%'>
+                                        {/* larger pie (categoryChart) */}
+                                        <PieChart>
+                                            <Pie
+                                                data={categoryChart} dataKey='value' nameKey='name'
+                                                cx='50%' cy='50%' outerRadius={225} innerRadius={125}
+                                                startAngle={90} endAngle={-270}
+                                                label={!modesty}
+                                            >
+                                                {categoryChart.map((entry, i) => (
+                                                    <Cell key={i} fill={entry.colour ?? '#cccccc'} />
+                                                ))}
+                                            </Pie>
+                                            {!modesty && <Tooltip />}
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+                        </div>
+                        <div className='rightPane'>
+                            <h4>Comparison of Expenditure</h4>
                             <ResponsiveContainer width='100%' height='100%'>
-                                {/* smaller pie (channelChart) */}
-                                <PieChart>
-                                    <Pie
-                                        data={channelChart} dataKey='value' nameKey='name' 
-                                        cx='50%' cy='50%' outerRadius={125}
-                                        startAngle={90} endAngle={-270}
-                                    >
-                                        {channelChart.map((entry, i) => (
-                                            <Cell key={i} fill={entry.colour ?? '#cccccc'} />
+                                <BarChart data={categoryChart} margin={{ top: 20, right: 20, left: 0, bottom: 60 }}>
+                                    <CartesianGrid strokeDasharray='3 3' />
+                                    <XAxis dataKey='name' angle={-45} textAnchor='end' interval={0} height={60} />
+                                    <YAxis />
+                                    {/* <Tooltip /> */}
+                                    <Bar dataKey='value'>
+                                        {categoryChart.map((entry, index) => (
+                                            <Cell key={index} fill={entry.colour ?? '#999999'} />
                                         ))}
-                                    </Pie>
-                                    <Tooltip />
-                                </PieChart>
+                                    </Bar>
+                                </BarChart>
                             </ResponsiveContainer>
                         </div>
-
-                        <div className='chartLayer'>
-                            <ResponsiveContainer width='100%' height='100%'>
-                                {/* larger pie (categoryChart) */}
-                                <PieChart>
-                                    <Pie
-                                        data={categoryChart} dataKey='value' nameKey='name'
-                                        cx='50%' cy='50%' outerRadius={225} innerRadius={125}
-                                        startAngle={90} endAngle={-270}
-                                        label={!modesty}
-                                    >
-                                        {categoryChart.map((entry, i) => (
-                                            <Cell key={i} fill={entry.colour ?? '#cccccc'} />
-                                        ))}
-                                    </Pie>
-                                    { !modesty && <Tooltip /> }
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </div>
+                    </>
+                }
+                {hasGraphData === false &&
+                    <div>
+                        <p>No expenditure data to display yet.</p>
+                        <p>Try categorising some transactions!</p>
                     </div>
-                </div>
-                <div className='rightPane'>
-                    <h4>Comparison of Expenditure</h4>
-                    <ResponsiveContainer width='100%' height='100%'>
-                        <BarChart data={categoryChart} margin={{ top: 20, right: 20, left: 0, bottom: 60 }}>
-                            <CartesianGrid strokeDasharray='3 3' />
-                            <XAxis dataKey='name' angle={-45} textAnchor='end' interval={0} height={60} />
-                            <YAxis />
-                            {/* <Tooltip /> */}
-                            <Bar dataKey='value'>
-                                {categoryChart.map((entry, index) => (
-                                    <Cell key={index} fill={entry.colour ?? '#999999'} />
-                                ))}
-                            </Bar>
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
+                }
             </div>
         </>
     );

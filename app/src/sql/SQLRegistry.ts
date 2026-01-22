@@ -16,3 +16,5 @@ export function getSQL(name: string): string {
 function stripComments(sql: string) {
     return sql.split('\n').filter((l) => (!l.trim().startsWith('--'))).join('\n').trim();
 }
+
+export const SCHEMA_VERSION = '0.0.1';
