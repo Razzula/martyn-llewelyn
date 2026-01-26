@@ -1,0 +1,32 @@
+[
+    {
+        "date": "2026-01-19",
+        "description": "MY OTHER ACCOUNT   OTHER BANK TO FD",
+        "amount": 300.00,
+        "balance": 0.00
+    },
+    {
+        "date": "2026-01-19",
+        "description": "MY ACCOUNT *FRS  DRS SAVINGS",
+        "amount": -300.00,
+        "balance": -300.00
+    },
+    {
+        "date": "2025-12-18",
+        "description": "MY ACCOUNT *FRS  DRS SAVINGS",
+        "amount": -300.00,
+        "balance": 0.00
+    },
+    {
+        "date": "2025-12-17",
+        "description": "MY OTHER ACCOUNT   OTHER BANK TO FD",
+        "amount": 300.00,
+        "balance": 300.00
+    },
+    {
+        "date": "2025-11-18",
+        "description": "MY ACCOUNT *FRS  DRS SAVINGS",
+        "amount": -300.00,
+        "balance": 0.00
+    }
+]
