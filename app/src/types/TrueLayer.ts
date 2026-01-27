@@ -147,5 +147,6 @@ export enum TrueLayerTransactionCategory {
     STANDING_ORDER = 'STANDING_ORDER',
     TRANSFER = 'TRANSFER',
     DEBIT = 'DEBIT',
+    
     UNKNOWN = 'UNKNOWN',
 }

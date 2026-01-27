@@ -422,7 +422,6 @@ export class Engine extends Boulangerie {
      * Make use of RequestGate's request coalescing, to reduce network load.
      */
     private async updateAccountTransactions(walletToken: string, accountID: string, isCard: boolean, from: string, to: string) {
-        console.log(`Fetching transactions for ${isCard ? 'card' : 'account'} ${accountID} from ${from} to ${to}`);
         const request = isCard
             ? () => TrueLayerClient.fetchCardTransactions(walletToken, accountID, from, to)
             : () => TrueLayerClient.fetchAccountTransactions(walletToken, accountID, from, to);

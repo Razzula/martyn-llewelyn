@@ -63,6 +63,19 @@ export function getCurrencySymbol(currency: string | undefined): string {
     }
 }
 
+export function getCurrencyFromSymbol(currencySymbol: string): string | undefined {
+    switch (currencySymbol) {
+        case '£':
+            return 'GBP';
+        case '€':
+            return 'EUR';
+        case '$':
+            return 'USD';
+        default:
+            return undefined;
+    }
+}
+
 export function getCurrencySymbolFromCountry(country: string): string | null {
     if (country === 'uk') {
         return getCurrencySymbol('GBP');
@@ -74,4 +87,34 @@ export function getCurrencySymbolFromCountry(country: string): string | null {
         return getCurrencySymbol('CHF');
     }
     return null;
+}
+
+export function parseFinancialToNumeric(financeStr: string): {
+    value: number,
+    currencySymbol?: string,
+} {
+    const stripped = financeStr.replace(/,/g, '');
+    // raw number
+    const numeric = parseFloat(stripped);
+    if (!Number.isNaN(numeric)) {
+        return { value: numeric };
+    }
+    
+    // MIDATA 'Debit/Credit' / 'Balance'
+    const match = /^[+-]?([^\d])?(\d+(?:\.\d{1,2})?)$/.exec(stripped);
+    if (match) {
+        try {
+            const numeric = parseFloat(match[2]);
+            return {
+                value: numeric * (financeStr.startsWith('-') ? -1 : 1),
+                currencySymbol: match[1],
+            }
+        }
+        catch (err) {
+            // continue with other checks
+        }
+    }
+
+    // fallback
+    return { value: Number.NaN };
 }
