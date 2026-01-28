@@ -46,3 +46,15 @@ export class AccountManager {
         return merged;
     }
 }
+
+export function findAccount(query: Partial<BankAccount>, accounts: BankAccount[]) {
+    for (const account of accounts) {
+        if (query.number && account.number) {
+            // Account Number
+            if (query.number.accountNumber === account.number.accountNumber) {
+                return {...account};
+            }
+        }
+    }
+    return {...query};
+}

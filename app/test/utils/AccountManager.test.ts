@@ -1,7 +1,8 @@
 import { describe, test, expect } from 'bun:test';
 
-import { AccountManager } from '../../src/utils/AccountManager.js';
+import { AccountManager, findAccount } from '../../src/utils/AccountManager.js';
 import { BankAccountType, InstrumentType, type BankAccount, type UserSignature } from '../../src/types/Bagel.js';
+import { MOCK_ACCOUNTS, NATWEST_ACCOUNT, NATWEST_CARD } from '../data/accounts.js';
 
 const user = (id: string): UserSignature => ({ id });
 const account = (id: string, users: UserSignature[] = []): BankAccount => ({
@@ -90,6 +91,42 @@ describe('AccountManager', () => {
         // prev not mutated
         expect(prev.A1.users.map(x => x.id)).toEqual(['u1']);
         expect(Object.keys(prev).sort()).toEqual(['A1', 'B1']);
+    });
+
+    describe('findAccount', () => {
+
+        test('search with exact accountNumber', () => {
+            const query: Partial<BankAccount> = {
+                // see TransactionsFileHandler.test.ts
+                name: 'My Natwest Account',
+                number: {
+                    accountNumber: '11111111',
+                    bankNumber: '11-22-33',
+                },
+            };
+            const result = findAccount(query, MOCK_ACCOUNTS);
+            expect(result).toEqual(NATWEST_ACCOUNT);
+        });
+
+        test('search with exact accountNumber', () => {
+            const query: Partial<BankAccount> = {
+                // see TransactionsFileHandler.test.ts
+                name: 'My Natwest Card',
+                number: {
+                    accountNumber: '1234',
+                },
+                instrumentType: InstrumentType.CARD,
+            };
+            const result = findAccount(query, MOCK_ACCOUNTS);
+            expect(result).toEqual(NATWEST_CARD);
+        });
+
+        test('search with empty query', () => {
+            const query: Partial<BankAccount> = {};
+            const result = findAccount(query, MOCK_ACCOUNTS);
+            expect(result).toEqual({});
+        });
+
     });
 
 });

@@ -71,6 +71,8 @@ export function getCurrencyFromSymbol(currencySymbol: string): string | undefine
             return 'EUR';
         case '$':
             return 'USD';
+        case '�':
+            return 'UNKNOWN';
         default:
             return undefined;
     }

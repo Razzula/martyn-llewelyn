@@ -4,15 +4,13 @@ import { existsSync, readFileSync } from 'fs';
 
 import TransactionsFileHandler from '../../src/utils/TransactionsFileHandler';
 import { TrueLayerTransactionCategory } from '../../src/types/TrueLayer';
-import { InstrumentType } from '../../src/types/Bagel';
+import { InstrumentType, Transaction } from '../../src/types/Bagel';
+
+import { MOCK_ACCOUNTS } from '../data/accounts';
 
 const stub = (name: string) => join(import.meta.dir, '..', 'data', name);
 
 describe('TransactionsFileHandler', () => {
-
-    describe('File Parsers', () => {
-
-    });
 
     describe('Cahoot CSV (Midata)', () => {
         let parsed: ReturnType<typeof TransactionsFileHandler.parseFromCSV>;
@@ -84,12 +82,25 @@ describe('TransactionsFileHandler', () => {
 
     describe('First Direct CSV', () => {
         let parsed: ReturnType<typeof TransactionsFileHandler.parseFromCSV>;
+        let raw: string;
         beforeAll(() => {
             const fileName = 'FirstDirect_tx.stub.csv';
             expect(existsSync(stub(fileName))).toBe(true);
-            const raw = readFileSync(stub(fileName), 'utf8');
+            raw = readFileSync(stub(fileName), 'utf8');
             parsed = TransactionsFileHandler.parseFromCSV(raw);
         });
+
+        const mockTransaction: Partial<Transaction> = {
+            transactionID: expect.any(String),
+            timestamp: '2026-01-19T00:00:00Z',
+            description: 'MY OTHER ACCOUNT   OTHER BANK TO FD',
+            amount: 300,
+            currency: 'UNKNOWN', // actually GBP, but can't know this without account data
+            transactionType: 'UNKNOWN', // actually CREDIT, but can't know this without account data
+            transactionCategory: TrueLayerTransactionCategory.UNKNOWN,
+
+            runningBalance: 0,
+        };
 
         test('parse transactions (completeness)', () => {
             const { transactions } = parsed;
@@ -98,28 +109,39 @@ describe('TransactionsFileHandler', () => {
         });
         test('parse transactions (accuracy)', () => {
             const { transactions } = parsed;
-            expect(transactions[0]).toEqual({
-                transactionID: expect.any(String),
-                timestamp: '2026-01-19T00:00:00Z',
-                description: 'MY OTHER ACCOUNT   OTHER BANK TO FD',
-                amount: 300,
-                currency: 'UNKNOWN',
-                transactionType: 'UNKNOWN', // actually CREDIT, but can't know this without account data
-                transactionCategory: TrueLayerTransactionCategory.UNKNOWN,
-
-                runningBalance: 0,
-            });
+            expect(transactions[0]).toEqual(mockTransaction);
         });
+        // test('parse transactions (accuracy) with account unification', () => {
+        //     const { transactions } = TransactionsFileHandler.parseFromCSV(raw, MOCK_ACCOUNTS);
+        //     expect(transactions[0]).toEqual({
+        //         ...mockTransaction,
+        //         currency: 'GBP',
+        //         transactionType: 'CREDIT',
+        //     });
+        // });
     });
 
     describe('First Direct JSON', () => {
         let parsed: ReturnType<typeof TransactionsFileHandler.parseFromJSON>;
+        let raw: string;
         beforeAll(() => {
             const fileName = 'FirstDirect_tx.stub.json';
             expect(existsSync(stub(fileName))).toBe(true);
-            const raw = readFileSync(stub(fileName), 'utf8');
+            raw = readFileSync(stub(fileName), 'utf8');
             parsed = TransactionsFileHandler.parseFromJSON(raw);
         });
+
+        const mockTransaction: Partial<Transaction> = {
+            transactionID: expect.any(String),
+            timestamp: '2026-01-19T00:00:00Z',
+            description: 'MY OTHER ACCOUNT   OTHER BANK TO FD',
+            amount: 300,
+            currency: 'UNKNOWN', // actually GBP, but can't know this without account data
+            transactionType: 'UNKNOWN', // actually CREDIT, but can't know this without account data
+            transactionCategory: TrueLayerTransactionCategory.UNKNOWN,
+
+            runningBalance: 0,
+        };
 
         test('parse transactions (completeness)', () => {
             const { transactions } = parsed;
@@ -128,18 +150,16 @@ describe('TransactionsFileHandler', () => {
         });
         test('parse transactions (accuracy)', () => {
             const { transactions } = parsed;
-            expect(transactions[0]).toEqual({
-                transactionID: expect.any(String),
-                timestamp: '2026-01-19T00:00:00Z',
-                description: 'MY OTHER ACCOUNT   OTHER BANK TO FD',
-                amount: 300,
-                currency: 'UNKNOWN',
-                transactionType: 'UNKNOWN', // actually CREDIT, but can't know this without account data
-                transactionCategory: TrueLayerTransactionCategory.UNKNOWN,
-
-                runningBalance: 0,
-            });
+            expect(transactions[0]).toEqual(mockTransaction);
         });
+        // test('parse transactions (accuracy) with account unification', () => {
+        //     const { transactions } = TransactionsFileHandler.parseFromJSON(raw, MOCK_ACCOUNTS);
+        //     expect(transactions[0]).toEqual({
+        //         ...mockTransaction,
+        //         currency: 'GBP',
+        //         transactionType: 'CREDIT',
+        //     });
+        // });
     });
 
     describe('First Direct CSV (Midata)', () => {
@@ -218,12 +238,23 @@ describe('TransactionsFileHandler', () => {
 
     describe('NatWest (Card) CSV', () => {
         let parsed: ReturnType<typeof TransactionsFileHandler.parseFromCSV>;
+        let raw: string;
         beforeAll(() => {
             const fileName = 'Natwest_tx_card.stub.csv';
             expect(existsSync(stub(fileName))).toBe(true);
-            const raw = readFileSync(stub(fileName), 'utf8');
+            raw = readFileSync(stub(fileName), 'utf8');
             parsed = TransactionsFileHandler.parseFromCSV(raw);
         });
+
+        const mockTransaction: Partial<Transaction> = {
+            transactionID: expect.any(String),
+            timestamp: '2026-01-12T00:00:00Z',
+            description: 'TUNNEL.LU.AM',
+            amount: -33.25,
+            currency: 'UNKNOWN',
+            transactionType: 'DEBIT', // negative transaction from a card (inferred from "Account Number")
+            transactionCategory: TrueLayerTransactionCategory.UNKNOWN,
+        };
 
         test('parse transactions (completeness)', () => {
             const { transactions } = parsed;
@@ -232,36 +263,49 @@ describe('TransactionsFileHandler', () => {
         });
         test('parse transactions (accuracy)', () => {
             const { transactions } = parsed;
-            expect(transactions[0]).toEqual({
-                transactionID: expect.any(String),
-                timestamp: '2026-01-12T00:00:00Z',
-                description: 'TUNNEL.LU.AM',
-                amount: 33.25,
-                currency: 'UNKNOWN',
-                transactionType: 'UNKNOWN',
-                transactionCategory: TrueLayerTransactionCategory.UNKNOWN,
-            });
+            expect(transactions[0]).toEqual(mockTransaction);
         });
         test('parse account', () => {
             const { account } = parsed;
             expect(account).toEqual({
-                name: 'My Card',
+                name: 'My Natwest Card',
                 number: {
                     accountNumber: '1234',
                 },
                 instrumentType: InstrumentType.CARD,
             });
         });
+        test('parse transactions (accuracy) with account unification', () => {
+            const { transactions } = TransactionsFileHandler.parseFromCSV(raw, MOCK_ACCOUNTS);
+            expect(transactions[0]).toEqual({
+                ...mockTransaction,
+                currency: 'GBP',
+                transactionType: 'DEBIT',
+            });
+        });
     });
 
     describe('NatWest CSV', () => {
         let parsed: ReturnType<typeof TransactionsFileHandler.parseFromCSV>;
+        let raw: string;
         beforeAll(() => {
             const fileName = 'Natwest_tx.stub.csv';
             expect(existsSync(stub(fileName))).toBe(true);
-            const raw = readFileSync(stub(fileName), 'utf8');
+            raw = readFileSync(stub(fileName), 'utf8');
             parsed = TransactionsFileHandler.parseFromCSV(raw);
         });
+
+        const mockTransaction: Partial<Transaction> = {
+            transactionID: expect.any(String),
+            timestamp: '2026-01-23T00:00:00Z',
+            description: 'DOWN RUCK LTD',
+            amount: -29.90,
+            currency: 'UNKNOWN',
+            transactionType: 'DEBIT',
+            transactionCategory: TrueLayerTransactionCategory.DIRECT_DEBIT,
+
+            runningBalance: 1675.79,
+        };
 
         test('parse transactions (completeness)', () => {
             const { transactions } = parsed;
@@ -270,26 +314,23 @@ describe('TransactionsFileHandler', () => {
         });
         test('parse transactions (accuracy)', () => {
             const { transactions } = parsed;
-            expect(transactions[0]).toEqual({
-                transactionID: expect.any(String),
-                timestamp: '2026-01-23T00:00:00Z',
-                description: 'DOWN RUCK LTD',
-                amount: -29.90,
-                currency: 'UNKNOWN',
-                transactionType: 'DEBIT',
-                transactionCategory: TrueLayerTransactionCategory.DIRECT_DEBIT,
-
-                runningBalance: 1675.79,
-            });
+            expect(transactions[0]).toEqual(mockTransaction);
         });
         test('parse account', () => {
             const { account } = parsed;
             expect(account).toEqual({
-                name: 'My Account',
+                name: 'My Natwest Account',
                 number: {
-                    accountNumber: '12345678',
+                    accountNumber: '11111111',
                     bankNumber: '11-22-33',
                 },
+            });
+        });
+        test('parse transactions (accuracy) with account unification', () => {
+            const { transactions } = TransactionsFileHandler.parseFromCSV(raw, MOCK_ACCOUNTS);
+            expect(transactions[0]).toEqual({
+                ...mockTransaction,
+                currency: 'GBP',
             });
         });
     });

@@ -15,7 +15,7 @@ These fixtures are intended to validate format handling, not real financial valu
 All personally identifiable or sensitive data has been replaced using fixed rules:
 
 - **Sort codes** → `11-22-33`
-- **Account numbers** → `12345678` (sometimes shortened to `*...*5678` or just `5678` where formats require)
+- **Account numbers** → `11111111` (sometimes shortened to `*...*1111` or just `1111` where formats require)
 - **Card numbers** → `*...*1234` (or just `1234` where only last digits appear)
 - **Account name** → `"My Account"`
 - **Card name** → `"My Card"`

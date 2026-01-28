@@ -1,10 +1,11 @@
 import Papa from 'papaparse';
 
-import { BankAccount, InstrumentType, Transaction } from "../types/Bagel";
+import { BankAccount, BankAccountType, InstrumentType, Transaction } from "../types/Bagel";
 import { hasValue, isEmptyString, isString, parseDateStringToISO } from './utils';
 import { asSortCode, getCurrencyFromSymbol, parseFinancialToNumeric } from './finance';
 import { getCategoryfromMidataType, getTypefromMidataType } from '../types/MidataAdapter';
 import { TrueLayerTransactionCategory } from '../types/TrueLayer';
+import { findAccount } from './AccountManager';
 
 const KNOWN_EXPORT_HEADERS: Record<string, Record<string, string>> = {
     'MIDATA': {
@@ -102,7 +103,10 @@ class TransactionsFileHandler {
      * @param input raw CSV input string
      * @returns ProcessedFile
      */
-    public static parseFromCSV(input: string): ProcessedFile {
+    public static parseFromCSV(
+        input: string,
+        accounts: BankAccount[] = [],
+    ): ProcessedFile {
         const processedFile: ProcessedFile = {
             account: {},
             transactions: [],
@@ -112,8 +116,9 @@ class TransactionsFileHandler {
                 header: true,
                 skipEmptyLines: true,
             });
-            processedFile.transactions = this.transactionsFromObjects(data);
             processedFile.account = this.accountFromObjects(data);
+            const account = findAccount(processedFile.account, accounts);
+            processedFile.transactions = this.transactionsFromObjects(data, account);
         }
         catch (err) {
             console.error('Cannot parse CSV:', err);
@@ -126,16 +131,20 @@ class TransactionsFileHandler {
      * @param input raw JSON input string
      * @returns ProcessedFile
      */
-    public static parseFromJSON(input: string): ProcessedFile {
+    public static parseFromJSON(
+        input: string,
+        accounts: BankAccount[] = [],
+    ): ProcessedFile {
         const processedFile: ProcessedFile = {
             account: {},
             transactions: [],
         };
         try {
-            const formatted = JSON.parse(input);
-            if (Array.isArray(formatted)) {
-                processedFile.transactions = this.transactionsFromObjects(formatted);
-                processedFile.account = this.accountFromObjects(formatted);
+            const data = JSON.parse(input);
+            if (Array.isArray(data)) {
+                processedFile.account = this.accountFromObjects(data);
+                const account = findAccount(processedFile.account, accounts);
+                processedFile.transactions = this.transactionsFromObjects(data, account);
             }
         }
         catch (err) {
@@ -149,7 +158,10 @@ class TransactionsFileHandler {
      * @param input raw TXT input string
      * @returns ProcessedFile
      */
-    public static parseFromTXT(input: string): ProcessedFile {
+    public static parseFromTXT(
+        input: string,
+        accounts: BankAccount[] = [],
+    ): ProcessedFile {
         const processedFile: ProcessedFile = {
             account: {},
             transactions: [],
@@ -159,7 +171,7 @@ class TransactionsFileHandler {
                 .replace(/\r\n/g, '\n')
                 .replace(/\uFFFD/g, '') // � replacement chars
             const blocks = normalised.split(/\n\s*\n+/);
-            const objects: Record<string, string>[] = [];
+            const data: Record<string, string>[] = [];
             for (const block of blocks) {
                 const object: Record<string, string> = {};
                 for (const line of block.split('\n')) {
@@ -170,10 +182,11 @@ class TransactionsFileHandler {
                     const [, key, value] = match;
                     object[key.trim()] = value.trim();
                 }
-                objects.push(object);
+                data.push(object);
             }
-            processedFile.transactions = this.transactionsFromObjects(objects);
-            processedFile.account = this.accountFromObjects(objects);
+            processedFile.account = this.accountFromObjects(data);
+            const account = findAccount(processedFile.account, accounts);
+            processedFile.transactions = this.transactionsFromObjects(data, account);
         }
         catch (err) {
             console.error('Cannot parse plaintext:', err);
@@ -186,14 +199,17 @@ class TransactionsFileHandler {
      * @param input raw PDF input string
      * @returns ProcessedFile
      */
-    public static parseFromPDF(_input: string): ProcessedFile {
+    public static parseFromPDF(
+        _input: string,
+        _accounts: BankAccount[] = [],
+    ): ProcessedFile {
         const processedFile: ProcessedFile = {
             account: {},
             transactions: [],
         };
         console.error('parseFromPDF not yet implemented...');
-        // processedFile.transactions = this.transactionsFromObjects(input);
         // processedFile.account = this.accountFromObjects(input);
+        // processedFile.transactions = this.transactionsFromObjects(input);
         return processedFile;
     }
 
@@ -295,11 +311,17 @@ class TransactionsFileHandler {
      * @param input formatted transactions file
      * @returns Transaction array
      */
-    public static transactionsFromObjects(inputs: Record<string, string | number>[]): Transaction[] {
+    public static transactionsFromObjects(
+        inputs: Record<string, string | number>[],
+        account?: Partial<BankAccount>,
+    ): Transaction[] {
         // console.log(inputs);
+        // console.log(account);
         const transactions: Transaction[] = [];
 
-        let seenCurrency: string | null = null;
+        let seenCurrency: string = account?.nationalCurrency ?? 'UNKNOWN';
+        const isCreditAccount = account?.type === BankAccountType.CREDIT || account?.instrumentType === InstrumentType.CARD;
+        const canRelyOnIsCreditAccount = account ?.type || account?.instrumentType;
 
         for (const input of inputs) {
             const transaction: Partial<Transaction> = {};
@@ -354,6 +376,12 @@ class TransactionsFileHandler {
                             else if (header.sourceField.toLowerCase() === 'credit') {
                                 // ensure value is positive
                                 amount.value = Math.abs(amount.value);
+                            }
+                            else {
+                                if (isCreditAccount && canRelyOnIsCreditAccount) {
+                                    // flip value
+                                    amount.value = -1 * amount.value;
+                                }
                             }
                             transaction.amount = amount.value;
                         }
@@ -435,19 +463,22 @@ class TransactionsFileHandler {
             if (seenCurrency) {
                 const data = getCurrencyFromSymbol(seenCurrency);
                 if (data) {
-                    // use Transactions data
+                    // use symbol data
                     transaction.currency = data;
                 }
                 else {
-                    // TODO use account information
+                    // hope the data is already formatted
+                    transaction.currency = seenCurrency;
                 }
             }
             else {
                 transaction.currency = 'UNKNOWN';
             }
 
+            // # VALIDATION
             // TODO validate validity as a full Transaction
             if (!hasValue(transaction?.amount)) {
+                console.warn('Skipped ivalid Transaction');
                 // console.warn(input, transaction);
                 continue;
             }
@@ -457,8 +488,42 @@ class TransactionsFileHandler {
             if (isEmptyString(transaction?.currency)) {
                 transaction.currency = 'UNKNOWN';
             }
-            if (isEmptyString(transaction?.transactionType)) {
-                transaction.transactionType = 'UNKNOWN';
+            if (
+                isEmptyString(transaction?.transactionType)
+                || transaction?.transactionType === 'UNKNOWN'
+            ) {
+                if (
+                    account !== undefined
+                    && transaction.amount !== undefined
+                    && hasValue(transaction.amount)
+                    && canRelyOnIsCreditAccount
+                ) {
+                    if (isCreditAccount) {
+                        // CREDIT ACCOUNT
+                        if (transaction.amount > 0) {
+                            // positive
+                            transaction.transactionType = 'CREDIT';
+                        }
+                        else {
+                            // negative
+                            transaction.transactionType = 'DEBIT';
+                        }
+                    }
+                    else {
+                        // DEBIT ACCOUNT
+                        if (transaction.amount > 0) {
+                            // positive
+                            transaction.transactionType = 'CREDIT';
+                        }
+                        else {
+                            // negative
+                            transaction.transactionType = 'DEBIT';
+                        }
+                    }
+                }
+                else {
+                    transaction.transactionType = 'UNKNOWN';
+                }
             }
             if (isEmptyString(transaction?.transactionCategory)) {
                 transaction.transactionCategory = TrueLayerTransactionCategory.UNKNOWN;
