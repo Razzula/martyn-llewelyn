@@ -1,6 +1,6 @@
 import Papa from 'papaparse';
 
-import { BankAccount, Transaction } from "../types/Bagel";
+import { BankAccount, InstrumentType, Transaction } from "../types/Bagel";
 import { hasValue, isEmptyString, isString, parseDateStringToISO } from './utils';
 import { asSortCode, getCurrencyFromSymbol, parseFinancialToNumeric } from './finance';
 import { getCategoryfromMidataType, getTypefromMidataType } from '../types/MidataAdapter';
@@ -47,7 +47,15 @@ const KNOWN_EXPORT_HEADERS: Record<string, Record<string, string>> = {
         Credit: 'amount',
         Debit: 'amount',
         Balance: 'runningBalance',
-    }
+    },
+    'CAHOOT (TXT)': {
+        // From: ,
+        Account: 'accountNumber',
+        Date: 'timestamp',
+        Description: 'description',
+        Amount: 'amount',
+        Balance: 'runningBalance'
+    },
 }
 
 /**
@@ -141,14 +149,35 @@ class TransactionsFileHandler {
      * @param input raw TXT input string
      * @returns ProcessedFile
      */
-    public static parseFromTXT(_input: string): ProcessedFile {
+    public static parseFromTXT(input: string): ProcessedFile {
         const processedFile: ProcessedFile = {
             account: {},
             transactions: [],
         };
-        console.error('parseFromTXT not yet implemented...');
-        // processedFile.transactions = this.transactionsFromObjects(input);
-        // processedFile.account = this.accountFromObjects(input);
+        try {
+            const normalised = input
+                .replace(/\r\n/g, '\n')
+                .replace(/\uFFFD/g, '') // � replacement chars
+            const blocks = normalised.split(/\n\s*\n+/);
+            const objects: Record<string, string>[] = [];
+            for (const block of blocks) {
+                const object: Record<string, string> = {};
+                for (const line of block.split('\n')) {
+                    const match = /^([^:]+):\s*(.+)$/.exec(line.trim());
+                    if (!match) {
+                        continue;
+                    }
+                    const [, key, value] = match;
+                    object[key.trim()] = value.trim();
+                }
+                objects.push(object);
+            }
+            processedFile.transactions = this.transactionsFromObjects(objects);
+            processedFile.account = this.accountFromObjects(objects);
+        }
+        catch (err) {
+            console.error('Cannot parse plaintext:', err);
+        }
         return processedFile;
     }
 
@@ -210,13 +239,22 @@ class TransactionsFileHandler {
                                 accountNumber.accountNumber = match[2];
                             }
                             else {
-                                // **** CARD
-                                const match = /^\d*\**(\d{4})$/.exec(data);
+                                // **** dddd
+                                const match = /[\*Xx]{4}\s+(\d{4})/.exec(data);
                                 if (match) {
-                                    accountNumber.accountNumber = match[1];
+                                    const formatted = match[1].replace(/[\*Xx]/g, '*');
+                                    accountNumber.accountNumber = formatted;
                                 }
                                 else {
-                                    accountNumber.accountNumber = data;
+                                    // *...*CARD
+                                    const match = /^\d*\**(\d{4})$/.exec(data);
+                                    if (match) {
+                                        accountNumber.accountNumber = match[1];
+                                        account.instrumentType = InstrumentType.CARD;
+                                    }
+                                    else {
+                                        accountNumber.accountNumber = data;
+                                    }
                                 }
                             }
                         }
@@ -238,8 +276,10 @@ class TransactionsFileHandler {
                             account.number = {
                                 ...account.number,
                                 accountNumber: accountNumber.accountNumber,
-                                bankNumber: accountNumber.bankNumber,
-                            }
+                                ...(accountNumber.bankNumber
+                                    ? { bankNumber: accountNumber.bankNumber }
+                                    : {}),
+                            };
                         }
                         break;
                     }

@@ -36,6 +36,18 @@ This document outlines the available transaction data formats by provider.
         - ⚠️ *can provide only up to 12 months of data, from 30 days prior to the current date*
         - ⚠️ *censors transaction descriptions*
     - ⏳ Text File (TXT)
+        ```
+        From:�DD/MM/YYYY�to�DD/MM/YYYY
+                                    
+        Account:�XXXX XXXX XXXX dddd
+                                
+        Date:�DD/MM/YYYY
+        Description:�...
+        Amount:�...�	
+        Balance:�...�
+
+        ...
+        ```
 - <details>
   <summary>🚫 Additional Online Banking Exports</summary>
   
