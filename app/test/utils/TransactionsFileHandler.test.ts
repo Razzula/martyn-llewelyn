@@ -29,8 +29,6 @@ describe('TransactionsFileHandler', () => {
 
             runningBalance: 3000,
         });
-        // expect(account).toMatchObject({     
-        // });
     });
 
     // test('Cahoot TXT', () => {
@@ -73,8 +71,6 @@ describe('TransactionsFileHandler', () => {
 
             runningBalance: 0,
         });
-        // expect(account).toMatchObject({     
-        // });
     });
 
     test('First Direct JSON', () => {
@@ -97,8 +93,6 @@ describe('TransactionsFileHandler', () => {
 
             runningBalance: 0,
         });
-        // expect(account).toMatchObject({     
-        // });
     });
 
     test('First Direct CSV (Midata)', () => {
@@ -121,8 +115,6 @@ describe('TransactionsFileHandler', () => {
 
             runningBalance: 0,
         });
-        // expect(account).toMatchObject({     
-        // });
     });
 
     test('Kingdom Bank CSV (Manual)', () => {
@@ -156,8 +148,6 @@ describe('TransactionsFileHandler', () => {
 
             runningBalance: 1280.98,
         });
-        // expect(account).toMatchObject({     
-        // });
     });
 
     test('NatWest (Card) CSV', () => {
@@ -178,8 +168,12 @@ describe('TransactionsFileHandler', () => {
             transactionType: 'UNKNOWN',
             transactionCategory: TrueLayerTransactionCategory.UNKNOWN,
         });
-        // expect(account).toMatchObject({     
-        // });
+        expect(account).toMatchObject({
+            name: 'My Card',
+            number: {
+                accountNumber: '1234',
+            },
+        });
     });
 
     test('NatWest CSV', () => {
@@ -202,8 +196,13 @@ describe('TransactionsFileHandler', () => {
 
             runningBalance: 1675.79,
         });
-        // expect(account).toMatchObject({     
-        // });
+        expect(account).toMatchObject({
+            name: 'My Account',
+            number: {
+                accountNumber: '12345678',
+                bankNumber: '11-22-33',
+            },
+        });
     });
 
 });

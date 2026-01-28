@@ -2,7 +2,7 @@ import Papa from 'papaparse';
 
 import { BankAccount, Transaction } from "../types/Bagel";
 import { hasValue, isEmptyString, isString, parseDateStringToISO } from './utils';
-import { getCurrencyFromSymbol, parseFinancialToNumeric } from './finance';
+import { asSortCode, getCurrencyFromSymbol, parseFinancialToNumeric } from './finance';
 import { getCategoryfromMidataType, getTypefromMidataType } from '../types/MidataAdapter';
 import { TrueLayerTransactionCategory } from '../types/TrueLayer';
 
@@ -37,8 +37,8 @@ const KNOWN_EXPORT_HEADERS: Record<string, Record<string, string>> = {
         Description: 'description',
         Value: 'amount',
         Balance: 'runningBalance',
-        "Account Name": 'TODO',
-        "Account Number": 'TODO',
+        "Account Name": 'accountName',
+        "Account Number": 'accountNumber',
     },
     'KINGDOM BANK (MANUAL as CSV)': {
         Date: 'timestamp',
@@ -105,6 +105,7 @@ class TransactionsFileHandler {
                 skipEmptyLines: true,
             });
             processedFile.transactions = this.transactionsFromObjects(data);
+            processedFile.account = this.accountFromObjects(data);
         }
         catch (err) {
             console.error('Cannot parse CSV:', err);
@@ -126,6 +127,7 @@ class TransactionsFileHandler {
             const formatted = JSON.parse(input);
             if (Array.isArray(formatted)) {
                 processedFile.transactions = this.transactionsFromObjects(formatted);
+                processedFile.account = this.accountFromObjects(formatted);
             }
         }
         catch (err) {
@@ -139,13 +141,14 @@ class TransactionsFileHandler {
      * @param input raw TXT input string
      * @returns ProcessedFile
      */
-    public static parseFromTXT(input: string): ProcessedFile {
+    public static parseFromTXT(_input: string): ProcessedFile {
         const processedFile: ProcessedFile = {
             account: {},
             transactions: [],
         };
         console.error('parseFromTXT not yet implemented...');
-        processedFile.transactions = this.transactionsFromObjects(input);
+        // processedFile.transactions = this.transactionsFromObjects(input);
+        // processedFile.account = this.accountFromObjects(input);
         return processedFile;
     }
 
@@ -154,13 +157,14 @@ class TransactionsFileHandler {
      * @param input raw PDF input string
      * @returns ProcessedFile
      */
-    public static parseFromPDF(input: string): ProcessedFile {
+    public static parseFromPDF(_input: string): ProcessedFile {
         const processedFile: ProcessedFile = {
             account: {},
             transactions: [],
         };
         console.error('parseFromPDF not yet implemented...');
-        processedFile.transactions = this.transactionsFromObjects(input);
+        // processedFile.transactions = this.transactionsFromObjects(input);
+        // processedFile.account = this.accountFromObjects(input);
         return processedFile;
     }
 
@@ -169,9 +173,81 @@ class TransactionsFileHandler {
      * @param input formatted transactions file
      * @returns BankAccount
      */
-    public static accountsFromObjects(input: Record<string, string | number>[]): BankAccount {
+    public static accountFromObjects(inputs: Record<string, string | number>[]): Partial<BankAccount> {
         // console.log(input);
-        return input;
+        const account: Partial<BankAccount> = {};
+
+        for (const input of inputs) {
+            // format data
+            // # ESSENTIAL FIELDS
+            // ## account name
+            if (HEADERS?.accountName) {
+                for (const header of HEADERS.accountName) {
+                    const data = input?.[header.sourceField];
+                    if (hasValue(data)) {
+                        if (
+                            !isEmptyString(account.name)
+                            && account.name !== String(data)
+                        ) {
+                            console.warn('Conflicting Account Names found. Defaulting to', data);
+                        }
+                        account.name = String(data);
+                        break;
+                    }
+                }
+            }
+            // ## account number
+            if (HEADERS?.accountNumber) {
+                for (const header of HEADERS.accountNumber) {
+                    const data = input?.[header.sourceField];
+                    if (hasValue(data)) {
+                        const accountNumber: Partial<BankAccount['number']> = {};
+                        if (isString(data)) {
+                            // SRTCOD-ACNUMBER
+                            const match = /^(\d{6})-(\d{8})$/.exec(data);
+                            if (match) {
+                                accountNumber.bankNumber = asSortCode(match[1]);
+                                accountNumber.accountNumber = match[2];
+                            }
+                            else {
+                                // **** CARD
+                                const match = /^\d*\**(\d{4})$/.exec(data);
+                                if (match) {
+                                    accountNumber.accountNumber = match[1];
+                                }
+                                else {
+                                    accountNumber.accountNumber = data;
+                                }
+                            }
+                        }
+
+                        if (
+                            !isEmptyString(account.number?.accountNumber)
+                            && account.number?.accountNumber !== accountNumber.accountNumber
+                        ) {
+                            console.warn('Conflicting Account Number found. Defaulting to', data);
+                        }
+                        if (
+                            !isEmptyString(account.number?.bankNumber)
+                            && account.number?.bankNumber !== accountNumber.bankNumber
+                        ) {
+                            console.warn('Conflicting Bank Number found. Defaulting to', data);
+                        }
+
+                        if (accountNumber.accountNumber) {
+                            account.number = {
+                                ...account.number,
+                                accountNumber: accountNumber.accountNumber,
+                                bankNumber: accountNumber.bankNumber,
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        return account;
     }
 
     /**
@@ -347,7 +423,7 @@ class TransactionsFileHandler {
             if (isEmptyString(transaction?.transactionCategory)) {
                 transaction.transactionCategory = TrueLayerTransactionCategory.UNKNOWN;
             }
-            transactions.push(transaction);
+            transactions.push(transaction as Transaction);
         }
 
         // TODO handle case where seenCurrency first set after some values
