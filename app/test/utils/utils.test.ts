@@ -2,7 +2,7 @@ import { expect, test, describe } from 'bun:test';
 import {
     isMobile,
     getMostRecentSunday,
-    toYYYYMMDD,
+    toYYYYMMDDFromDate,
     isEmptyString,
     isFutureDate
 } from '../../src/utils/utils.js';
@@ -33,7 +33,7 @@ describe('getMostRecentSunday()', () => {
 describe('toYYYYMMDD()', () => {
     test('formats date correctly', () => {
         const date = new Date('2026-01-18T15:00:00Z');
-        expect(toYYYYMMDD(date)).toBe('2026-01-18');
+        expect(toYYYYMMDDFromDate(date)).toBe('2026-01-18');
     });
 });
 

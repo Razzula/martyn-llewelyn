@@ -2,11 +2,12 @@ import { describe, test, expect, beforeAll } from 'bun:test';
 import { join } from 'path';
 import { existsSync, readFileSync } from 'fs';
 
-import TransactionsFileHandler from '../../src/utils/TransactionsFileHandler';
+import TransactionsFileHandler, { FileFormat } from '../../src/utils/TransactionsFileHandler';
 import { TrueLayerTransactionCategory } from '../../src/types/TrueLayer';
 import { InstrumentType, Transaction } from '../../src/types/Bagel';
 
 import { MOCK_ACCOUNTS } from '../data/accounts';
+import { CAHOOT_TX_CSV, CAHOOT_TX_TXT } from '../data/transactions';
 
 const stub = (name: string) => join(import.meta.dir, '..', 'data', name);
 
@@ -28,17 +29,7 @@ describe('TransactionsFileHandler', () => {
         });
         test('parse transactions (accuracy)', () => {
             const { transactions } = parsed;
-            expect(transactions[0]).toEqual({
-                transactionID: expect.any(String),
-                timestamp: '2026-01-26T00:00:00Z',
-                description: '**** ******* *** ****** ******* ** **** ********* ********* *** ******** * ******* ** ****',
-                amount: -30.95,
-                currency: 'UNKNOWN',
-                transactionType: 'DEBIT',
-                transactionCategory: TrueLayerTransactionCategory.UNKNOWN,
-
-                runningBalance: 3000,
-            });
+            expect(transactions[0]).toEqual(CAHOOT_TX_CSV[0]);
         });
     });
 
@@ -58,17 +49,7 @@ describe('TransactionsFileHandler', () => {
         });
         test('parse transactions (accuracy)', () => {
             const { transactions } = parsed;
-            expect(transactions[0]).toEqual({
-                transactionID: expect.any(String),
-                timestamp: '2026-01-26T00:00:00Z',
-                description: 'BILL PAYMENT VIA FASTER PAYMENT TO MASTER BAGEL REFERENCE BAGEL INTERNAL , MANDATE NO 0001',
-                amount: -30.95,
-                currency: 'UNKNOWN',
-                transactionType: 'UNKNOWN',
-                transactionCategory: TrueLayerTransactionCategory.UNKNOWN,
-
-                runningBalance: 3000,
-            });
+            expect(transactions[0]).toEqual(CAHOOT_TX_TXT[0]);
         });
         test('parse account', () => {
             const { account } = parsed;
@@ -98,6 +79,7 @@ describe('TransactionsFileHandler', () => {
             currency: 'UNKNOWN', // actually GBP, but can't know this without account data
             transactionType: 'UNKNOWN', // actually CREDIT, but can't know this without account data
             transactionCategory: TrueLayerTransactionCategory.UNKNOWN,
+            source: FileFormat.CSV,
 
             runningBalance: 0,
         };
@@ -139,6 +121,7 @@ describe('TransactionsFileHandler', () => {
             currency: 'UNKNOWN', // actually GBP, but can't know this without account data
             transactionType: 'UNKNOWN', // actually CREDIT, but can't know this without account data
             transactionCategory: TrueLayerTransactionCategory.UNKNOWN,
+            source: FileFormat.JSON,
 
             runningBalance: 0,
         };
@@ -186,6 +169,7 @@ describe('TransactionsFileHandler', () => {
                 currency: 'GBP',
                 transactionType: 'CREDIT',
                 transactionCategory: TrueLayerTransactionCategory.CREDIT,
+                source: FileFormat.CSV,
 
                 runningBalance: 0,
             });
@@ -216,6 +200,7 @@ describe('TransactionsFileHandler', () => {
                 currency: 'GBP',
                 transactionType: 'DEBIT',
                 transactionCategory: TrueLayerTransactionCategory.UNKNOWN,
+                source: FileFormat.CSV,
 
                 runningBalance: 80.98,
             });
@@ -230,6 +215,7 @@ describe('TransactionsFileHandler', () => {
                 currency: 'GBP',
                 transactionType: 'CREDIT',
                 transactionCategory: TrueLayerTransactionCategory.CREDIT,
+                source: FileFormat.CSV,
 
                 runningBalance: 1280.98,
             });
@@ -254,6 +240,7 @@ describe('TransactionsFileHandler', () => {
             currency: 'UNKNOWN',
             transactionType: 'DEBIT', // negative transaction from a card (inferred from "Account Number")
             transactionCategory: TrueLayerTransactionCategory.UNKNOWN,
+            source: FileFormat.CSV,
         };
 
         test('parse transactions (completeness)', () => {
@@ -303,6 +290,7 @@ describe('TransactionsFileHandler', () => {
             currency: 'UNKNOWN',
             transactionType: 'DEBIT',
             transactionCategory: TrueLayerTransactionCategory.DIRECT_DEBIT,
+            source: FileFormat.CSV,
 
             runningBalance: 1675.79,
         };

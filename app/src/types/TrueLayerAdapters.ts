@@ -166,3 +166,6 @@ function getBankNumber(account: TrueLayerAccount) {
     // AU and US not supported yet
     return undefined;
 }
+
+// TODO: transactions use custom ID
+// TODO: transactions still store TrueLayer's ID, for easy matching of live data

@@ -151,7 +151,8 @@ export function generatePatchFromAccount(account: BankAccount, live: BankAccount
 }
 
 export interface Transaction {
-    transactionID: string;
+    transactionID: string; // TODO: rename to id
+    // TODO: transactionFingerprint
     timestamp: string; // ISO timestamp
     description: string;
     amount: number;

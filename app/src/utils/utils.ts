@@ -63,8 +63,12 @@ export function isFutureDate(date?: string | null): boolean {
     return !date || isNaN(Date.parse(date)) || new Date(date) > new Date();
 }
 
-export function toYYYYMMDD(date: Date): string {
+export function toYYYYMMDDFromDate(date: Date): string {
     return date.toISOString().slice(0, 10);
+}
+
+export function toYYYYMMDDFromISO(iso: string): string {
+    return iso.slice(0, 10);
 }
 
 export function parseDateStringToISO(dateStr: string): string | undefined {

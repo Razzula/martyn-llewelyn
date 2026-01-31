@@ -5,7 +5,7 @@ import { appDataDir } from '@tauri-apps/api/path';
 import { defaultChannels, defaultExpenditures, defaultIncomes } from '../data/categories.js';
 import { Channel, Transaction, TransactionAnnotation, TransactionCategory } from '../types/Bagel.js';
 import { newOrderedDateTreeFromList, OrderedDateTree } from '../types/OrderedDateTree.js';
-import { toYYYYMMDD } from './utils.js';
+import { toYYYYMMDDFromDate } from './utils.js';
 import { TrueLayerTransactionCategory } from '../types/TrueLayer.js';
 
 import { getSQL, SCHEMA_VERSION } from '../sql/SQLRegistry.js';
@@ -234,7 +234,7 @@ export class DatabaseManager {
         // XXX: this is bit hacky, but since `to` will always be time 00:00:00, we use the next day as the bound
         const toUpperBound = new Date(to);
         toUpperBound.setDate(toUpperBound.getDate() + 1); // move to next day
-        const toUpper = toYYYYMMDD(toUpperBound);
+        const toUpper = toYYYYMMDDFromDate(toUpperBound);
 
         const rows: any[] = await this.db.select(
             `SELECT t.*, 

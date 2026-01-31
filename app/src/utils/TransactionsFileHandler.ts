@@ -6,6 +6,14 @@ import { asSortCode, getCurrencyFromSymbol, parseFinancialToNumeric } from './fi
 import { getCategoryfromMidataType, getTypefromMidataType } from '../types/MidataAdapter';
 import { TrueLayerTransactionCategory } from '../types/TrueLayer';
 import { findAccount } from './AccountManager';
+import { generateTransactionID } from './TransactionManager';
+
+export enum FileFormat {
+    CSV = 'csv',
+    TXT = 'txt',
+    JSON = 'json',
+    PDF = 'pdf',
+}
 
 const KNOWN_EXPORT_HEADERS: Record<string, Record<string, string>> = {
     'MIDATA': {
@@ -58,6 +66,13 @@ const KNOWN_EXPORT_HEADERS: Record<string, Record<string, string>> = {
         Balance: 'runningBalance'
     },
 }
+
+// TODO: make flow workable:
+// TODO: (1) pass in a file and either fail, or get data.
+// TODO: (2) find a matching account, if possible.
+// TODO: NOTE: if cannot match account automatically, must be done manually by user. ergo, separate functions.
+// TODO: (3) parse transactions according to selected account
+// TODO: NOTE: allow no account, for testing purposes (but not in actual app)
 
 /**
  * Automatically generated from `KNOWN_EXPORT_HEADERS`
@@ -118,7 +133,7 @@ class TransactionsFileHandler {
             });
             processedFile.account = this.accountFromObjects(data);
             const account = findAccount(processedFile.account, accounts);
-            processedFile.transactions = this.transactionsFromObjects(data, account);
+            processedFile.transactions = this.transactionsFromObjects(data, FileFormat.CSV, account);
         }
         catch (err) {
             console.error('Cannot parse CSV:', err);
@@ -144,7 +159,7 @@ class TransactionsFileHandler {
             if (Array.isArray(data)) {
                 processedFile.account = this.accountFromObjects(data);
                 const account = findAccount(processedFile.account, accounts);
-                processedFile.transactions = this.transactionsFromObjects(data, account);
+                processedFile.transactions = this.transactionsFromObjects(data, FileFormat.JSON, account);
             }
         }
         catch (err) {
@@ -186,7 +201,7 @@ class TransactionsFileHandler {
             }
             processedFile.account = this.accountFromObjects(data);
             const account = findAccount(processedFile.account, accounts);
-            processedFile.transactions = this.transactionsFromObjects(data, account);
+            processedFile.transactions = this.transactionsFromObjects(data, FileFormat.TXT, account);
         }
         catch (err) {
             console.error('Cannot parse plaintext:', err);
@@ -209,7 +224,8 @@ class TransactionsFileHandler {
         };
         console.error('parseFromPDF not yet implemented...');
         // processedFile.account = this.accountFromObjects(input);
-        // processedFile.transactions = this.transactionsFromObjects(input);
+        // const account = findAccount(processedFile.account, accounts);
+        // processedFile.transactions = this.transactionsFromObjects(input, FileFormat.PDF, account);
         return processedFile;
     }
 
@@ -313,6 +329,7 @@ class TransactionsFileHandler {
      */
     public static transactionsFromObjects(
         inputs: Record<string, string | number>[],
+        source: FileFormat,
         account?: Partial<BankAccount>,
     ): Transaction[] {
         // console.log(inputs);
@@ -324,7 +341,9 @@ class TransactionsFileHandler {
         const canRelyOnIsCreditAccount = account ?.type || account?.instrumentType;
 
         for (const input of inputs) {
-            const transaction: Partial<Transaction> = {};
+            const transaction: Partial<Transaction> = {
+                source: source,
+            };
             // handle special quirks
             // # MIDATA
             // ## Midata exports have extra row
@@ -336,8 +355,6 @@ class TransactionsFileHandler {
 
             // format data
             // # ESSENTIAL FIELDS
-            // ## transactionID
-            transaction.transactionID = 'TODO';
             // ## timestamp
             if (HEADERS?.timestamp) {
                 for (const header of HEADERS.timestamp) {
@@ -478,7 +495,7 @@ class TransactionsFileHandler {
             // # VALIDATION
             // TODO validate validity as a full Transaction
             if (!hasValue(transaction?.amount)) {
-                console.warn('Skipped ivalid Transaction');
+                console.warn('Skipped invalid Transaction');
                 // console.warn(input, transaction);
                 continue;
             }
@@ -528,11 +545,26 @@ class TransactionsFileHandler {
             if (isEmptyString(transaction?.transactionCategory)) {
                 transaction.transactionCategory = TrueLayerTransactionCategory.UNKNOWN;
             }
+
+            // # ESSENTIAL (but need to be last)
+            // ## transactionID
+            if (account) {
+                const id = generateTransactionID(transaction, account);
+                if (id) {
+                    transaction.transactionID = id;
+                }
+                else {
+                    // XXX
+                    console.error('Invalid ID!');
+                    transaction.transactionID = 'ERROR!';
+                }
+            }
+
             transactions.push(transaction as Transaction);
         }
 
-        // TODO handle case where seenCurrency first set after some values
 
+        // TODO handle case where seenCurrency first set after some values
         return transactions;
     }
 

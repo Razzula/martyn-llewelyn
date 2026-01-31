@@ -6,7 +6,7 @@ import { BankAccount, CardNetwork, getAccountLogoSrc, Transaction, User, WalletE
 import TransactionCard from "./TransactionCard";
 import { TrueLayerProvider } from "../types/TrueLayer";
 import { OrderedDateTreeStruct } from "../types/OrderedDateTree";
-import { getMonthName, getMostRecentSunday, getOrdinalSuffix, toYYYYMMDD } from "../utils/utils";
+import { getMonthName, getMostRecentSunday, getOrdinalSuffix, toYYYYMMDDFromDate } from "../utils/utils";
 import { AppSettings } from "../App";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./common/Tooltip";
 import { isTauri } from "../utils/tauri";
@@ -86,11 +86,11 @@ function TransactionsPanel({
 
     function loadMoreTransactions() {
         // TODO: split this into chunks?
-        const to = toYYYYMMDD(transactionsLoadedRange);
+        const to = toYYYYMMDDFromDate(transactionsLoadedRange);
         const from = getMostRecentSunday(transactionsLoadedRange, false);
         setLoadingTransactions(true);
 
-        updateAccountsTransactions(toYYYYMMDD(from), to)
+        updateAccountsTransactions(toYYYYMMDDFromDate(from), to)
             .then(() => {
                 setTransactionsLoadedRange(from);
             })

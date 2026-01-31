@@ -28,7 +28,7 @@ import {
     users as mockUsers,
     walletEntries as mockWalletEntries,
 } from './data/TrueLayerMock.ts';
-import { getMostRecentSunday, toYYYYMMDD } from './utils/utils.ts';
+import { getMostRecentSunday, toYYYYMMDDFromDate } from './utils/utils.ts';
 import { ResponseState } from './App.tsx';
 import { AccountManager } from './utils/AccountManager.ts';
 import requestGate from './utils/RequestGate.ts';
@@ -394,8 +394,8 @@ export class Engine extends Boulangerie {
 
                 // FETCH ACCOUNT TRANSACTIONS
                 if (account.transactions === undefined) {
-                    const from = toYYYYMMDD(this.transactionsLoadedRange.get());
-                    const to = toYYYYMMDD(new Date());
+                    const from = toYYYYMMDDFromDate(this.transactionsLoadedRange.get());
+                    const to = toYYYYMMDDFromDate(new Date());
                     this.updateAccountTransactions(walletToken, accountID, isCard, from, to);
                 }
 
