@@ -1,7 +1,86 @@
 import { TrueLayerProvider } from '../types/TrueLayer';
 
+export const trueLayercachedProviders: TrueLayerProvider[] = [
+    {
+        'provider_id': 'ob-first-direct',
+        'display_name': 'first direct',
+        'country': 'uk',
+        'logo_url': 'https://providers-assets.truelayer.com/ob-first-direct/logo.svg',
+        'scopes': [],
+        'availability': {
+            'recommended_status': 'healthy',
+            'updated_at': '2026-02-21T21:21:44.6647704Z'
+        }
+    },{
+        'provider_id': 'ob-nationwide',
+        'display_name': 'Nationwide',
+        'country': 'uk',
+        'logo_url': 'https://providers-assets.truelayer.com/ob-nationwide/logo.svg',
+        'scopes': [],
+        'availability': {
+            'recommended_status': 'healthy',
+            'updated_at': '2026-02-21T21:21:44.6647704Z'
+        }
+    },
+    {
+        'provider_id': 'ob-natwest',
+        'display_name': 'NatWest',
+        'country': 'uk',
+        'logo_url': 'https://providers-assets.truelayer.com/ob-natwest/logo.svg',
+        'scopes': [],
+        'availability': {
+            'recommended_status': 'healthy',
+            'updated_at': '2026-02-21T21:21:44.6647704Z'
+        }
+    },
+    {
+        'provider_id': 'ob-rbs',
+        'display_name': 'Royal Bank of Scotland',
+        'country': 'uk',
+        'logo_url': 'https://providers-assets.truelayer.com/ob-rbs/logo.svg',
+        'scopes': [],
+        'availability': {
+            'recommended_status': 'healthy',
+            'updated_at': '2026-02-21T21:21:44.6647704Z'
+        }
+    },
+    {
+        'provider_id': 'ob-santander',
+        'display_name': 'Santander',
+        'country': 'uk',
+        'logo_url': 'https://providers-assets.truelayer.com/ob-santander/logo.svg',
+        'scopes': [],
+        'availability': {
+            'recommended_status': 'healthy',
+            'updated_at': '2026-02-21T21:21:44.6647704Z'
+        }
+    },
+    {
+        'provider_id': 'ob-tsb',
+        'display_name': 'TSB',
+        'country': 'uk',
+        'logo_url': 'https://providers-assets.truelayer.com/ob-tsb/logo.svg',
+        'scopes': [],
+        'availability': {
+            'recommended_status': 'healthy',
+            'updated_at': '2026-02-21T21:21:44.6647704Z'
+        }
+    },
+];
+
 export const closedProviders: TrueLayerProvider[] = [
     // ACCOUNTS and/or CARDS
+    {
+        provider_id: 'bagel-coop',
+        display_name: 'The Co-operative Bank',
+        country: 'uk',
+        logo_url: './Finance/Banks/Co-op.svg',
+        scopes: [],
+        availability: {
+            recommended_status: '',
+            updated_at: ''
+        },
+    },
     {
         provider_id: 'bagel-kingdom-bank',
         display_name: 'Kingdom Bank',

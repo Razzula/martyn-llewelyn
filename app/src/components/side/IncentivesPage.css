@@ -1,0 +1,265 @@
+/* IncentivesPage.css */
+
+/* ---------- Layout ---------- */
+.incentivesLayout {
+  display: flex;
+  min-height: 70vh;
+  gap: 12px;
+}
+
+.incentivesSidebar {
+  width: 300px;
+  min-width: 260px;
+  max-width: 360px;
+  padding: 10px;
+  overflow: auto;
+}
+
+.incentivesMain {
+  flex: 1;
+  overflow: auto;
+  padding-left: 12px;
+}
+
+/* ---------- Sidebar ---------- */
+.sidebarTitle {
+  font-size: 16px;
+  font-weight: 800;
+  margin: 4px 0 10px;
+}
+
+.sidebarSectionTitle {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  opacity: 0.85;
+  margin: 14px 0 8px;
+}
+
+/* ---------- Offer list items ---------- */
+.offerList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.offerStub {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 10px;
+  align-items: center;
+
+  padding: 8px 10px;
+  border-radius: 10px;
+
+  font-size: 13px;
+  line-height: 1.2;
+
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  cursor: pointer;
+  user-select: none;
+  transition: background 120ms ease, border-color 120ms ease, transform 80ms ease;
+}
+
+.offerStub:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.offerStub:active {
+  transform: translateY(1px);
+}
+
+.offerStub.active {
+  background: rgba(138, 154, 91, 0.25);
+  border-color: rgba(138, 154, 91, 0.55);
+}
+
+.offerStubLogo {
+  width: 40px;
+  height: 28px;
+  object-fit: contain;
+  opacity: 0.95;
+}
+
+.offerStubText {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.offerStubTitle {
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.offerStubMeta {
+  font-size: 11px;
+  opacity: 0.75;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- Offer details (light cards) ---------- */
+.offerDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.offerCard,
+.offerDetailsHeader {
+  background: #f7f8fa;
+  border: 1px solid #e2e5ea;
+  border-radius: 14px;
+  padding: 16px 18px;
+}
+
+.offerDetailsHeader {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.offerDetailsLogo {
+  width: 96px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.offerDetailsHeaderText {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.offerDetailsTitle {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.15;
+  color: #1a1a1a;
+}
+
+.offerDetailsHeadline {
+  color: #555;
+  line-height: 1.25;
+}
+
+/* Cards */
+.offerCardTitle {
+  font-size: 14px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #666;
+  margin: 0 0 12px;
+}
+
+/* List inside cards */
+.offerListItem {
+  padding: 10px 0;
+  border-bottom: 1px solid #e3e6eb;
+}
+
+.offerListItem:last-child {
+  border-bottom: none;
+}
+
+.offerListItemTop {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: baseline;
+}
+
+.offerReqChip {
+  font-weight: 700;
+  color: #222;
+}
+
+.offerReqMeta,
+.offerReqNotes {
+  font-size: 13px;
+  color: #666;
+}
+
+.offerReqNotes {
+  margin-top: 6px;
+  line-height: 1.4;
+  max-width: 90ch;
+}
+
+/* Links */
+.offerLinks {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.offerLinks a {
+  text-decoration: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.25);
+  padding-bottom: 1px;
+}
+
+.offerLinks a:hover {
+  border-bottom-color: rgba(0, 0, 0, 0.55);
+}
+
+/* Details/summary (for dropdowns) */
+.offerDetailsDisclosure > summary {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  font-weight: 800;
+}
+
+.offerDetailsDisclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
+.offerDetailsDisclosure > summary::before {
+  content: "▸";
+  display: inline-block;
+  width: 18px;
+  opacity: 0.8;
+  transform: translateY(-1px);
+}
+
+.offerDetailsDisclosure[open] > summary::before {
+  content: "▾";
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 900px) {
+  .incentivesLayout {
+    flex-direction: column;
+  }
+
+  .incentivesSidebar {
+    width: auto;
+    max-width: none;
+  }
+
+  .incentivesMain {
+    padding-left: 0;
+  }
+
+  .offerDetailsHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .offerDetailsLogo {
+    width: 120px;
+    height: 44px;
+  }
+}

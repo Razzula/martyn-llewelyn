@@ -1,17 +1,31 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
+
+import AppGate from './AppGate.tsx';
+import IncentivesPage from './components/side/IncentivesPage.tsx';
+import { isMobile } from './utils/utils.ts';
 
 import './styles/index.css'
-import AppGate from './AppGate.tsx';
-import { isMobile } from './utils/utils.ts';
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
         <div className='appScroll'>
-            {isMobile() &&
-                <div className='androidBanner' />
-            }
-            <AppGate />
+            <BrowserRouter>
+                <Routes>
+                    <Route path='/*' element={
+                        <>
+                            {isMobile() &&
+                                <div className='androidBanner' />
+                            }
+                            <AppGate />
+                        </>
+                    } />
+                    <Route path='/martyn-llewelyn/incentives' element={
+                        <IncentivesPage />
+                    } />
+                </Routes>
+            </BrowserRouter>
         </div>
     </StrictMode>
 );

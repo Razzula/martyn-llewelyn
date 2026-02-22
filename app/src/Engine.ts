@@ -19,7 +19,7 @@ import {
 } from './lib/localStorage.ts';
 import { Boulangerie, createSignal } from './utils/Boulangerie.ts';
 
-import { closedProviders, providerPatches } from './data/providers';
+import { closedProviders, providerPatches, trueLayercachedProviders } from './data/providers';
 
 import { defaultChannels, defaultExpenditures, defaultIncomes } from './data/categories.tsx';
 import {
@@ -182,7 +182,7 @@ export class Engine extends Boulangerie {
             const providers = await TrueLayerClient.fetchProviders();
             const providersMap: Record<string, TrueLayerProvider> = {};
             // unify TrueLayer's and Bagel's Provider lists
-            [...providers, ...closedProviders]
+            [...trueLayercachedProviders, ...providers, ...closedProviders]
                 .filter(provider =>
                     (provider.provider_id !== 'mock' || !isTauri) // remove mock if not needed
                     && (provider.country === 'uk' || provider.country === 'ch') // XXX: restrict to UK for now
