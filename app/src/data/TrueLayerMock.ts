@@ -404,13 +404,13 @@ export const channelStats: Record<string, number> = {
 export const users: User[] = [
   {
     id: 'mock-user-1',
-    name: 'Mr. Penguin',
+    name: 'Person 1',
     icon: './Serenity/bagel.png',
     email: 'martyn-llewelyn@razzula.github.io',
   },
   {
     id: 'mock-user-2',
-    name: 'Mrs. Giraffe',
+    name: 'Person 2',
     icon: './Serenity/nim.png',
     email: 'martyn-llewelyn@razzula.github.io',
   },

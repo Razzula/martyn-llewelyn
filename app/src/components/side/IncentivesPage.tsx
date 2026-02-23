@@ -1,117 +1,149 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+
 import { incentives } from '../../data/incentives';
 import { trueLayercachedProviders, closedProviders } from '../../data/providers';
+import { User } from 'src/types/Bagel';
 
 import '../../styles/App.css';
 import './IncentivesPage.css';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../common/Tooltip';
+import { ToggleSwitch } from '../common/ToggleSwitch';
 
-function IncentivesPage() {
+type SelectedTodos = Record<string, Record<string, string[]>>;
+
+type IncentivesPageProps = {
+    users: User[];
+};
+
+function IncentivesPage({ users, }: IncentivesPageProps) {
     const offers = incentives.data ?? [];
 
-    const startedOfferIDs = useMemo(() => new Set<string>([
-        // Put some real offer IDs here to test.
-        // 'rbs-150-2026', 'nationwide-175-2025'
-    ]), []);
+    const selectedTodosStorageKey = 'bagel:selectedTodos:v1';
 
-    const startedOffers = useMemo(
-        () => offers.filter((o: any) => startedOfferIDs.has(o.id)),
-        [offers, startedOfferIDs]
-    );
-
+    const [selectedTodos, setSelectedTodos] = useState<SelectedTodos>(() => loadSelectedTodos());
     const [selectedOfferID, setSelectedOfferID] = useState<string | null>(null);
+    const [showExpired, setShowExpired] = useState(false);
+
+    useEffect(() => {
+        try {
+            localStorage.setItem(selectedTodosStorageKey, JSON.stringify(selectedTodos));
+        } catch {
+            // ignore quota / privacy mode failures
+        }
+    }, [selectedTodos]);
 
     const selectedOffer = useMemo(
         () => offers.find((o: any) => o.id === selectedOfferID) ?? null,
         [offers, selectedOfferID]
     );
 
-    const allTodos: TodoItem[] = useMemo(() => {
-        const out: TodoItem[] = [];
+    const people = useMemo(() => {
+        return [
+            ...users,
+            { id: 'joint', name: 'Joint Account', email: 'null', icon: './Serenity/Heart.png' },
+        ]
+    }, [users]);
 
-        for (const offer of startedOffers as any[]) {
-            const offerTitle = offer.title ?? offer.id;
+    type ReqEntry = { reqId: string; req: any };
+    type OfferReqIndex = Map<string, { offer: any; reqs: ReqEntry[] }>;
 
-            // Offer-level requirements → TODOs (no dates)
-            if (Array.isArray(offer.requirements)) {
-                offer.requirements.forEach((r: any, i: number) => {
-                    const bits: string[] = [];
-                    if (r.type) bits.push(String(r.type));
-                    if (typeof r.amount === 'number') bits.push(formatMoney(r.amount));
-                    if (typeof r.count === 'number') bits.push(`count ${r.count}`);
-                    if (typeof r.countAtLeast === 'number') bits.push(`≥ ${r.countAtLeast}`);
-                    if (r.windowDays) bits.push(`within ${r.windowDays} days`);
-                    if (r.mustRequestBy) bits.push(`request by ${r.mustRequestBy}`);
-                    if (r.note) bits.push(String(r.note));
+    const offerReqIndex = useMemo<OfferReqIndex>(() => {
+        const idx = new Map<string, { offer: any; reqs: ReqEntry[] }>();
 
-                    out.push({
-                        id: `${offer.id}:req:${i}`,
-                        offerId: offer.id,
-                        offerTitle,
-                        label: bits.length ? bits.join(' • ') : 'Requirement',
-                        date: r.mustRequestBy, // best-effort: treat mustRequestBy as a date if ISO-like
-                    });
-                });
-            }
+        for (const o of offers as any[]) {
+            const offerId = String(o.id);
 
-            // Components → deadlines + requirements
-            if (Array.isArray(offer.components)) {
-                offer.components.forEach((c: any) => {
-                    if (Array.isArray(c.deadlines)) {
-                        c.deadlines.forEach((d: any, i: number) => {
-                            out.push({
-                                id: `${offer.id}:c:${c.id}:dl:${i}`,
-                                offerId: offer.id,
-                                offerTitle,
-                                label: `${c.title ?? 'Component'} • ${d.type ?? 'deadline'}${d.label ? ` — ${d.label}` : ''}`,
-                                date: d.date,
-                            });
-                        });
-                    }
+            const allReqs = [
+                ...(o.requirements ?? []),
+                ...(o.components ?? []).flatMap((c: any) => c.requirements ?? []),
+            ];
 
-                    if (Array.isArray(c.requirements)) {
-                        c.requirements.forEach((r: any, i: number) => {
-                            const bits: string[] = [];
-                            if (c.title) bits.push(String(c.title));
-                            if (r.type) bits.push(String(r.type));
-                            if (typeof r.amount === 'number') bits.push(formatMoney(r.amount));
-                            if (typeof r.count === 'number') bits.push(`count ${r.count}`);
-                            if (r.note) bits.push(String(r.note));
+            const reqs: ReqEntry[] = allReqs.map((r: any, i: number) => ({
+                reqId: reqIdFor(r, i), // same function used in OfferDetails
+                req: r,
+            }));
 
-                            out.push({
-                                id: `${offer.id}:c:${c.id}:req:${i}`,
-                                offerId: offer.id,
-                                offerTitle,
-                                label: bits.join(' • '),
-                            });
-                        });
-                    }
-                });
-            }
+            idx.set(offerId, { offer: o, reqs });
         }
 
-        // Timeline ordering: dated first by date, then undated at the end (Infinity).
-        out.sort((a, b) => parseDateMs(a.date) - parseDateMs(b.date));
-        return out;
-    }, [startedOffers]);
+        return idx;
+    }, [offers]);
 
-    // const selectedTodos = useMemo(() => {
-    //     if (!selectedOfferID) return allTodos;
-    //     return allTodos.filter(t => t.offerId === selectedOfferID);
-    // }, [allTodos, selectedOfferID]);
+    function loadSelectedTodos(): SelectedTodos {
+        try {
+            const raw = localStorage.getItem(selectedTodosStorageKey);
+            if (!raw) return {};
+            const parsed = JSON.parse(raw);
+            return (parsed && typeof parsed === 'object') ? (parsed as SelectedTodos) : {};
+        } catch {
+            return {};
+        }
+    }
+
+    function toggleTodo(offerId: string, reqId: string, userId: string) {
+        setSelectedTodos(prev => {
+            const next: SelectedTodos = { ...prev };
+            const offerMap = { ...(next[offerId] ?? {}) };
+            const prevArr = offerMap[reqId] ?? [];
+
+            const has = prevArr.includes(userId);
+            const nextArr = has ? prevArr.filter(x => x !== userId) : [...prevArr, userId];
+
+            if (nextArr.length === 0) {
+                delete offerMap[reqId];
+            } else {
+                offerMap[reqId] = nextArr;
+            }
+
+            if (Object.keys(offerMap).length === 0) {
+                delete next[offerId];
+            } else {
+                next[offerId] = offerMap;
+            }
+
+            return next;
+        });
+    }
 
     function renderMonolithTodos() {
+        const activeOfferIds = Object.keys(selectedTodos); // offers with any partial completion
+
         return (
             <div className="column" style={{ gap: 12 }}>
                 <div style={{ fontSize: 18, fontWeight: 700 }}>Your Offers</div>
-                {allTodos.length ? (
-                    <div className="banner" style={{ padding: 12 }}>
-                        <ul style={{ margin: 0, paddingLeft: 18 }}>
-                            {allTodos.map(t => (
-                                <li key={t.id}>
-                                    {t.date ? <code>{t.date}</code> : <code>—</code>} • <strong>{t.offerTitle}</strong> • {t.label}
-                                </li>
-                            ))}
-                        </ul>
+
+                {activeOfferIds.length ? (
+                    <div className="column" style={{ gap: 12 }}>
+                        {activeOfferIds.map((offerId) => {
+                            const hit = offerReqIndex.get(offerId);
+                            if (!hit) return null;
+
+                            const { offer, reqs } = hit;
+
+                            return (
+                                <section className="offerCard" key={offerId}>
+                                    <div className="offerCardTitle">{offer.title}</div>
+                                    <ul className="offerList">
+                                        {reqs.map(({ reqId, req }) => {
+                                            const selectedUserIds = selectedTodos[offerId]?.[reqId] ?? [];
+
+                                            return (
+                                                <RequirementRow
+                                                    key={`${offerId}:${reqId}`}
+                                                    offerId={offerId}
+                                                    offerTitle={offer.title}
+                                                    reqId={reqId}
+                                                    req={req}
+                                                    users={people}
+                                                    selectedUserIds={selectedUserIds}
+                                                    onToggleUser={(userId) => toggleTodo(offerId, reqId, userId)}
+                                                />
+                                            );
+                                        })}
+                                    </ul>
+                                </section>
+                            );
+                        })}
                     </div>
                 ) : (
                     <div className="banner" style={{ padding: 12, opacity: 0.8 }}>
@@ -138,9 +170,9 @@ function IncentivesPage() {
                     <div className="offerStubTitleRow">
                         <div className="offerStubTitle">{offer.title}</div>
                         <div className="offerStubMeta">
-                            {offer.availability?.start ? offer.availability.start : ''}
-                            {offer.availability?.start && offer.availability.end ? ' - ' : ''}
-                            {offer.availability?.end ? offer.availability.end : ''}
+                            {offer.availability?.start ? formatDate(offer.availability.start) : ''}
+                            {' — '}
+                            {offer.availability?.end ? formatDate(offer.availability.end) : ''}
                         </div>
                     </div>
                 </div>
@@ -152,7 +184,10 @@ function IncentivesPage() {
         <div>
             <div className="incentivesLayout">
                 <aside className="banner incentivesSidebar">
-                    <div className="sidebarTitle">All Offers</div>
+                    <div className='row'>
+                        {/* <ToggleSwitch isOn={!showExpired} handleToggle={() => setShowExpired(prev => !prev)} /> */}
+                        <div className="sidebarTitle">All { !showExpired && 'Available' } Offers</div>
+                    </div>
 
                     <div className="sidebarSectionTitle">CASS incentives</div>
                     <div className="offerList">
@@ -176,7 +211,18 @@ function IncentivesPage() {
                 </aside>
 
                 <main className="incentivesMain">
-                    {selectedOffer ? <OfferDetails offer={selectedOffer} /> : renderMonolithTodos()}
+                    {
+                        selectedOffer ? (
+                            <OfferDetails
+                                offer={selectedOffer}
+                                users={people}
+                                selectedTodos={selectedTodos}
+                                toggleTodo={toggleTodo}
+                            />
+                        ) : (
+                            renderMonolithTodos()
+                        )
+                    }
                 </main>
             </div>
 
@@ -192,7 +238,21 @@ function IncentivesPage() {
     );
 }
 
-function OfferDetails({ offer }: { offer: any }) {
+function reqIdFor(r: any, i: number) {
+    return String(r.id ?? `${r.type ?? 'req'}:${i}`);
+}
+
+function OfferDetails({
+    offer,
+    users,
+    selectedTodos,
+    toggleTodo,
+}: {
+    offer: any;
+    users: User[];
+    selectedTodos: Record<string, Record<string, string[]>>;
+    toggleTodo: (offerId: string, reqId: string, userId: string) => void;
+}) {
     const provider = getProvider(offer.bankID);
     const dates = collectDates(offer);
 
@@ -200,6 +260,8 @@ function OfferDetails({ offer }: { offer: any }) {
         ...(offer.requirements ?? []),
         ...(offer.components ?? []).flatMap((c: any) => c.requirements ?? []),
     ];
+
+    const offerId = String(offer.id);
 
     return (
         <div className="offerDetails">
@@ -220,24 +282,33 @@ function OfferDetails({ offer }: { offer: any }) {
             </header>
 
             {/* Criteria */}
-            {allReqs.length ? (
-                <section className="offerCard">
-                    <div className="offerCardTitle">Criteria</div>
-                    <ul className="offerList">
-                        {allReqs.map((r: any, i: number) => (
-                            <li className="offerListItem" key={`${r.type ?? 'req'}:${i}`}>
-                                <div className="offerListItemTop">
-                                    <strong className="offerReqChip">{reqChip(r)}</strong>
-                                    {reqMeta(r).length ? (
-                                        <span className="offerReqMeta"> — {reqMeta(r).join(' • ')}</span>
-                                    ) : null}
-                                </div>
-                                {r ? <div className="offerReqNotes">{r.note}</div> : null}
-                            </li>
-                        ))}
-                    </ul>
-                </section>
-            ) : null}
+            {
+                allReqs.length ? (
+                    <section className="offerCard">
+                        <div className="offerCardTitle">Criteria</div>
+                        <ul className="offerList">
+                            {allReqs.map((r: any, i: number) => {
+                                const offerId = String(offer.id);
+                                const reqId = reqIdFor(r, i);
+                                const selectedUserIds = selectedTodos[offerId]?.[reqId] ?? [];
+
+                                return (
+                                    <RequirementRow
+                                        key={`${offerId}:${reqId}`}
+                                        offerId={offerId}
+                                        offerTitle={offer.title}
+                                        reqId={reqId}
+                                        req={r}
+                                        users={users}
+                                        selectedUserIds={selectedUserIds}
+                                        onToggleUser={(userId) => toggleTodo(offerId, reqId, userId)}
+                                    />
+                                );
+                            })}
+                        </ul>
+                    </section>
+                ) : null
+            }
 
             {/* Eligibility */}
             {offer.eligibility?.length ? (
@@ -323,6 +394,63 @@ function OfferDetails({ offer }: { offer: any }) {
     );
 }
 
+function RequirementRow({
+    offerId,
+    offerTitle,
+    reqId,
+    req,
+    users,
+    selectedUserIds,
+    onToggleUser,
+}: {
+    offerId: string;
+    offerTitle: string;
+    reqId: string;
+    req: any;
+    users: User[];
+    selectedUserIds: string[];
+    onToggleUser: (userId: string) => void;
+}) {
+    return (
+        <li className="offerListItem" key={`${offerId}:${reqId}`}>
+            <div className="offerListItemTop">
+                {users.map(u =>
+                    renderUserChip(
+                        u,
+                        selectedUserIds.includes(u.id),
+                        () => onToggleUser(u.id)
+                    )
+                )}
+
+                <strong className="offerReqChip">{reqChip(req)}</strong>
+
+                {reqMeta(req).length ? (
+                    <span className="offerReqMeta"> — {reqMeta(req).join(' • ')}</span>
+                ) : null}
+            </div>
+
+            {req?.note ? <div className="offerReqNotes">{req.note}</div> : null}
+        </li>
+    );
+}
+
+function renderUserChip(user: User, selected: boolean, onClick?: () => void) {
+    return (
+        <Tooltip>
+            <TooltipTrigger>
+                <img
+                    className={`offerReqUser ${selected ? '' : 'unselected'}`}
+                    src={user.icon}
+                    alt={user.name}
+                    title={user.name}
+                    onClick={onClick}
+                />
+            </TooltipTrigger>
+            <TooltipContent>{user.name}</TooltipContent>
+        </Tooltip>
+    );
+}
+
 function formatMoney(n: number) {
     return n.toLocaleString('en-GB', { style: 'currency', currency: 'GBP', maximumFractionDigits: 0 });
 }
@@ -352,10 +480,19 @@ function parseDateMs(date?: string) {
 
 function formatDate(d?: string) {
     if (!d) return null;
-    // Assume YYYY-MM-DD input; display UK-friendly.
+
     const ms = Date.parse(d);
     if (!Number.isFinite(ms)) return d;
-    return new Date(ms).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' });
+
+    const date = new Date(ms);
+
+    const formatted = date.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+    });
+
+    return formatted.toUpperCase(); // 01 FEB 2026
 }
 
 function headlineText(headline: any) {

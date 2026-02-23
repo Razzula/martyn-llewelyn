@@ -64,28 +64,16 @@ type Offer = {
     noteLong?: string;
 };
 
-export const incentives: {
-    meta: {
-        schemaVersion: number;
-        currency: string;
-        timezone: string;
-    };
-    data: Offer[];
-} = {
-    meta: {
-        schemaVersion: 1,
-        currency: 'GBP',
-        timezone: 'Europe/London',
-    },
+export const incentives: { data: Offer[] } = {
     data: [
         {
-            id: 'firstDirect_cass_sep2025',
+            id: 'firstDirect_cass_sep2025_amazon',
             bankID: 'ob-first-direct',
             scheme: 'CASS',
             title: '£225 Switch',
             headline: { credit: 175, amazon: 50 },
             value: 225,
-            availability: { start: '2025-09-09', },
+            availability: { start: '2025-09-09', end: '2026-02-15', },
             links: [{ label: 'See offer', url: 'https://www.firstdirect.com/banking/switching-bank-accounts/' }],
             eligibility: [
                 "Not eligible if you're already a first direct customer, have previously held a first direct product, or opened an HSBC current account on or after 1 January 2018.",
@@ -107,6 +95,80 @@ export const incentives: {
                         },
                     ],
                 },
+                {
+                    id: 'firstDirect_cass_sep2025_credit',
+                    title: '£175 Switch Incentive',
+                    requirements: [
+                        {
+                            type: 'openAccount',
+                            accountTypes: ['1st Account'],
+                            note: 'Open a 1st Account on or after 9 September until the offer is withdrawn.',
+                        },
+                        {
+                            type: 'switch',
+                            scheme: 'CASS',
+                            mustBeFull: true,
+                            windowDaysFrom: 'accountOpenedAt',
+                            windowDays: 45,
+                            note: 'Switch using CASS within 45 days. For joint 1st Accounts, at least one joint holder must switch from a sole account in their own name or another joint account in the same names.',
+                        },
+                        {
+                            type: 'standingOrdersOrDirectDebits',
+                            countAtLeast: 2,
+                            windowDaysFrom: 'accountOpenedAt',
+                            windowDays: 45,
+                            mustBeActive: null as unknown as boolean,
+                            note: 'Switch must include at least two Direct Debits or standing orders.',
+                        },
+                        {
+                            type: 'payIn',
+                            amount: 1000,
+                            windowDaysFrom: 'accountOpenedAt',
+                            windowDays: 45,
+                            note: 'Minimum £1,000 (can be paid in all at once or in multiple amounts within the 45 days).',
+                        },
+                        {
+                            type: 'debitCardTx',
+                            countAtLeast: 5,
+                            windowDaysFrom: 'accountOpenedAt',
+                            windowDays: 45,
+                            note: 'At least 5 debit card payments. Excludes gambling, credit card or insurance payments, cash withdrawals, and card-to-card payments.',
+                        },
+                        {
+                            type: 'login',
+                            channel: 'appOrOnlineBanking',
+                            windowDaysFrom: 'accountOpenedAt',
+                            windowDays: 45,
+                            note: 'Register and log into the app or Online Banking.',
+                        },
+                    ],
+                    payment: [
+                        {
+                            type: 'credit',
+                            amount: 175,
+                            payout: {
+                                windowDaysFrom: 'criteriaMetAt',
+                                date: '20th',
+                                label: 'by 20th of following month',
+                            },
+                            note: 'Paid only if you meet all criteria and still have the new 1st Account on the payment date. For joint accounts, only one £175 payment is made into the joint account.',
+                        },
+                    ],
+                },
+            ],
+        }, {
+            id: 'firstDirect_cass_sep2025',
+            bankID: 'ob-first-direct',
+            scheme: 'CASS',
+            title: '£175 Switch',
+            headline: { credit: 175 },
+            value: 175,
+            availability: { start: '2025-09-09', },
+            links: [{ label: 'See offer', url: 'https://www.firstdirect.com/banking/switching-bank-accounts/' }],
+            eligibility: [
+                "Not eligible if you're already a first direct customer, have previously held a first direct product, or opened an HSBC current account on or after 1 January 2018.",
+            ],
+            components: [
                 {
                     id: 'firstDirect_cass_sep2025_credit',
                     title: '£175 Switch Incentive',

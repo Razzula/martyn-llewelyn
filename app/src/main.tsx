@@ -7,6 +7,7 @@ import IncentivesPage from './components/side/IncentivesPage.tsx';
 import { isMobile } from './utils/utils.ts';
 
 import './styles/index.css'
+import { users } from './data/TrueLayerMock.ts';
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
@@ -22,7 +23,9 @@ createRoot(document.getElementById('root')!).render(
                         </>
                     } />
                     <Route path='/martyn-llewelyn/incentives' element={
-                        <IncentivesPage />
+                        <IncentivesPage
+                            users={users}
+                        />
                     } />
                 </Routes>
             </BrowserRouter>

@@ -120,6 +120,7 @@
   border: 1px solid #e2e5ea;
   border-radius: 14px;
   padding: 16px 18px;
+  width: 100%;
 }
 
 .offerDetailsHeader {
@@ -185,6 +186,17 @@
   color: #222;
 }
 
+.unselected {
+  opacity: 0.4;
+}
+
+.offerReqUser {
+  width: 22px;
+  height: 22px;
+  object-fit: cover;
+  cursor: pointer;
+}
+
 .offerReqMeta,
 .offerReqNotes {
   font-size: 13px;
@@ -215,18 +227,18 @@
 }
 
 /* Details/summary (for dropdowns) */
-.offerDetailsDisclosure > summary {
+.offerDetailsDisclosure>summary {
   list-style: none;
   cursor: pointer;
   user-select: none;
   font-weight: 800;
 }
 
-.offerDetailsDisclosure > summary::-webkit-details-marker {
+.offerDetailsDisclosure>summary::-webkit-details-marker {
   display: none;
 }
 
-.offerDetailsDisclosure > summary::before {
+.offerDetailsDisclosure>summary::before {
   content: "▸";
   display: inline-block;
   width: 18px;
@@ -234,7 +246,7 @@
   transform: translateY(-1px);
 }
 
-.offerDetailsDisclosure[open] > summary::before {
+.offerDetailsDisclosure[open]>summary::before {
   content: "▾";
 }
 
