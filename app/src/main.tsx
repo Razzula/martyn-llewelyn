@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { HashRouter, Route, Routes } from 'react-router-dom';
 
 import AppGate from './AppGate.tsx';
 import IncentivesPage from './components/side/IncentivesPage.tsx';
@@ -12,7 +12,7 @@ import { users } from './data/TrueLayerMock.ts';
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
         <div className='appScroll'>
-            <BrowserRouter>
+            <HashRouter>
                 <Routes>
                     <Route path='/*' element={
                         <>
@@ -22,13 +22,13 @@ createRoot(document.getElementById('root')!).render(
                             <AppGate />
                         </>
                     } />
-                    <Route path='/martyn-llewelyn/incentives' element={
+                    <Route path='/incentives' element={
                         <IncentivesPage
                             users={users}
                         />
                     } />
                 </Routes>
-            </BrowserRouter>
+            </HashRouter>
         </div>
     </StrictMode>
 );
