@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import { incentives } from '../../data/incentives';
+import { incentives, Offer } from '../../data/incentives';
 import { trueLayercachedProviders, closedProviders } from '../../data/providers';
 import { User } from 'src/types/Bagel';
 
@@ -8,8 +8,12 @@ import '../../styles/App.css';
 import './IncentivesPage.css';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../common/Tooltip';
 import { ToggleSwitch } from '../common/ToggleSwitch';
+import { RadioButtons } from '../common/RadioButtons';
 
-type SelectedTodos = Record<string, Record<string, string[]>>;
+import EventRepeat from '../../assets/icons/EventRepeat.svg?react';
+import MoneyBag from '../../assets/icons/MoneyBag.svg?react';
+
+type SelectedTodos = Record<string, Record<string, { marks: string[], data?: Record<string, any> }>>;
 
 type IncentivesPageProps = {
     users: User[];
@@ -22,7 +26,8 @@ function IncentivesPage({ users, }: IncentivesPageProps) {
 
     const [selectedTodos, setSelectedTodos] = useState<SelectedTodos>(() => loadSelectedTodos());
     const [selectedOfferID, setSelectedOfferID] = useState<string | null>(null);
-    const [showExpired, setShowExpired] = useState(false);
+    const [showAllOffers, setShowExpired] = useState(false);
+    const [sortBy, setSortBy] = useState<'value' | 'date'>('value');
 
     useEffect(() => {
         try {
@@ -44,30 +49,26 @@ function IncentivesPage({ users, }: IncentivesPageProps) {
         ]
     }, [users]);
 
-    type ReqEntry = { reqId: string; req: any };
-    type OfferReqIndex = Map<string, { offer: any; reqs: ReqEntry[] }>;
+    const allReqGroups = offers.map(offer => {
+        const groups: ReqGroup[] = [
+            {
+                groupId: '',
+                title: offer.title,
+                reqs: offer.requirements ?? [],
+            },
+            ...(offer.components ?? []).map((c: any, idx: number) => ({
+                groupId: `${c.id ?? idx}`,
+                title: c.title ?? c.name ?? `Component ${idx + 1}`,
+                reqs: c.requirements ?? [],
+            })),
+        ].filter(g => g.reqs.length > 0);
 
-    const offerReqIndex = useMemo<OfferReqIndex>(() => {
-        const idx = new Map<string, { offer: any; reqs: ReqEntry[] }>();
-
-        for (const o of offers as any[]) {
-            const offerId = String(o.id);
-
-            const allReqs = [
-                ...(o.requirements ?? []),
-                ...(o.components ?? []).flatMap((c: any) => c.requirements ?? []),
-            ];
-
-            const reqs: ReqEntry[] = allReqs.map((r: any, i: number) => ({
-                reqId: reqIdFor(r, i), // same function used in OfferDetails
-                req: r,
-            }));
-
-            idx.set(offerId, { offer: o, reqs });
-        }
-
-        return idx;
-    }, [offers]);
+        return {
+            offerId: offer.id,
+            offerTitle: offer.title,
+            groups,
+        };
+    });
 
     function loadSelectedTodos(): SelectedTodos {
         try {
@@ -84,20 +85,23 @@ function IncentivesPage({ users, }: IncentivesPageProps) {
         setSelectedTodos(prev => {
             const next: SelectedTodos = { ...prev };
             const offerMap = { ...(next[offerId] ?? {}) };
-            const prevArr = offerMap[reqId] ?? [];
+            const prevEntry = offerMap[reqId] ?? { marks: [] as string[] };
+            const prevMarks = prevEntry.marks ?? [];
 
-            const has = prevArr.includes(userId);
-            const nextArr = has ? prevArr.filter(x => x !== userId) : [...prevArr, userId];
+            const has = prevMarks.includes(userId);
+            const nextMarks = has ? prevMarks.filter(x => x !== userId) : [...prevMarks, userId];
 
-            if (nextArr.length === 0) {
+            if (nextMarks.length === 0) {
                 delete offerMap[reqId];
-            } else {
-                offerMap[reqId] = nextArr;
+            }
+            else {
+                offerMap[reqId] = { ...prevEntry, marks: nextMarks };
             }
 
             if (Object.keys(offerMap).length === 0) {
                 delete next[offerId];
-            } else {
+            }
+            else {
                 next[offerId] = offerMap;
             }
 
@@ -105,49 +109,69 @@ function IncentivesPage({ users, }: IncentivesPageProps) {
         });
     }
 
+    const offerGroupsIndex = new Map(
+        allReqGroups.map(x => [x.offerId, x]) // { offerId, offerTitle, groups }
+    );
+    const offersById = new Map(offers.map(o => [o.id, o]));
+
     function renderMonolithTodos() {
-        const activeOfferIds = Object.keys(selectedTodos); // offers with any partial completion
+        const activeOfferIds = Object.keys(selectedTodos);
 
         return (
             <div className="column" style={{ gap: 12 }}>
-                <div style={{ fontSize: 18, fontWeight: 700 }}>Your Offers</div>
+                <div style={{ fontSize: 18, fontWeight: 700 }}>Your Progress</div>
 
                 {activeOfferIds.length ? (
                     <div className="column" style={{ gap: 12 }}>
                         {activeOfferIds.map((offerId) => {
-                            const hit = offerReqIndex.get(offerId);
-                            if (!hit) return null;
+                            const grouped = offerGroupsIndex.get(offerId);
+                            if (!grouped) return null;
 
-                            const { offer, reqs } = hit;
+                            const offer = offersById.get(offerId);
+                            if (!offer) return null;
 
                             return (
                                 <section className="offerCard" key={offerId}>
-                                    <div className="offerCardTitle">{offer.title}</div>
-                                    <ul className="offerList">
-                                        {reqs.map(({ reqId, req }) => {
-                                            const selectedUserIds = selectedTodos[offerId]?.[reqId] ?? [];
+                                    <div className="offerCardTitle">
+                                        <img
+                                            className="offerStubLogo"
+                                            src={getProvider(offer.bankID)?.logo_url}
+                                            alt={offer.bankID}
+                                        />
+                                        <span style={{ marginLeft: 10 }}>{offer.title}</span>
+                                    </div>
 
-                                            return (
-                                                <RequirementRow
-                                                    key={`${offerId}:${reqId}`}
-                                                    offerId={offerId}
-                                                    offerTitle={offer.title}
-                                                    reqId={reqId}
-                                                    req={req}
-                                                    users={people}
-                                                    selectedUserIds={selectedUserIds}
-                                                    onToggleUser={(userId) => toggleTodo(offerId, reqId, userId)}
-                                                />
-                                            );
-                                        })}
-                                    </ul>
+                                    {grouped.groups.map((g) => (
+                                        <div key={`${offerId}:${g.groupId}`} className="offerReqGroup">
+                                            <div className="offerReqGroupTitle">{g.title}</div>
+
+                                            <ul className="offerList">
+                                                {g.reqs.map((r: any, i: number) => {
+                                                    const reqId = `${g.groupId}:${reqIdFor(r, i)}`;
+                                                    const selectedUserIds = selectedTodos[offerId]?.[reqId]?.marks ?? [];
+
+                                                    return (
+                                                        <RequirementRow
+                                                            key={`${offerId}:${reqId}`}
+                                                            offer={offer}
+                                                            reqId={reqId}
+                                                            req={r}
+                                                            users={people}
+                                                            selectedUserIds={selectedUserIds}
+                                                            onToggleUser={(userId) => toggleTodo(offerId, reqId, userId)}
+                                                        />
+                                                    );
+                                                })}
+                                            </ul>
+                                        </div>
+                                    ))}
                                 </section>
                             );
                         })}
                     </div>
                 ) : (
                     <div className="banner" style={{ padding: 12, opacity: 0.8 }}>
-                        <p>Select an offer from the left to see its details.</p>
+                        <p>Select an offer to see its details.</p>
                         <p>Once you've started working towards offers, their TODOs will appear here.</p>
                     </div>
                 )}
@@ -157,9 +181,10 @@ function IncentivesPage({ users, }: IncentivesPageProps) {
 
     function renderListItem(offer: any) {
         const p = getProvider(offer.bankID);
+        const isAvailable = isOfferAvailable(offer);
         return (
             <div
-                className={`offerStub ${selectedOfferID === offer.id ? 'active' : ''}`}
+                className={`offerStub ${selectedOfferID === offer.id ? 'active' : ''} ${!isAvailable ? 'expired' : ''}`}
                 key={offer.id}
                 onClick={() => setSelectedOfferID(prev => (prev === offer.id ? null : offer.id))}
                 role="button"
@@ -180,21 +205,66 @@ function IncentivesPage({ users, }: IncentivesPageProps) {
         );
     }
 
+    function isOfferAvailable(offer: Offer) {
+        const activeOfferIds = Object.keys(selectedTodos);
+        const isOfferStarted = activeOfferIds.includes(offer.id);
+        const isOfferExpired = offer.availability?.end ? Date.now() > parseDateMs(offer.availability.end) : false;
+
+        return isOfferStarted || !isOfferExpired;
+    }
+
     return (
         <div>
             <div className="incentivesLayout">
                 <aside className="banner incentivesSidebar">
-                    <div className='row'>
-                        {/* <ToggleSwitch isOn={!showExpired} handleToggle={() => setShowExpired(prev => !prev)} /> */}
-                        <div className="sidebarTitle">All { !showExpired && 'Available' } Offers</div>
+                    <div className="sidebarHeaderRow">
+                        <div>
+                            <Tooltip placement='right'>
+                                <TooltipTrigger>
+                                    <ToggleSwitch
+                                        isOn={showAllOffers}
+                                        handleToggle={() => setShowExpired(prev => !prev)}
+                                    />
+                                </TooltipTrigger>
+                                <TooltipContent>{showAllOffers ? 'Show only available offers' : 'Show all offers'}</TooltipContent>
+                            </Tooltip>
+                        </div>
+                        <div className="sidebarTitle">
+                            All {!showAllOffers && 'Available'} Offers
+                        </div>
+                        <div>
+                            <RadioButtons
+                                options={[
+                                    { key: 'value', desc: 'Sort by value', icon: <MoneyBag /> },
+                                    { key: 'date', desc: 'Sort by Expiration Date', icon: <EventRepeat /> },
+                                ]}
+                                selected={sortBy}
+                                setSelected={(key: string) => setSortBy(key as 'value' | 'date')}
+                                tooltipPlacement='bottom'
+                                iconOnColour='green'
+                                iconOffColour='#e3e3e3'
+                            />
+                        </div>
                     </div>
 
                     <div className="sidebarSectionTitle">CASS incentives</div>
                     <div className="offerList">
                         {
                             offers
-                                .filter((o: any) => o.scheme === 'CASS')
-                                .sort((a: any, b: any) => a.value === b.value ? 0 : (a.value > b.value ? -1 : 1)) // sort by value desc
+                                .filter((o: Offer) => (showAllOffers || isOfferAvailable(o)) && o.scheme === 'CASS')
+                                .sort((a: Offer, b: Offer) => {
+                                    if (sortBy === 'value') {
+                                        return a.value === b.value ? 0 : (a.value > b.value ? -1 : 1);
+                                    }
+                                    else if (sortBy === 'date') {
+                                        const aDate = a.availability?.end ? parseDateMs(a.availability.end) : Number.POSITIVE_INFINITY;
+                                        const bDate = b.availability?.end ? parseDateMs(b.availability.end) : Number.POSITIVE_INFINITY;
+                                        return aDate === bDate ? 0 : (aDate < bDate ? -1 : 1);
+                                    }
+                                    else {
+                                        return 0;
+                                    }
+                                })
                                 .map(renderListItem)
                         }
                     </div>
@@ -203,8 +273,20 @@ function IncentivesPage({ users, }: IncentivesPageProps) {
                     <div className="offerList">
                         {
                             offers
-                                .filter((o: any) => o.scheme !== 'CASS')
-                                .sort((a: any, b: any) => a.value === b.value ? 0 : (a.value > b.value ? -1 : 1)) // sort by value desc
+                                .filter((o: any) => (showAllOffers || isOfferAvailable(o)) && o.scheme !== 'CASS')
+                                .sort((a: Offer, b: Offer) => {
+                                    if (sortBy === 'value') {
+                                        return a.value === b.value ? 0 : (a.value > b.value ? -1 : 1);
+                                    }
+                                    else if (sortBy === 'date') {
+                                        const aDate = a.availability?.end ? parseDateMs(a.availability.end) : Number.POSITIVE_INFINITY;
+                                        const bDate = b.availability?.end ? parseDateMs(b.availability.end) : Number.POSITIVE_INFINITY;
+                                        return aDate === bDate ? 0 : (aDate < bDate ? -1 : 1);
+                                    }
+                                    else {
+                                        return 0;
+                                    }
+                                })
                                 .map(renderListItem)
                         }
                     </div>
@@ -218,6 +300,7 @@ function IncentivesPage({ users, }: IncentivesPageProps) {
                                 users={people}
                                 selectedTodos={selectedTodos}
                                 toggleTodo={toggleTodo}
+                                reqGroups={allReqGroups.find(g => g.offerId === selectedOffer.id)?.groups ?? []}
                             />
                         ) : (
                             renderMonolithTodos()
@@ -242,24 +325,27 @@ function reqIdFor(r: any, i: number) {
     return String(r.id ?? `${r.type ?? 'req'}:${i}`);
 }
 
+type ReqGroup = {
+    groupId: string;
+    title: string;
+    reqs: any[];
+};
+
 function OfferDetails({
     offer,
     users,
     selectedTodos,
     toggleTodo,
+    reqGroups,
 }: {
     offer: any;
     users: User[];
-    selectedTodos: Record<string, Record<string, string[]>>;
+    selectedTodos: SelectedTodos;
     toggleTodo: (offerId: string, reqId: string, userId: string) => void;
+    reqGroups: ReqGroup[];
 }) {
     const provider = getProvider(offer.bankID);
     const dates = collectDates(offer);
-
-    const allReqs = [
-        ...(offer.requirements ?? []),
-        ...(offer.components ?? []).flatMap((c: any) => c.requirements ?? []),
-    ];
 
     const offerId = String(offer.id);
 
@@ -282,33 +368,38 @@ function OfferDetails({
             </header>
 
             {/* Criteria */}
-            {
-                allReqs.length ? (
-                    <section className="offerCard">
-                        <div className="offerCardTitle">Criteria</div>
-                        <ul className="offerList">
-                            {allReqs.map((r: any, i: number) => {
-                                const offerId = String(offer.id);
-                                const reqId = reqIdFor(r, i);
-                                const selectedUserIds = selectedTodos[offerId]?.[reqId] ?? [];
+            {reqGroups.length ? (
+                <section className="offerCard">
+                    <div className="offerCardTitle">Criteria</div>
 
-                                return (
-                                    <RequirementRow
-                                        key={`${offerId}:${reqId}`}
-                                        offerId={offerId}
-                                        offerTitle={offer.title}
-                                        reqId={reqId}
-                                        req={r}
-                                        users={users}
-                                        selectedUserIds={selectedUserIds}
-                                        onToggleUser={(userId) => toggleTodo(offerId, reqId, userId)}
-                                    />
-                                );
-                            })}
-                        </ul>
-                    </section>
-                ) : null
-            }
+                    {reqGroups.map((g) => (
+                        <div key={g.groupId} className="offerReqGroup">
+                            <div className="offerReqGroupTitle">{g.title}</div>
+
+                            <ul className="offerList">
+                                {
+                                    g.reqs.map((r: any, i: number) => {
+                                        const reqId = `${g.groupId}:${reqIdFor(r, i)}`; // ensure uniqueness across groups
+                                        const selectedUserIds = selectedTodos[offerId]?.[reqId]?.marks ?? [];
+
+                                        return (
+                                            <RequirementRow
+                                                key={`${offerId}:${reqId}`}
+                                                offer={offer}
+                                                reqId={reqId}
+                                                req={r}
+                                                users={users}
+                                                selectedUserIds={selectedUserIds}
+                                                onToggleUser={(userId) => toggleTodo(offerId, reqId, userId)}
+                                            />
+                                        );
+                                    })
+                                }
+                            </ul>
+                        </div>
+                    ))}
+                </section>
+            ) : null}
 
             {/* Eligibility */}
             {offer.eligibility?.length ? (
@@ -380,13 +471,20 @@ function OfferDetails({
             {/* Links */}
             {offer.links?.length ? (
                 <section className="offerCard">
-                    <div className="offerCardTitle">Links</div>
+                    <div className="offerCardTitle">See Also</div>
                     <div className="offerLinks">
-                        {offer.links.map((l: any, i: number) => (
-                            <a key={i} href={l.url} target="_blank" rel="noreferrer">
-                                {l.label ?? 'Link'}
-                            </a>
-                        ))}
+                        {
+                            offer.links.map((l: any, i: number) => (
+                                <>
+                                    {i > 0 &&
+                                        <span>•</span>
+                                    }
+                                    <a key={i} href={l.url} target="_blank" rel="noreferrer">
+                                        {l.label ?? l.url}
+                                    </a>
+                                </>
+                            ))
+                        }
                     </div>
                 </section>
             ) : null}
@@ -395,41 +493,58 @@ function OfferDetails({
 }
 
 function RequirementRow({
-    offerId,
-    offerTitle,
+    offer,
     reqId,
     req,
     users,
     selectedUserIds,
     onToggleUser,
 }: {
-    offerId: string;
-    offerTitle: string;
+    offer: Offer;
     reqId: string;
     req: any;
     users: User[];
     selectedUserIds: string[];
     onToggleUser: (userId: string) => void;
 }) {
-    return (
-        <li className="offerListItem" key={`${offerId}:${reqId}`}>
-            <div className="offerListItemTop">
-                {users.map(u =>
-                    renderUserChip(
-                        u,
-                        selectedUserIds.includes(u.id),
-                        () => onToggleUser(u.id)
-                    )
-                )}
-
-                <strong className="offerReqChip">{reqChip(req)}</strong>
-
-                {reqMeta(req).length ? (
+    const hasExtra = Boolean(req?.note);
+    const summaryContent = (
+        <>
+            <strong className="offerReqChip">{reqChip(req)}</strong>
+            {
+                reqMeta(req).length ? (
                     <span className="offerReqMeta"> — {reqMeta(req).join(' • ')}</span>
-                ) : null}
-            </div>
+                ) : null
+            }
+        </>
+    );
 
-            {req?.note ? <div className="offerReqNotes">{req.note}</div> : null}
+    return (
+        <li className="offerListItem">
+            <div className="offerListItemTop">
+                {
+                    users
+                        .filter(u => offer.canRepeat === 'joint' || u.id !== 'joint') // only show joint option if offer is joint-repeatable
+                        .map(user =>
+                            renderUserChip(
+                                user,
+                                selectedUserIds.includes(user.id),
+                                () => onToggleUser(user.id)
+                            )
+                        )
+                }
+
+                <div className="reqText">
+                    {hasExtra ? (
+                        <details className="offerDetailsDisclosure">
+                            <summary>{summaryContent}</summary>
+                            <div className="offerReqNotes">{req.note}</div>
+                        </details>
+                    ) : (
+                        <div>{summaryContent}</div>
+                    )}
+                </div>
+            </div>
         </li>
     );
 }
@@ -446,7 +561,7 @@ function renderUserChip(user: User, selected: boolean, onClick?: () => void) {
                     onClick={onClick}
                 />
             </TooltipTrigger>
-            <TooltipContent>{user.name}</TooltipContent>
+            <TooltipContent>Mark as {selected && 'not'} done by {user.name}</TooltipContent>
         </Tooltip>
     );
 }
@@ -523,13 +638,13 @@ function reqChip(r: any) {
         case 'login':
             return `Login (${r.channel ?? '—'})`;
         case 'form':
-            return <span>Submit <a href={r.url}>form</a></span>;
+            return <span>Submit <a href={r.url} target="_blank">form</a></span>;
         default:
             return String(r.type ?? 'Requirement');
     }
 }
 
-function reqMeta(r: any) {
+function reqMeta(r: any, data?: any) {
     const bits: string[] = [];
 
     if (typeof r.count === 'number') bits.push(`count ${r.count}`);
@@ -539,11 +654,18 @@ function reqMeta(r: any) {
     // Unknown/nullable boolean support
     if (r.mustBeActive === true) bits.push('active');
     if (r.mustBeActive === false) bits.push('not active');
-    if (r.mustBeActive == null && 'mustBeActive' in r) bits.push('active: unknown');
 
-    if (r.windowDays) bits.push(`within ${r.windowDays} days`);
-    if (r.windowDaysFrom) bits.push(`from ${r.windowDaysFrom}`);
-    if (r.anchor) bits.push(`anchor ${r.anchor}`);
+    const dateBits: string[] = [];
+    if (r.windowDays) dateBits.push(`within ${r.windowDays} days`);
+    if (r.windowDaysFrom) {
+        const windowDaysFrom = data?.windowDaysFrom;
+        const windowDaysFromDate = formatDate(windowDaysFrom) ?? r.windowDaysFrom;
+        dateBits.push(`from ${windowDaysFromDate}`);
+    }
+    if (r.anchor) dateBits.push(`anchor ${r.anchor}`);
+    if (dateBits.length) {
+        bits.push(dateBits.join(' '));
+    }
 
     if (r.mustRequestBy) bits.push(`request by ${formatDate(r.mustRequestBy) ?? r.mustRequestBy}`);
 

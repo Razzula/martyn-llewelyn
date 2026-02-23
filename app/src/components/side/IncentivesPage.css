@@ -17,8 +17,8 @@
 
 .incentivesMain {
   flex: 1;
-  overflow: auto;
-  padding-left: 12px;
+  overflow: none;
+  text-align: left;
 }
 
 /* ---------- Sidebar ---------- */
@@ -65,8 +65,8 @@
 }
 
 .offerStub:hover {
-  background: rgba(255, 255, 255, 0.07);
-  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(138, 154, 91, 0.05);
+  border-color: rgba(138, 154, 91, 0.35);
 }
 
 .offerStub:active {
@@ -74,8 +74,13 @@
 }
 
 .offerStub.active {
-  background: rgba(138, 154, 91, 0.25);
+  background: rgba(138, 154, 91, 0.25) !important;
   border-color: rgba(138, 154, 91, 0.55);
+}
+
+.offerStub.expired {
+  background: rgba(154, 91, 91, 0.25);
+  border-color: rgba(154, 91, 91, 0.55);
 }
 
 .offerStubLogo {
@@ -121,6 +126,28 @@
   border-radius: 14px;
   padding: 16px 18px;
   width: 100%;
+}
+
+.sidebarHeaderRow {
+  position: relative;
+  display: flex;
+  align-items: center;      /* vertical alignment */
+  justify-content: center;  /* centre the title */
+  min-height: 32px;         /* ensure enough height for toggle */
+}
+
+.sidebarHeaderRow .sidebarTitle {
+  text-align: centre;
+}
+
+.sidebarHeaderRow > :first-child {
+  position: absolute;
+  left: 0;
+}
+
+.sidebarHeaderRow > :last-child {
+  position: absolute;
+  right: 0;
 }
 
 .offerDetailsHeader {

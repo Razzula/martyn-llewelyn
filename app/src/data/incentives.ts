@@ -47,13 +47,13 @@ type Component = {
     noteLong?: string;
 };
 
-type Offer = {
+export type Offer = {
     id: string;
     bankID: string;
     scheme: 'CASS' | 'PROMO';
     title: string;
     headline?: Headline;
-    value?: number;
+    value: number;
     availability?: Availability;
     links?: { label?: string; url: string }[];
     eligibility?: string[];
@@ -62,6 +62,7 @@ type Offer = {
     timelineNotes?: { date: string; label: string }[];
     bonuses?: { type: string; title?: string; openBy?: string; maxSavePerMonth?: number; note?: string }[];
     noteLong?: string;
+    canRepeat?: 'joint';
 };
 
 export const incentives: { data: Offer[] } = {
@@ -74,13 +75,16 @@ export const incentives: { data: Offer[] } = {
             headline: { credit: 175, amazon: 50 },
             value: 225,
             availability: { start: '2025-09-09', end: '2026-02-15', },
-            links: [{ label: 'See offer', url: 'https://www.firstdirect.com/banking/switching-bank-accounts/' }],
+            links: [
+                { label: 'first  direct Page', url: 'https://www.firstdirect.com/banking/switching-bank-accounts/' },
+                { label: 'Terms & Conditions', url: './documents/first direct/Sep26-Switch_T&Cs.pdf' },
+            ],
             eligibility: [
                 "Not eligible if you're already a first direct customer, have previously held a first direct product, or opened an HSBC current account on or after 1 January 2018.",
             ],
             components: [
                 {
-                    id: 'firstDirect_cass_sep2025_amazon',
+                    id: 'amazon',
                     title: '£50 Amazon Gift Card',
                     requirements: [
                         {
@@ -96,7 +100,7 @@ export const incentives: { data: Offer[] } = {
                     ],
                 },
                 {
-                    id: 'firstDirect_cass_sep2025_credit',
+                    id: 'credit',
                     title: '£175 Switch Incentive',
                     requirements: [
                         {
@@ -164,7 +168,10 @@ export const incentives: { data: Offer[] } = {
             headline: { credit: 175 },
             value: 175,
             availability: { start: '2025-09-09', },
-            links: [{ label: 'See offer', url: 'https://www.firstdirect.com/banking/switching-bank-accounts/' }],
+            links: [
+                { label: 'first  direct Page', url: 'https://www.firstdirect.com/banking/switching-bank-accounts/' },
+                { label: 'Terms & Conditions', url: './documents/first direct/Sep26-Switch_T&Cs.pdf' },
+            ],
             eligibility: [
                 "Not eligible if you're already a first direct customer, have previously held a first direct product, or opened an HSBC current account on or after 1 January 2018.",
             ],
@@ -412,6 +419,7 @@ export const incentives: { data: Offer[] } = {
                 { type: 'payIn', amount: 1000, windowDaysFrom: 'accountOpenedAt', windowDays: 31 },
                 { type: 'debitCardTx', count: 1, windowDaysFrom: 'accountOpenedAt', windowDays: 31 },
             ],
+            canRepeat: 'joint',
         },
         {
             id: 'co-op_cass_jan2026',
