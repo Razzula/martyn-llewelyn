@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import { incentives, Offer } from '../../data/incentives';
+import { incentives, Offer, Payment, Requirement } from '../../data/incentives';
 import { trueLayercachedProviders, closedProviders } from '../../data/providers';
 import { User } from 'src/types/Bagel';
 
@@ -55,11 +55,13 @@ function IncentivesPage({ users, }: IncentivesPageProps) {
                 groupId: '',
                 title: offer.title,
                 reqs: offer.requirements ?? [],
+                payment: offer.payment,
             },
             ...(offer.components ?? []).map((c: any, idx: number) => ({
                 groupId: `${c.id ?? idx}`,
                 title: c.title ?? c.name ?? `Component ${idx + 1}`,
                 reqs: c.requirements ?? [],
+                payment: c.payment,
             })),
         ].filter(g => g.reqs.length > 0);
 
@@ -118,11 +120,11 @@ function IncentivesPage({ users, }: IncentivesPageProps) {
         const activeOfferIds = Object.keys(selectedTodos);
 
         return (
-            <div className="column" style={{ gap: 12 }}>
+            <div className="offerDetails" style={{ gap: 12 }}>
                 <div style={{ fontSize: 18, fontWeight: 700 }}>Your Progress</div>
 
                 {activeOfferIds.length ? (
-                    <div className="column" style={{ gap: 12 }}>
+                    <div className="offerCard" style={{ gap: 12 }}>
                         {activeOfferIds.map((offerId) => {
                             const grouped = offerGroupsIndex.get(offerId);
                             if (!grouped) return null;
@@ -131,7 +133,7 @@ function IncentivesPage({ users, }: IncentivesPageProps) {
                             if (!offer) return null;
 
                             return (
-                                <section className="offerCard" key={offerId}>
+                                <section className="" key={offerId}>
                                     <div className="offerCardTitle">
                                         <img
                                             className="offerStubLogo"
@@ -154,7 +156,6 @@ function IncentivesPage({ users, }: IncentivesPageProps) {
                                                         <RequirementRow
                                                             key={`${offerId}:${reqId}`}
                                                             offer={offer}
-                                                            reqId={reqId}
                                                             req={r}
                                                             users={people}
                                                             selectedUserIds={selectedUserIds}
@@ -197,7 +198,7 @@ function IncentivesPage({ users, }: IncentivesPageProps) {
                         <div className="offerStubMeta">
                             {offer.availability?.start ? formatDate(offer.availability.start) : ''}
                             {' — '}
-                            {offer.availability?.end ? formatDate(offer.availability.end) : ''}
+                            {offer.availability?.end ? formatDate(offer.availability.end) : 'present'}
                         </div>
                     </div>
                 </div>
@@ -329,6 +330,7 @@ type ReqGroup = {
     groupId: string;
     title: string;
     reqs: any[];
+    payment?: Payment;
 };
 
 function OfferDetails({
@@ -345,7 +347,6 @@ function OfferDetails({
     reqGroups: ReqGroup[];
 }) {
     const provider = getProvider(offer.bankID);
-    const dates = collectDates(offer);
 
     const offerId = String(offer.id);
 
@@ -374,7 +375,7 @@ function OfferDetails({
 
                     {reqGroups.map((g) => (
                         <div key={g.groupId} className="offerReqGroup">
-                            <div className="offerReqGroupTitle">{g.title}</div>
+                            <div className="offerGroupTitle">{g.title}</div>
 
                             <ul className="offerList">
                                 {
@@ -386,7 +387,6 @@ function OfferDetails({
                                             <RequirementRow
                                                 key={`${offerId}:${reqId}`}
                                                 offer={offer}
-                                                reqId={reqId}
                                                 req={r}
                                                 users={users}
                                                 selectedUserIds={selectedUserIds}
@@ -406,29 +406,74 @@ function OfferDetails({
                 <section className="offerCard">
                     <div className="offerCardTitle">Eligibility</div>
                     <ul className="offerList">
-                        {offer.eligibility.map((x: string, i: number) => (
-                            <li className="offerListItem" key={i}>
-                                {x}
-                            </li>
-                        ))}
+                        <div className="offerReqNotes">
+                            <ul>
+                                {offer.eligibility.map((x: string, i: number) => (
+                                    offer.eligibility.length > 1 ? (
+                                        <li key={i}>{x}</li>
+                                    ) : (
+                                        <span key={i}>{x}</span>
+                                    )
+                                ))}
+                            </ul>
+                        </div>
                     </ul>
                 </section>
             ) : null}
 
-            {/* Dates */}
-            {dates.length ? (
-                <details className="offerCard offerDetailsDisclosure">
-                    <summary className="offerDisclosureSummary">Dates &amp; timeline</summary>
-                    <ul className="offerList offerDisclosureBody">
-                        {dates.map((d, i) => (
-                            <li className="offerListItem" key={i}>
-                                <code className="offerCode">{formatDate(d.date) ?? d.date}</code>
-                                <span className="offerDash">—</span>
-                                <span>{d.label}</span>
-                            </li>
-                        ))}
-                    </ul>
-                </details>
+            {/* Payments */}
+            {reqGroups.length ? (
+                <section className="offerCard">
+                    <div className="offerCardTitle">Reward</div>
+
+                    {reqGroups.map((g) => {
+                        const payment: Payment = g.payment ?? offer.payment;
+                        console.log(payment);
+                        return (
+                            <div key={g.groupId} className="offerReqGroup">
+                                <div className="offerGroupTitle">{g.title}</div>
+
+                                <ul className="offerList">
+                                    <li className="offerListItem">
+                                        {payment && (
+                                            <>
+                                                {payment.payout && (
+                                                    <div className="muted">
+                                                        {payment.payout.label ??
+                                                            (payment.payout.days
+                                                                ? `Paid within ${payment.payout.days} days`
+                                                                : payment.payout.date
+                                                                    ? `Paid on ${payment.payout.date}`
+                                                                    : null)}
+                                                    </div>
+                                                )}
+
+
+                                                {
+                                                    payment.notes && (
+                                                        <div className="offerReqNotes">
+                                                            <ul>
+                                                                {
+                                                                    payment.notes.map((n: string, i: number) => (
+                                                                        payment.notes && payment.notes.length > 1 ? (
+                                                                            <li key={i}>{n}</li>
+                                                                        ) : (
+                                                                            <span key={i}>{n}</span>
+                                                                        )
+                                                                    ))
+                                                                }
+                                                            </ul>
+                                                        </div>
+                                                    )
+                                                }
+                                            </>
+                                        )}
+                                    </li>
+                                </ul>
+                            </div>
+                        );
+                    })}
+                </section>
             ) : null}
 
             {/* Bonuses */}
@@ -453,18 +498,10 @@ function OfferDetails({
                                         </span>
                                     ) : null}
                                 </div>
-                                {b.note ? <div className="offerReqNotes">{b.note}</div> : null}
+                                {b.notes ? <div className="offerReqNotes">{b.notes}</div> : null}
                             </li>
                         ))}
                     </ul>
-                </details>
-            ) : null}
-
-            {/* Notes */}
-            {offer.noteLong ? (
-                <details className="offerCard offerDetailsDisclosure">
-                    <summary className="offerDisclosureSummary">Notes</summary>
-                    <div className="offerNotes offerDisclosureBody">{offer.noteLong}</div>
                 </details>
             ) : null}
 
@@ -494,20 +531,18 @@ function OfferDetails({
 
 function RequirementRow({
     offer,
-    reqId,
     req,
     users,
     selectedUserIds,
     onToggleUser,
 }: {
     offer: Offer;
-    reqId: string;
     req: any;
     users: User[];
     selectedUserIds: string[];
     onToggleUser: (userId: string) => void;
 }) {
-    const hasExtra = Boolean(req?.note);
+    const hasExtra = Boolean((req?.notes ?? []).length);
     const summaryContent = (
         <>
             <strong className="offerReqChip">{reqChip(req)}</strong>
@@ -538,7 +573,19 @@ function RequirementRow({
                     {hasExtra ? (
                         <details className="offerDetailsDisclosure">
                             <summary>{summaryContent}</summary>
-                            <div className="offerReqNotes">{req.note}</div>
+                            <div className="offerReqNotes">
+                                <ul>
+                                    {
+                                        req.notes.map((n: string, i: number) => (
+                                            req.notes.length > 1 ? (
+                                                <li key={i}>{n}</li>
+                                            ) : (
+                                                <span key={i}>{n}</span>
+                                            )
+                                        ))
+                                    }
+                                </ul>
+                            </div>
                         </details>
                     ) : (
                         <div>{summaryContent}</div>
@@ -579,14 +626,6 @@ function getProvider(providerID: string) {
     );
 }
 
-type TodoItem = {
-    id: string;
-    offerId: string;
-    offerTitle: string;
-    label: string;
-    date?: string; // ISO-ish string if available, e.g. "2026-06-16"
-};
-
 function parseDateMs(date?: string) {
     if (!date) return Number.POSITIVE_INFINITY;
     const ms = Date.parse(date);
@@ -620,25 +659,34 @@ function headlineText(headline: any) {
     return bits.length ? bits.join(' • ') : '—';
 }
 
-function reqChip(r: any) {
-    // Minimal “human” label per requirement type
+function reqChip(r: Requirement) {
+    const count = r.countAtLeast ?? r.count ?? r.countAtMost;
+    const amount = typeof r.amount === 'number' ? formatMoney(r.amount) : '';
     switch (r.type) {
         case 'switch':
             return `Switch (${r.scheme ?? 'CASS'}${r.mustBeFull ? ', full' : ''})`;
         case 'openAccount':
             return `Open account (${(r.accountTypes ?? []).join(' / ') || '—'})`;
+        case 'holdAccount':
+            return `Hold an account (${(r.accountTypes ?? []).join(' / ') || '—'})`;
         case 'payIn':
-            return `Pay in ${typeof r.amount === 'number' ? formatMoney(r.amount) : ''}`;
+            return `Pay in ${amount}`;
         case 'directDebits':
-            return `Direct Debits (${r.count ?? '—'})`;
+            return `Direct Debits (${count ?? '—'})`;
         case 'standingOrdersOrDirectDebits':
-            return `SO/DD (${r.countAtLeast ?? '—'})`;
+            return `SO/DD (${count ?? '—'})`;
         case 'debitCardTx':
-            return `Card spend (${r.countAtLeast ?? r.count ?? '—'})`;
+            return `Card spend (${count ?? '—'})`;
         case 'login':
             return `Login (${r.channel ?? '—'})`;
+        case 'register':
+            return `Register (${r.channel ?? '—'})`;
         case 'form':
             return <span>Submit <a href={r.url} target="_blank">form</a></span>;
+        case 'entry_deposit':
+            return `Entry by ${amount} Deposit`;
+        case 'entry_notice':
+            return `Entry by ${r.channel} notice`;
         default:
             return String(r.type ?? 'Requirement');
     }
@@ -649,6 +697,7 @@ function reqMeta(r: any, data?: any) {
 
     if (typeof r.count === 'number') bits.push(`count ${r.count}`);
     if (typeof r.countAtLeast === 'number') bits.push(`≥ ${r.countAtLeast}`);
+    if (typeof r.countAtMost === 'number') bits.push(`≤ ${r.countAtMost}`);
     if (typeof r.amount === 'number') bits.push(formatMoney(r.amount));
 
     // Unknown/nullable boolean support
@@ -671,56 +720,5 @@ function reqMeta(r: any, data?: any) {
 
     return bits;
 }
-
-function collectDates(offer: any) {
-    const dates: { label: string; date: string }[] = [];
-
-    // Offer-level requirement deadlines
-    (offer.requirements ?? []).forEach((r: any) => {
-        if (r.mustRequestBy) dates.push({ label: 'Request by', date: r.mustRequestBy });
-    });
-
-    // Components deadlines
-    (offer.components ?? []).forEach((c: any) => {
-        (c.deadlines ?? []).forEach((d: any) => {
-            if (d?.date) dates.push({ label: d.label ?? d.type ?? 'Deadline', date: d.date });
-        });
-    });
-
-    // Availability withdrawn date
-    if (offer.availability?.withdrawnDate) {
-        dates.push({ label: offer.availability.withdrawnLabel ?? 'Withdrawn', date: offer.availability.withdrawnDate });
-    }
-
-    // Timeline notes
-    (offer.timelineNotes ?? []).forEach((t: any) => {
-        if (t?.date) dates.push({ label: t.label ?? 'Note', date: t.date });
-    });
-
-    // Sort ascending
-    dates.sort((a, b) => (Date.parse(a.date) || 9e15) - (Date.parse(b.date) || 9e15));
-    return dates;
-}
-
-// A deliberately “best-effort” one-liner, based on what your model contains.
-// If you later add explicit openBy / mustCompleteBy at offer-level, update here.
-// function oneLiner(offer: any) {
-//     const bank = getProvider(offer.bankID)?.display_name ?? offer.bankID ?? '—';
-//     const headline = headlineText(offer.headline);
-
-//     const dates = collectDates(offer);
-//     const keyDates = dates
-//         .filter(d => d.date)
-//         .slice(0, 2) // keep it short
-//         .map(d => `${d.label.toLowerCase()} ${formatDate(d.date) ?? d.date}`)
-//         .join('; ');
-
-//     const scheme = offer.scheme ? `${offer.scheme}` : '';
-
-//     const value = typeof offer.value === 'number' ? `(${formatMoney(offer.value)} max)` : '';
-//     const dateBit = keyDates ? ` — ${keyDates}` : '';
-
-//     return `${headline} when you take out ${offer.title}${scheme ? ` (${scheme})` : ''} ${value}. ${bank}${dateBit}. T&Cs apply.`;
-// }
 
 export default IncentivesPage;

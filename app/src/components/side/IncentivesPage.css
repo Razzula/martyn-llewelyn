@@ -4,7 +4,6 @@
 .incentivesLayout {
   display: flex;
   min-height: 70vh;
-  gap: 12px;
 }
 
 .incentivesSidebar {
@@ -19,6 +18,7 @@
   flex: 1;
   overflow: none;
   text-align: left;
+  margin: 12px;
 }
 
 /* ---------- Sidebar ---------- */
@@ -116,7 +116,7 @@
 .offerDetails {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
 }
 
 .offerCard,
@@ -131,21 +131,24 @@
 .sidebarHeaderRow {
   position: relative;
   display: flex;
-  align-items: center;      /* vertical alignment */
-  justify-content: center;  /* centre the title */
-  min-height: 32px;         /* ensure enough height for toggle */
+  align-items: center;
+  /* vertical alignment */
+  justify-content: center;
+  /* centre the title */
+  min-height: 32px;
+  /* ensure enough height for toggle */
 }
 
 .sidebarHeaderRow .sidebarTitle {
   text-align: centre;
 }
 
-.sidebarHeaderRow > :first-child {
+.sidebarHeaderRow> :first-child {
   position: absolute;
   left: 0;
 }
 
-.sidebarHeaderRow > :last-child {
+.sidebarHeaderRow> :last-child {
   position: absolute;
   right: 0;
 }
@@ -191,6 +194,15 @@
   margin: 0 0 12px;
 }
 
+.offerGroupTitle {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #666;
+  margin-top: 12px;
+}
+
 /* List inside cards */
 .offerListItem {
   padding: 10px 0;
@@ -233,7 +245,7 @@
 .offerReqNotes {
   margin-top: 6px;
   line-height: 1.4;
-  max-width: 90ch;
+  /* max-width: 90ch; */
 }
 
 /* Links */
