@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import { incentives, Offer, Payment, Requirement } from '../../data/incentives';
+import { incentives, Offer, Payment, Requirement, RequirementLeaf } from '../../data/incentives';
 import { trueLayercachedProviders, closedProviders } from '../../data/providers';
 import { User } from 'src/types/Bagel';
 
@@ -83,28 +83,29 @@ function IncentivesPage({ users, }: IncentivesPageProps) {
         }
     }
 
-    function toggleTodo(offerId: string, reqId: string, userId: string) {
+    function toggleTodo(offerID: string, reqID: string, userID: string) {
+        console.log(offerID, reqID, userID);
         setSelectedTodos(prev => {
             const next: SelectedTodos = { ...prev };
-            const offerMap = { ...(next[offerId] ?? {}) };
-            const prevEntry = offerMap[reqId] ?? { marks: [] as string[] };
+            const offerMap = { ...(next[offerID] ?? {}) };
+            const prevEntry = offerMap[reqID] ?? { marks: [] as string[] };
             const prevMarks = prevEntry.marks ?? [];
 
-            const has = prevMarks.includes(userId);
-            const nextMarks = has ? prevMarks.filter(x => x !== userId) : [...prevMarks, userId];
+            const has = prevMarks.includes(userID);
+            const nextMarks = has ? prevMarks.filter(x => x !== userID) : [...prevMarks, userID];
 
             if (nextMarks.length === 0) {
-                delete offerMap[reqId];
+                delete offerMap[reqID];
             }
             else {
-                offerMap[reqId] = { ...prevEntry, marks: nextMarks };
+                offerMap[reqID] = { ...prevEntry, marks: nextMarks };
             }
 
             if (Object.keys(offerMap).length === 0) {
-                delete next[offerId];
+                delete next[offerID];
             }
             else {
-                next[offerId] = offerMap;
+                next[offerID] = offerMap;
             }
 
             return next;
@@ -149,17 +150,16 @@ function IncentivesPage({ users, }: IncentivesPageProps) {
 
                                             <ul className="offerList">
                                                 {g.reqs.map((r: any, i: number) => {
-                                                    const reqId = `${g.groupId}:${reqIdFor(r, i)}`;
-                                                    const selectedUserIds = selectedTodos[offerId]?.[reqId]?.marks ?? [];
-
+                                                    const reqID = `${g.groupId}:${reqIDFor(r, i)}`;
                                                     return (
                                                         <RequirementRow
-                                                            key={`${offerId}:${reqId}`}
+                                                            key={`${offerId}:${reqID}`}
                                                             offer={offer}
                                                             req={r}
+                                                            reqID={reqID}
                                                             users={people}
-                                                            selectedUserIds={selectedUserIds}
-                                                            onToggleUser={(userId) => toggleTodo(offerId, reqId, userId)}
+                                                            selectedTodos={selectedTodos}
+                                                            onToggleUser={toggleTodo}
                                                         />
                                                     );
                                                 })}
@@ -291,6 +291,29 @@ function IncentivesPage({ users, }: IncentivesPageProps) {
                                 .map(renderListItem)
                         }
                     </div>
+
+                    <p>
+                        <Tooltip>
+                            <TooltipTrigger>
+                                <span className="offerStubMeta">
+                                    Last updated:{' '}
+                                    {
+                                        new Date(__BUILD_TIME__).toLocaleString('en-GB', {
+                                            dateStyle: 'medium',
+                                        })
+                                    }
+                                </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {
+                                    new Date(__BUILD_TIME__).toLocaleString('en-GB', {
+                                        dateStyle: 'medium',
+                                        timeStyle: 'short',
+                                    })
+                                }
+                            </TooltipContent>
+                        </Tooltip>
+                    </p>
                 </aside>
 
                 <main className="incentivesMain">
@@ -310,20 +333,24 @@ function IncentivesPage({ users, }: IncentivesPageProps) {
                 </main>
             </div>
 
-            <div className='banner footer'>
+            <div className='banner footer smallPrint'>
                 <p>This page is for informational purposes only.</p>
                 <p>
                     It summarises publicly available promotional offers and their stated terms.
                     It does not constitute financial advice or a recommendation.
                     You are responsible for reviewing the official terms and conditions and determining suitability for your circumstances.
                 </p>
+                <p>
+                    To-do selections are saved only in your browser on this device.
+                    They are not sent to or stored on any server.
+                </p>
             </div>
         </div>
     );
 }
 
-function reqIdFor(r: any, i: number) {
-    return String(r.id ?? `${r.type ?? 'req'}:${i}`);
+function reqIDFor(req: any, i: number) {
+    return String(req.id ?? `${req.type ?? 'req'}:${i}`);
 }
 
 type ReqGroup = {
@@ -379,18 +406,17 @@ function OfferDetails({
 
                             <ul className="offerList">
                                 {
-                                    g.reqs.map((r: any, i: number) => {
-                                        const reqId = `${g.groupId}:${reqIdFor(r, i)}`; // ensure uniqueness across groups
-                                        const selectedUserIds = selectedTodos[offerId]?.[reqId]?.marks ?? [];
-
+                                    g.reqs.map((r: Requirement, i: number) => {
+                                        const reqID = `${g.groupId}:${reqIDFor(r, i)}`; // ensure uniqueness across groups
                                         return (
                                             <RequirementRow
-                                                key={`${offerId}:${reqId}`}
+                                                key={`${offerId}:${reqID}`}
                                                 offer={offer}
                                                 req={r}
+                                                reqID={reqID}
                                                 users={users}
-                                                selectedUserIds={selectedUserIds}
-                                                onToggleUser={(userId) => toggleTodo(offerId, reqId, userId)}
+                                                selectedTodos={selectedTodos}
+                                                onToggleUser={toggleTodo}
                                             />
                                         );
                                     })
@@ -428,7 +454,6 @@ function OfferDetails({
 
                     {reqGroups.map((g) => {
                         const payment: Payment = g.payment ?? offer.payment;
-                        console.log(payment);
                         return (
                             <div key={g.groupId} className="offerReqGroup">
                                 <div className="offerGroupTitle">{g.title}</div>
@@ -532,83 +557,189 @@ function OfferDetails({
 function RequirementRow({
     offer,
     req,
+    reqID,
     users,
-    selectedUserIds,
+    selectedTodos,
     onToggleUser,
 }: {
     offer: Offer;
-    req: any;
+    req: Requirement;
+    reqID: string;
     users: User[];
-    selectedUserIds: string[];
-    onToggleUser: (userId: string) => void;
+    selectedTodos: SelectedTodos;
+    onToggleUser: (offerID: string, reqID: string, userID: string) => void;
 }) {
-    const hasExtra = Boolean((req?.notes ?? []).length);
-    const summaryContent = (
-        <>
-            <strong className="offerReqChip">{reqChip(req)}</strong>
-            {
-                reqMeta(req).length ? (
-                    <span className="offerReqMeta"> — {reqMeta(req).join(' • ')}</span>
-                ) : null
-            }
-        </>
-    );
+    const selectedUserIDs = selectedTodos[offer.id]?.[reqID]?.marks ?? [];
 
-    return (
-        <li className="offerListItem">
-            <div className="offerListItemTop">
-                {
-                    users
+    if (req.kind === 'group') {
+
+        // helpers
+        const uniq = (arr: string[]) => Array.from(new Set(arr));
+        const union = (lists: string[][]) => uniq(lists.flat());
+        const intersect = (lists: string[][]) => {
+            if (lists.length === 0) return [];
+            const sets = lists.map(xs => new Set(xs));
+            const first = sets[0];
+            const out: string[] = [];
+            for (const x of first) {
+                if (sets.every(s => s.has(x))) out.push(x);
+            }
+            return out;
+        };
+        function selectedUsersForReq(req: Requirement, reqID: string): string[] {
+            if (req.kind !== 'group') {
+                return selectedTodos[offer.id]?.[reqID]?.marks ?? [];
+            }
+
+            const childLists = (req.children ?? []).map((child, i) =>
+                selectedUsersForReq(child, `${reqID}:${reqIDFor(child, i)}`)
+            );
+
+            return req.op === 'OR'
+                ? union(childLists)
+                : intersect(childLists); // AND
+        }
+
+        const childLists = (req.children ?? []).map((child, i) =>
+            selectedUsersForReq(child, `${reqID}:${reqIDFor(child, i)}`)
+        );
+
+        const satisfiedUserIDs: string[] =
+            req.op === 'OR'
+                ? Array.from(new Set(childLists.flat()))
+                : childLists.length === 0
+                    ? []
+                    : childLists.reduce<string[]>(
+                        (acc, curr) => acc.filter(id => curr.includes(id)),
+                        childLists[0]
+                    );
+
+        return (
+            <li className="offerListItem">
+                <div className="offerListItemTop">
+                    {users
                         .filter(u => offer.canRepeat === 'joint' || u.id !== 'joint') // only show joint option if offer is joint-repeatable
                         .map(user =>
                             renderUserChip(
                                 user,
-                                selectedUserIds.includes(user.id),
-                                () => onToggleUser(user.id)
+                                satisfiedUserIDs.includes(user.id),
                             )
-                        )
-                }
+                        )}
 
-                <div className="reqText">
-                    {hasExtra ? (
-                        <details className="offerDetailsDisclosure">
-                            <summary>{summaryContent}</summary>
-                            <div className="offerReqNotes">
-                                <ul>
-                                    {
-                                        req.notes.map((n: string, i: number) => (
-                                            req.notes.length > 1 ? (
-                                                <li key={i}>{n}</li>
-                                            ) : (
-                                                <span key={i}>{n}</span>
-                                            )
-                                        ))
-                                    }
-                                </ul>
-                            </div>
-                        </details>
-                    ) : (
-                        <div>{summaryContent}</div>
-                    )}
+                    <div className="reqText reqStack">
+                        {req.label ? (
+                            <details className="offerDetailsDisclosure">
+                                <summary className="offerGroupTitle">{req.label}</summary>
+
+                                {(req?.children ?? []).map((child: any, i: number) => (
+                                    <RequirementRow
+                                        key={`${offer.id}:${reqID}:${reqIDFor(child, i)}`}
+                                        offer={offer}
+                                        req={child}
+                                        reqID={`${reqID}:${reqIDFor(child, i)}`}
+                                        users={users}
+                                        selectedTodos={selectedTodos}
+                                        onToggleUser={onToggleUser}
+                                    />
+                                ))}
+                            </details>
+                        ) : (
+                            <>
+                                <span className="offerGroupTitle">{req.op === 'OR' ? 'One of' : 'All of'}</span>
+
+                                {(req?.children ?? []).map((child: any, i: number) => (
+                                    <RequirementRow
+                                        key={`${offer.id}:${reqID}:${reqIDFor(child, i)}`}
+                                        offer={offer}
+                                        req={child}
+                                        reqID={`${reqID}:${reqIDFor(child, i)}`}
+                                        users={users}
+                                        selectedTodos={selectedTodos}
+                                        onToggleUser={onToggleUser}
+                                    />
+                                ))}
+                            </>
+                        )}
+                    </div>
                 </div>
-            </div>
-        </li>
-    );
+            </li>
+        );
+    }
+    else {
+        // single row
+        const hasExtra = Boolean((req?.notes ?? []).length);
+        const summaryContent = (
+            <>
+                <strong className="offerReqChip">{reqChip(req)}</strong>
+                {
+                    reqMeta(req).length ? (
+                        <span className="offerReqMeta"> — {reqMeta(req).join(' • ')}</span>
+                    ) : null
+                }
+            </>
+        );
+
+        return (
+            <li className="offerListItem">
+                <div className="offerListItemTop">
+                    {
+                        users
+                            .filter(u => offer.canRepeat === 'joint' || u.id !== 'joint') // only show joint option if offer is joint-repeatable
+                            .map(user =>
+                                renderUserChip(
+                                    user,
+                                    selectedUserIDs.includes(user.id),
+                                    () => onToggleUser(offer.id, reqID, user.id)
+                                )
+                            )
+                    }
+
+                    <div className="reqText">
+                        {hasExtra ? (
+                            <details className="offerDetailsDisclosure">
+                                <summary>{summaryContent}</summary>
+                                <div className="offerReqNotes">
+                                    <ul>
+                                        {
+                                            req.notes && req.notes.map((n: string, i: number) => (
+                                                req.notes && req.notes.length > 1 ? (
+                                                    <li key={i}>{n}</li>
+                                                ) : (
+                                                    <span key={i}>{n}</span>
+                                                )
+                                            ))
+                                        }
+                                    </ul>
+                                </div>
+                            </details>
+                        ) : (
+                            <div>{summaryContent}</div>
+                        )}
+                    </div>
+                </div>
+            </li>
+        );
+    }
 }
 
 function renderUserChip(user: User, selected: boolean, onClick?: () => void) {
     return (
-        <Tooltip>
+        <Tooltip placement='left'>
             <TooltipTrigger>
                 <img
-                    className={`offerReqUser ${selected ? '' : 'unselected'}`}
+                    className={`offerReqUser ${selected ? '' : 'unselected'} ${onClick === undefined ? 'unclickable' : 'clickable'}`}
                     src={user.icon}
                     alt={user.name}
                     title={user.name}
                     onClick={onClick}
                 />
             </TooltipTrigger>
-            <TooltipContent>Mark as {selected && 'not'} done by {user.name}</TooltipContent>
+            <TooltipContent>
+                {onClick === undefined
+                    ? <span>Task {!selected && 'not'} done by {user.name}</span>
+                    : <span>Mark as {selected && 'not'} done by {user.name}</span>
+                }
+            </TooltipContent>
         </Tooltip>
     );
 }
@@ -659,7 +790,7 @@ function headlineText(headline: any) {
     return bits.length ? bits.join(' • ') : '—';
 }
 
-function reqChip(r: Requirement) {
+function reqChip(r: RequirementLeaf) {
     const count = r.countAtLeast ?? r.count ?? r.countAtMost;
     const amount = typeof r.amount === 'number' ? formatMoney(r.amount) : '';
     switch (r.type) {
@@ -671,14 +802,22 @@ function reqChip(r: Requirement) {
             return `Hold an account (${(r.accountTypes ?? []).join(' / ') || '—'})`;
         case 'payIn':
             return `Pay in ${amount}`;
+        case 'paymentsOut':
+            return `Make ${count} payments out`;
+        case 'payments':
+            return `Make ${count} payments in or out`;
         case 'directDebits':
             return `Direct Debits (${count ?? '—'})`;
         case 'standingOrdersOrDirectDebits':
             return `SO/DD (${count ?? '—'})`;
         case 'debitCardTx':
             return `Card spend (${count ?? '—'})`;
+        case 'balance':
+            return `Have a balance of ${amount} (${(r.accountTypes ?? []).join(' / ') || '—'})`;
         case 'login':
             return `Login (${r.channel ?? '—'})`;
+        case 'payFee':
+            return `Pay your ${r.meta} fee`;
         case 'register':
             return `Register (${r.channel ?? '—'})`;
         case 'form':
@@ -715,6 +854,8 @@ function reqMeta(r: any, data?: any) {
     if (dateBits.length) {
         bits.push(dateBits.join(' '));
     }
+
+    if (r.meta) bits.push(r.meta); 
 
     if (r.mustRequestBy) bits.push(`request by ${formatDate(r.mustRequestBy) ?? r.mustRequestBy}`);
 

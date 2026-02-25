@@ -45,4 +45,8 @@ export default defineConfig({
     envDir: '../', // load .env from repo root
 
     clearScreen: false, // prevent vite from obscuring rust errors
+
+    define: {
+        __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+    },
 })

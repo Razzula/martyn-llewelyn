@@ -12,7 +12,10 @@ type Headline = {
     prize?: string;
 };
 
-export type Requirement = {
+export type RequirementOp = 'AND' | 'OR' | 'XOR';
+
+export type RequirementLeaf = {
+    kind?: 'req';
     type: string;
     scheme?: 'CASS';
     mustBeFull?: boolean;
@@ -34,8 +37,19 @@ export type Requirement = {
     url?: string;
     accountTypes?: string[];
     channel?: string;
+    meta?: string;
     notes?: string[];
 };
+
+export type RequirementGroup = {
+    kind: 'group';
+    op: RequirementOp;
+    label?: string;
+    children: Requirement[];
+    notes?: string[];
+};
+
+export type Requirement = RequirementLeaf | RequirementGroup;
 
 export type Payment = {
     type: 'credit' | 'amazon' | 'prize';
@@ -125,56 +139,62 @@ export const incentives: { data: Offer[] } = {
                     title: '£175 Switch Incentive',
                     requirements: [
                         {
-                            type: 'openAccount',
-                            accountTypes: ['1st Account'],
-                            notes: ['Open a 1st Account on or after 9 September until the offer is withdrawn.'],
-                        },
-                        {
-                            type: 'switch',
-                            scheme: 'CASS',
-                            mustBeFull: true,
-                            windowDaysFrom: 'accountOpenedAt',
-                            windowDays: 45,
-                            notes: [
-                                'Switch using CASS within 45 days.',
-                                'For joint 1st Accounts, at least one joint holder must switch from a sole account in their own name or another joint account in the same names.',
+                            kind: 'group',
+                            op: 'AND',
+                            children: [
+                                {
+                                    type: 'openAccount',
+                                    accountTypes: ['1st Account'],
+                                    notes: ['Open a 1st Account on or after 9 September until the offer is withdrawn.'],
+                                },
+                                {
+                                    type: 'switch',
+                                    scheme: 'CASS',
+                                    mustBeFull: true,
+                                    windowDaysFrom: 'accountOpenedAt',
+                                    windowDays: 45,
+                                    notes: [
+                                        'Switch using CASS within 45 days.',
+                                        'For joint 1st Accounts, at least one joint holder must switch from a sole account in their own name or another joint account in the same names.',
+                                    ],
+                                },
+                                {
+                                    type: 'standingOrdersOrDirectDebits',
+                                    countAtLeast: 2,
+                                    windowDaysFrom: 'accountOpenedAt',
+                                    windowDays: 45,
+                                    mustBeActive: null as unknown as boolean,
+                                    notes: [
+                                        'Switch must include at least two Direct Debits or standing orders.',
+                                        'It is not stated that there must be a minimum amount or who the payments must be to.',
+                                        'It is not stated that they must be active, collected from, or collect within any timeframe.',
+                                    ],
+                                },
+                                {
+                                    type: 'payIn',
+                                    amount: 1000,
+                                    windowDaysFrom: 'accountOpenedAt',
+                                    windowDays: 45,
+                                    notes: ['This amount can be paid in all at once or at different times within the 45 days.'],
+                                },
+                                {
+                                    type: 'debitCardTx',
+                                    countAtLeast: 5,
+                                    windowDaysFrom: 'accountOpenedAt',
+                                    windowDays: 45,
+                                    notes: [
+                                        'It is not stated that there must be a minimum amount.',
+                                        'Excludes gambling transactions, credit card or insurance payments, cash withdrawals, and card to card payments.',
+                                    ],
+                                },
+                                {
+                                    type: 'login',
+                                    channel: 'appOrOnlineBanking',
+                                    windowDaysFrom: 'accountOpenedAt',
+                                    windowDays: 45,
+                                    notes: ['Register and log into the App or Online Banking.'],
+                                },
                             ],
-                        },
-                        {
-                            type: 'standingOrdersOrDirectDebits',
-                            countAtLeast: 2,
-                            windowDaysFrom: 'accountOpenedAt',
-                            windowDays: 45,
-                            mustBeActive: null as unknown as boolean,
-                            notes: [
-                                'Switch must include at least two Direct Debits or standing orders.',
-                                'It is not stated that there must be a minimum amount or who the payments must be to.',
-                                'It is not stated that they must be active, collected from, or collect within any timeframe.',
-                            ],
-                        },
-                        {
-                            type: 'payIn',
-                            amount: 1000,
-                            windowDaysFrom: 'accountOpenedAt',
-                            windowDays: 45,
-                            notes: ['This amount can be paid in all at once or at different times within the 45 days.'],
-                        },
-                        {
-                            type: 'debitCardTx',
-                            countAtLeast: 5,
-                            windowDaysFrom: 'accountOpenedAt',
-                            windowDays: 45,
-                            notes: [
-                                'It is not stated that there must be a minimum amount.',
-                                'Excludes gambling transactions, credit card or insurance payments, cash withdrawals, and card to card payments.',
-                            ],
-                        },
-                        {
-                            type: 'login',
-                            channel: 'appOrOnlineBanking',
-                            windowDaysFrom: 'accountOpenedAt',
-                            windowDays: 45,
-                            notes: ['Register and log into the App or Online Banking.'],
                         },
                     ],
                     payment: {
@@ -217,56 +237,62 @@ export const incentives: { data: Offer[] } = {
                     title: '£175 Switch Incentive',
                     requirements: [
                         {
-                            type: 'openAccount',
-                            accountTypes: ['1st Account'],
-                            notes: ['Open a 1st Account on or after 9 September until the offer is withdrawn.'],
-                        },
-                        {
-                            type: 'switch',
-                            scheme: 'CASS',
-                            mustBeFull: true,
-                            windowDaysFrom: 'accountOpenedAt',
-                            windowDays: 45,
-                            notes: [
-                                'Switch using CASS within 45 days.',
-                                'For joint 1st Accounts, at least one joint holder must switch from a sole account in their own name or another joint account in the same names.',
+                            kind: 'group',
+                            op: 'AND',
+                            children: [
+                                {
+                                    type: 'openAccount',
+                                    accountTypes: ['1st Account'],
+                                    notes: ['Open a 1st Account on or after 9 September until the offer is withdrawn.'],
+                                },
+                                {
+                                    type: 'switch',
+                                    scheme: 'CASS',
+                                    mustBeFull: true,
+                                    windowDaysFrom: 'accountOpenedAt',
+                                    windowDays: 45,
+                                    notes: [
+                                        'Switch using CASS within 45 days.',
+                                        'For joint 1st Accounts, at least one joint holder must switch from a sole account in their own name or another joint account in the same names.',
+                                    ],
+                                },
+                                {
+                                    type: 'standingOrdersOrDirectDebits',
+                                    countAtLeast: 2,
+                                    windowDaysFrom: 'accountOpenedAt',
+                                    windowDays: 45,
+                                    mustBeActive: null as unknown as boolean,
+                                    notes: [
+                                        'Switch must include at least two Direct Debits or standing orders.',
+                                        'It is not stated that there must be a minimum amount or who the payments must be to.',
+                                        'It is not stated that they must be active, collected from, or collect within any timeframe.',
+                                    ],
+                                },
+                                {
+                                    type: 'payIn',
+                                    amount: 1000,
+                                    windowDaysFrom: 'accountOpenedAt',
+                                    windowDays: 45,
+                                    notes: ['This amount can be paid in all at once or at different times within the 45 days.'],
+                                },
+                                {
+                                    type: 'debitCardTx',
+                                    countAtLeast: 5,
+                                    windowDaysFrom: 'accountOpenedAt',
+                                    windowDays: 45,
+                                    notes: [
+                                        'It is not stated that there must be a minimum amount.',
+                                        'Excludes gambling transactions, credit card or insurance payments, cash withdrawals, and card to card payments.',
+                                    ],
+                                },
+                                {
+                                    type: 'login',
+                                    channel: 'appOrOnlineBanking',
+                                    windowDaysFrom: 'accountOpenedAt',
+                                    windowDays: 45,
+                                    notes: ['Register and log into the App or Online Banking.'],
+                                },
                             ],
-                        },
-                        {
-                            type: 'standingOrdersOrDirectDebits',
-                            countAtLeast: 2,
-                            windowDaysFrom: 'accountOpenedAt',
-                            windowDays: 45,
-                            mustBeActive: null as unknown as boolean,
-                            notes: [
-                                'Switch must include at least two Direct Debits or standing orders.',
-                                'It is not stated that there must be a minimum amount or who the payments must be to.',
-                                'It is not stated that they must be active, collected from, or collect within any timeframe.',
-                            ],
-                        },
-                        {
-                            type: 'payIn',
-                            amount: 1000,
-                            windowDaysFrom: 'accountOpenedAt',
-                            windowDays: 45,
-                            notes: ['This amount can be paid in all at once or at different times within the 45 days.'],
-                        },
-                        {
-                            type: 'debitCardTx',
-                            countAtLeast: 5,
-                            windowDaysFrom: 'accountOpenedAt',
-                            windowDays: 45,
-                            notes: [
-                                'It is not stated that there must be a minimum amount.',
-                                'Excludes gambling transactions, credit card or insurance payments, cash withdrawals, and card to card payments.',
-                            ],
-                        },
-                        {
-                            type: 'login',
-                            channel: 'appOrOnlineBanking',
-                            windowDaysFrom: 'accountOpenedAt',
-                            windowDays: 45,
-                            notes: ['Register and log into the App or Online Banking.'],
                         },
                     ],
                     payment: {
@@ -325,27 +351,33 @@ export const incentives: { data: Offer[] } = {
                     title: '£200 Switch Incentive',
                     requirements: [
                         {
-                            type: 'openAccount',
-                            accountTypes: ['Santander Everyday', 'Edge', 'Edge Up', 'Edge Explorer', 'Private (v2)'],
-                            notes: ['Or use an existing account.'],
-                        },
-                        { type: 'switch', scheme: 'CASS', mustBeFull: true, },
-                        {
-                            type: 'payIn', amount: 1500, windowDaysFrom: 'switchRequest', windowDays: 60,
-                            notes: ['Through 1 or more payments.'],
-                        },
-                        {
-                            type: 'directDebits',
-                            count: 2,
-                            mustBeActive: true,
-                            windowDaysFrom: 'switchRequest',
-                            windowDays: 60,
-                            notes: [
-                                'Direct Debits must be active at the point of eligibility assesment.',
-                                'Must satisfy Santander\'s list of "Household Direct Debits" (Direct Debits for the payment of your council tax, mobile phone, home phone, broadband, paid-for TV packages, and water, gas and electricity bills.)',
-                                'Does not include Direct Debits set up to fund a savings account you have with Santander, cahoot, or Cater Allen.',
+                            kind: 'group',
+                            op: 'AND',
+                            children: [
+                                {
+                                    type: 'openAccount',
+                                    accountTypes: ['Santander Everyday', 'Edge', 'Edge Up', 'Edge Explorer', 'Private (v2)'],
+                                    notes: ['Or use an existing account.'],
+                                },
+                                { type: 'switch', scheme: 'CASS', mustBeFull: true, },
+                                {
+                                    type: 'payIn', amount: 1500, windowDaysFrom: 'switchRequest', windowDays: 60,
+                                    notes: ['Through 1 or more payments.'],
+                                },
+                                {
+                                    type: 'directDebits',
+                                    count: 2,
+                                    mustBeActive: true,
+                                    windowDaysFrom: 'switchRequest',
+                                    windowDays: 60,
+                                    notes: [
+                                        'Direct Debits must be active at the point of eligibility assesment.',
+                                        'Must satisfy Santander\'s list of "Household Direct Debits" (Direct Debits for the payment of your council tax, mobile phone, home phone, broadband, paid-for TV packages, and water, gas and electricity bills.)',
+                                        'Does not include Direct Debits set up to fund a savings account you have with Santander, cahoot, or Cater Allen.',
+                                    ],
+                                },
                             ],
-                        },
+                        }
                     ],
                     payment: {
                         type: 'credit', amount: 200,
@@ -390,40 +422,46 @@ export const incentives: { data: Offer[] } = {
                     headline: { credit: 150 },
                     requirements: [
                         {
-                            type: 'openAccount',
-                            accountTypes: ['Spend & Save', 'Spend & Save Plus'],
-                            notes: [
-                                'Or, hold a TSB personal current account (which is not an Under 19s current account) that you opened before 13 January 2026.',
-                            ],
-                        },
-                        {
-                            type: 'switch', scheme: 'CASS', mustBeFull: true,
-                            byDate: '2026-03-20',
-                            notes: [
-                                'Complete a full switch, using CASS, by 20 March 2026.',
-                                'NB. The switch will take at least 7 working days to complete from submission.',
-                            ],
-                        },
-                        {
-                            type: 'debitCardTx', countAtLeast: 5,
-                            byDate: '2026-03-20',
-                            notes: [
-                                'Payments can be of any value.',
-                                'Payments made by the account\'s debit card includes Apple Pay, Samsung Pay, and Google Pay.',
-                            ],
-                        },
-                        {
-                            type: 'login', channel: 'tsbApp',
-                            byDate: '2026-03-20',
-                        },
-                        {
-                            type: 'payIn', amount: 1000,
-                            byDate: '2026-03-20',
-                            notes: [
-                                'Payment can be made in one or more deposits.',
-                                'Deposits must come from any account held with another bank or building society.',
-                                'Funds already held in a TSB personal current account prior to 13 January 2026 will not count.',
-                                'Funds must be in your account by 23.59pm on 20 March 2026.',
+                            kind: 'group',
+                            op: 'AND',
+                            children: [
+                                {
+                                    type: 'openAccount',
+                                    accountTypes: ['Spend & Save', 'Spend & Save Plus'],
+                                    notes: [
+                                        'Or, hold a TSB personal current account (which is not an Under 19s current account) that you opened before 13 January 2026.',
+                                    ],
+                                },
+                                {
+                                    type: 'switch', scheme: 'CASS', mustBeFull: true,
+                                    byDate: '2026-03-20',
+                                    notes: [
+                                        'Complete a full switch, using CASS, by 20 March 2026.',
+                                        'NB. The switch will take at least 7 working days to complete from submission.',
+                                    ],
+                                },
+                                {
+                                    type: 'debitCardTx', countAtLeast: 5,
+                                    byDate: '2026-03-20',
+                                    notes: [
+                                        'Payments can be of any value.',
+                                        'Payments made by the account\'s debit card includes Apple Pay, Samsung Pay, and Google Pay.',
+                                    ],
+                                },
+                                {
+                                    type: 'login', channel: 'tsbApp',
+                                    byDate: '2026-03-20',
+                                },
+                                {
+                                    type: 'payIn', amount: 1000,
+                                    byDate: '2026-03-20',
+                                    notes: [
+                                        'Payment can be made in one or more deposits.',
+                                        'Deposits must come from any account held with another bank or building society.',
+                                        'Funds already held in a TSB personal current account prior to 13 January 2026 will not count.',
+                                        'Funds must be in your account by 23.59pm on 20 March 2026.',
+                                    ],
+                                },
                             ],
                         },
                     ],
@@ -482,32 +520,38 @@ export const incentives: { data: Offer[] } = {
             availability: { start: '2026-02-17', end: '2026-05-28', },
             requirements: [
                 {
-                    type: 'openAccount',
-                    accountTypes: ['Select', 'Reward'],
-                    notes: [
-                        'Apply for a new account between 17th February 2026 and 28th May 2026.',
-                        'Must not be a joint account.',
+                    kind: 'group',
+                    op: 'AND',
+                    children: [
+                        {
+                            type: 'openAccount',
+                            accountTypes: ['Select', 'Reward'],
+                            notes: [
+                                'Apply for a new account between 17th February 2026 and 28th May 2026.',
+                                'Must not be a joint account.',
+                            ],
+                        },
+                        {
+                            type: 'switch', scheme: 'CASS', mustBeFull: true,
+                            mustRequestBy: '2026-05-28', mustCompleteBy: '2026-06-36',
+                            notes: [
+                                'Original account cannot be RBS, NatWest, or Ulster Bank.',
+                            ],
+                        },
+                        {
+                            type: 'payIn', amount: 1250,
+                            windowDaysFrom: 'switchCompletedAt', windowDays: 60,
+                            notes: [
+                                'This can be made of multiple payments into your account.',
+                                'Funds transferred during the switch process count towards the deposit requirement.'
+                            ],
+                        },
+                        {
+                            type: 'login', channel: 'royalBankApp',
+                            windowDaysFrom: 'switchCompletedAt', windowDays: 60,
+                            notes: ['This can be done on any device that supports the RBS Mobile Banking App.'],
+                        },
                     ],
-                },
-                {
-                    type: 'switch', scheme: 'CASS', mustBeFull: true,
-                    mustRequestBy: '2026-05-28', mustCompleteBy: '2026-06-36',
-                    notes: [
-                        'Original account cannot be RBS, NatWest, or Ulster Bank.',
-                    ],
-                },
-                {
-                    type: 'payIn', amount: 1250,
-                    windowDaysFrom: 'switchCompletedAt', windowDays: 60,
-                    notes: [
-                        'This can be made of multiple payments into your account.',
-                        'Funds transferred during the switch process count towards the deposit requirement.'
-                    ],
-                },
-                {
-                    type: 'login', channel: 'royalBankApp',
-                    windowDaysFrom: 'switchCompletedAt', windowDays: 60,
-                    notes: ['This can be done on any device that supports the RBS Mobile Banking App.'],
                 },
             ],
             eligibility: [
@@ -551,32 +595,38 @@ export const incentives: { data: Offer[] } = {
             availability: { start: '2026-02-17', end: '2026-05-28', },
             requirements: [
                 {
-                    type: 'openAccount',
-                    accountTypes: ['Select', 'Reward'],
-                    notes: [
-                        'Apply for a new account between 17th February 2026 and 28th May 2026.',
-                        'Must not be a joint account.',
+                    kind: 'group',
+                    op: 'AND',
+                    children: [
+                        {
+                            type: 'openAccount',
+                            accountTypes: ['Select', 'Reward'],
+                            notes: [
+                                'Apply for a new account between 17th February 2026 and 28th May 2026.',
+                                'Must not be a joint account.',
+                            ],
+                        },
+                        {
+                            type: 'switch', scheme: 'CASS', mustBeFull: true,
+                            mustRequestBy: '2026-05-28', mustCompleteBy: '2026-06-36',
+                            notes: [
+                                'Original account cannot be RBS, NatWest, or Ulster Bank.',
+                            ],
+                        },
+                        {
+                            type: 'payIn', amount: 1250,
+                            windowDaysFrom: 'switchCompletedAt', windowDays: 60,
+                            notes: [
+                                'This can be made of multiple payments into your account.',
+                                'Funds transferred during the switch process count towards the deposit requirement.'
+                            ],
+                        },
+                        {
+                            type: 'login', channel: 'royalBankApp',
+                            windowDaysFrom: 'switchCompletedAt', windowDays: 60,
+                            notes: ['This can be done on any device that supports the Natwest Mobile Banking App.'],
+                        },
                     ],
-                },
-                {
-                    type: 'switch', scheme: 'CASS', mustBeFull: true,
-                    mustRequestBy: '2026-05-28', mustCompleteBy: '2026-06-36',
-                    notes: [
-                        'Original account cannot be RBS, NatWest, or Ulster Bank.',
-                    ],
-                },
-                {
-                    type: 'payIn', amount: 1250,
-                    windowDaysFrom: 'switchCompletedAt', windowDays: 60,
-                    notes: [
-                        'This can be made of multiple payments into your account.',
-                        'Funds transferred during the switch process count towards the deposit requirement.'
-                    ],
-                },
-                {
-                    type: 'login', channel: 'royalBankApp',
-                    windowDaysFrom: 'switchCompletedAt', windowDays: 60,
-                    notes: ['This can be done on any device that supports the Natwest Mobile Banking App.'],
                 },
             ],
             eligibility: [
@@ -620,44 +670,50 @@ export const incentives: { data: Offer[] } = {
             value: 175,
             requirements: [
                 {
-                    type: 'openAccount',
-                    accountTypes: ['FlexDirect', 'FlexAccount', 'FlexPlus'],
-                    notes: ['Or use existing one of these accounts.'],
-                },
-                {
-                    type: 'switch', scheme: 'CASS', mustBeFull: true,
-                    windowDaysFrom: 'accountOpenedAt', windowDays: 28,
-                    notes: [
-                        'Switched account must contain Direct Debits (see below).',
-                        'Switched accoutn must be in your name.',
-                        'The switch must not habe been requested before 18 September 2025, even if it completes after this date.',
-                    ],
-                },
-                {
-                    type: 'directDebits',
-                    countAtLeast: 2,
-                    mustBeActive: null as unknown as boolean,
-                    notes: [
-                        'Other automatic payments, like standing orders and recurring card payments, do not count.',
-                        'It is not stated that there must be a minimum amount or who the payments must be to.',
-                        'It is not stated that they must be active, collected from, or collect within any timeframe.',
-                    ],
-                },
-                {
-                    type: 'payIn', amount: 1000,
-                    windowDaysFrom: 'accountOpenedAt', windowDays: 31,
-                    notes: [
-                        'Includes money transferred as part of the switch.',
-                        'Transferring money from other Nationwide accounts or Visa credits will not count.',
-                        'Money already held in a Natiopnwide account will not count.',
-                    ],
-                },
-                {
-                    type: 'debitCardTx', count: 1,
-                    windowDaysFrom: 'accountOpenedAt', windowDays: 31,
-                    notes: [
-                        'Payments made by the account\'s debit card includes Apple Pay, Samsung Pay, Google Pay, and recurring card payments.',
-                        'Excludes gambling and crypto transactions, taking out cash and money transfers, buying foreign currency or traveller’s cheques, money orders, loan, lease and mortgage payments.',
+                    kind: 'group',
+                    op: 'AND',
+                    children: [
+                        {
+                            type: 'openAccount',
+                            accountTypes: ['FlexDirect', 'FlexAccount', 'FlexPlus'],
+                            notes: ['Or use existing one of these accounts.'],
+                        },
+                        {
+                            type: 'switch', scheme: 'CASS', mustBeFull: true,
+                            windowDaysFrom: 'accountOpenedAt', windowDays: 28,
+                            notes: [
+                                'Switched account must contain Direct Debits (see below).',
+                                'Switched accoutn must be in your name.',
+                                'The switch must not habe been requested before 18 September 2025, even if it completes after this date.',
+                            ],
+                        },
+                        {
+                            type: 'directDebits',
+                            countAtLeast: 2,
+                            mustBeActive: null as unknown as boolean,
+                            notes: [
+                                'Other automatic payments, like standing orders and recurring card payments, do not count.',
+                                'It is not stated that there must be a minimum amount or who the payments must be to.',
+                                'It is not stated that they must be active, collected from, or collect within any timeframe.',
+                            ],
+                        },
+                        {
+                            type: 'payIn', amount: 1000,
+                            windowDaysFrom: 'accountOpenedAt', windowDays: 31,
+                            notes: [
+                                'Includes money transferred as part of the switch.',
+                                'Transferring money from other Nationwide accounts or Visa credits will not count.',
+                                'Money already held in a Natiopnwide account will not count.',
+                            ],
+                        },
+                        {
+                            type: 'debitCardTx', count: 1,
+                            windowDaysFrom: 'accountOpenedAt', windowDays: 31,
+                            notes: [
+                                'Payments made by the account\'s debit card includes Apple Pay, Samsung Pay, Google Pay, and recurring card payments.',
+                                'Excludes gambling and crypto transactions, taking out cash and money transfers, buying foreign currency or traveller’s cheques, money orders, loan, lease and mortgage payments.',
+                            ],
+                        },
                     ],
                 },
             ],
@@ -701,46 +757,52 @@ export const incentives: { data: Offer[] } = {
                     title: '£100 Switch Incentive',
                     requirements: [
                         {
-                            type: 'openAccount',
-                            accountTypes: ['Standard Current Account', 'Current Account Plus', 'Privilege', 'Privilege Premier', 'Everyday Extra'],
-                            notes: ['Or use an existing one.'],
-                        },
-                        {
-                            type: 'switch', scheme: 'CASS', mustBeFull: true,
-                            windowDaysFrom: 'accountOpenedAt', windowDays: 14,
-                            notes: [
-                                'smile current accounts, student accounts, and Cashminder accounts are excluded from this offer.',
-                                'Current Account Switch Service request must be received from between 28/01/2026 and offer withdrawal date.',
+                            kind: 'group',
+                            op: 'AND',
+                            children: [
+                                {
+                                    type: 'openAccount',
+                                    accountTypes: ['Standard Current Account', 'Current Account Plus', 'Privilege', 'Privilege Premier', 'Everyday Extra'],
+                                    notes: ['Or use an existing one.'],
+                                },
+                                {
+                                    type: 'switch', scheme: 'CASS', mustBeFull: true,
+                                    windowDaysFrom: 'accountOpenedAt', windowDays: 14,
+                                    notes: [
+                                        'smile current accounts, student accounts, and Cashminder accounts are excluded from this offer.',
+                                        'Current Account Switch Service request must be received from between 28/01/2026 and offer withdrawal date.',
+                                    ],
+                                },
+                                {
+                                    type: 'payIn', amount: 1000,
+                                    windowDaysFrom: 'accountOpenedAt', windowDays: 30,
+                                    notes: [
+                                        'Payment can be made in one or more deposits.',
+                                        'Includes money transferred as part of the switch.',
+                                    ],
+                                },
+                                {
+                                    type: 'directDebits', countAtLeast: 2, mustBeActive: true,
+                                    windowDaysFrom: 'accountOpenedAt', windowDays: 30,
+                                    notes: [
+                                        'Active at the point of payment.',
+                                        'This can include any that are transferred as part of the switch.',
+                                    ],
+                                },
+                                {
+                                    type: 'debitCardTx', countAtLeast: 10,
+                                    windowDaysFrom: 'accountOpenedAt', windowDays: 30,
+                                    notes: [
+                                        'Payments made by the account\'s debit card includes any digital wallet transactions.',
+                                        'Excludes pending transactions.',
+                                    ],
+                                },
+                                {
+                                    type: 'register', channel: 'appOrOnlineBanking',
+                                    windowDaysFrom: 'accountOpenedAt', windowDays: 30,
+                                    notes: ['Register and log into the App or Online Banking.'],
+                                },
                             ],
-                        },
-                        {
-                            type: 'payIn', amount: 1000,
-                            windowDaysFrom: 'accountOpenedAt', windowDays: 30,
-                            notes: [
-                                'Payment can be made in one or more deposits.',
-                                'Includes money transferred as part of the switch.',
-                            ],
-                        },
-                        {
-                            type: 'directDebits', countAtLeast: 2, mustBeActive: true,
-                            windowDaysFrom: 'accountOpenedAt', windowDays: 30,
-                            notes: [
-                                'Active at the point of payment.',
-                                'This can include any that are transferred as part of the switch.',
-                            ],
-                        },
-                        {
-                            type: 'debitCardTx', countAtLeast: 10,
-                            windowDaysFrom: 'accountOpenedAt', windowDays: 30,
-                            notes: [
-                                'Payments made by the account\'s debit card includes any digital wallet transactions.',
-                                'Excludes pending transactions.',
-                            ],
-                        },
-                        {
-                            type: 'register', channel: 'appOrOnlineBanking',
-                            windowDaysFrom: 'accountOpenedAt', windowDays: 30,
-                            notes: ['Register and log into the App or Online Banking.'],
                         },
                     ],
                     payment: {
@@ -764,26 +826,32 @@ export const incentives: { data: Offer[] } = {
                     title: '£25 \'Stay\' Incentive (1)',
                     requirements: [
                         {
-                            type: 'payIn', amount: 1000,
-                            windowMonthsFrom: 'switchPayment', windowMonths: 1,
-                            notes: [
-                                'Payment can be made in one or more deposits.',
-                                'Deposits must be within 1 month of "£100 Switch Incentive" payment.',
-                            ],
-                        },
-                        {
-                            type: 'debitCardTx', countAtLeast: 10,
-                            windowMonthsFrom: 'switchPayment', windowMonths: 1,
-                            notes: [
-                                'Payments made by the account\'s debit card includes any digital wallet transactions.',
-                                'Excludes pending transactions.',
-                            ],
-                        },
-                        {
-                            type: 'directDebits', countAtLeast: 2, mustBeActive: true,
-                            windowMonthsFrom: 'switchPayment', windowMonths: 1,
-                            notes: [
-                                'Active on the final day of the qualifying period.',
+                            kind: 'group',
+                            op: 'AND',
+                            children: [
+                                {
+                                    type: 'payIn', amount: 1000,
+                                    windowMonthsFrom: 'switchPayment', windowMonths: 1,
+                                    notes: [
+                                        'Payment can be made in one or more deposits.',
+                                        'Deposits must be within 1 month of "£100 Switch Incentive" payment.',
+                                    ],
+                                },
+                                {
+                                    type: 'debitCardTx', countAtLeast: 10,
+                                    windowMonthsFrom: 'switchPayment', windowMonths: 1,
+                                    notes: [
+                                        'Payments made by the account\'s debit card includes any digital wallet transactions.',
+                                        'Excludes pending transactions.',
+                                    ],
+                                },
+                                {
+                                    type: 'directDebits', countAtLeast: 2, mustBeActive: true,
+                                    windowMonthsFrom: 'switchPayment', windowMonths: 1,
+                                    notes: [
+                                        'Active on the final day of the qualifying period.',
+                                    ],
+                                },
                             ],
                         },
                     ],
@@ -807,26 +875,32 @@ export const incentives: { data: Offer[] } = {
                     title: '£25 \'Stay\' Incentive (2)',
                     requirements: [
                         {
-                            type: 'payIn', amount: 1000,
-                            windowMonthsFrom: 'switchPayment', windowMonths: 1,
-                            notes: [
-                                'Payment can be made in one or more deposits.',
-                                'Deposits must be within 1 month of "£100 Switch Incentive" payment.',
-                            ],
-                        },
-                        {
-                            type: 'debitCardTx', countAtLeast: 10,
-                            windowMonthsFrom: 'switchPayment', windowMonths: 1,
-                            notes: [
-                                'Payments made by the account\'s debit card includes any digital wallet transactions.',
-                                'Excludes pending transactions.',
-                            ],
-                        },
-                        {
-                            type: 'directDebits', countAtLeast: 2, mustBeActive: true,
-                            windowMonthsFrom: 'switchPayment', windowMonths: 1,
-                            notes: [
-                                'Active on the final day of the qualifying period.',
+                            kind: 'group',
+                            op: 'AND',
+                            children: [
+                                {
+                                    type: 'payIn', amount: 1000,
+                                    windowMonthsFrom: 'switchPayment', windowMonths: 1,
+                                    notes: [
+                                        'Payment can be made in one or more deposits.',
+                                        'Deposits must be within 1 month of "£100 Switch Incentive" payment.',
+                                    ],
+                                },
+                                {
+                                    type: 'debitCardTx', countAtLeast: 10,
+                                    windowMonthsFrom: 'switchPayment', windowMonths: 1,
+                                    notes: [
+                                        'Payments made by the account\'s debit card includes any digital wallet transactions.',
+                                        'Excludes pending transactions.',
+                                    ],
+                                },
+                                {
+                                    type: 'directDebits', countAtLeast: 2, mustBeActive: true,
+                                    windowMonthsFrom: 'switchPayment', windowMonths: 1,
+                                    notes: [
+                                        'Active on the final day of the qualifying period.',
+                                    ],
+                                },
                             ],
                         },
                     ],
@@ -850,26 +924,32 @@ export const incentives: { data: Offer[] } = {
                     title: '£25 \'Stay\' Incentive (3)',
                     requirements: [
                         {
-                            type: 'payIn', amount: 1000,
-                            windowMonthsFrom: 'switchPayment', windowMonths: 1,
-                            notes: [
-                                'Payment can be made in one or more deposits.',
-                                'Deposits must be within 1 month of "£100 Switch Incentive" payment.',
-                            ],
-                        },
-                        {
-                            type: 'debitCardTx', countAtLeast: 10,
-                            windowMonthsFrom: 'switchPayment', windowMonths: 1,
-                            notes: [
-                                'Payments made by the account\'s debit card includes any digital wallet transactions.',
-                                'Excludes pending transactions.',
-                            ],
-                        },
-                        {
-                            type: 'directDebits', countAtLeast: 2, mustBeActive: true,
-                            windowMonthsFrom: 'switchPayment', windowMonths: 1,
-                            notes: [
-                                'Active on the final day of the qualifying period.',
+                            kind: 'group',
+                            op: 'AND',
+                            children: [
+                                {
+                                    type: 'payIn', amount: 1000,
+                                    windowMonthsFrom: 'switchPayment', windowMonths: 1,
+                                    notes: [
+                                        'Payment can be made in one or more deposits.',
+                                        'Deposits must be within 1 month of "£100 Switch Incentive" payment.',
+                                    ],
+                                },
+                                {
+                                    type: 'debitCardTx', countAtLeast: 10,
+                                    windowMonthsFrom: 'switchPayment', windowMonths: 1,
+                                    notes: [
+                                        'Payments made by the account\'s debit card includes any digital wallet transactions.',
+                                        'Excludes pending transactions.',
+                                    ],
+                                },
+                                {
+                                    type: 'directDebits', countAtLeast: 2, mustBeActive: true,
+                                    windowMonthsFrom: 'switchPayment', windowMonths: 1,
+                                    notes: [
+                                        'Active on the final day of the qualifying period.',
+                                    ],
+                                },
                             ],
                         },
                     ],
@@ -909,27 +989,39 @@ export const incentives: { data: Offer[] } = {
             availability: { start: '2026-01-20', end: '2026-03-02' },
             requirements: [
                 {
-                    type: 'holdAccount', accountTypes: ['personal savings account'],
-                    notes: [
-                        'All TSB personal savings accounts are eligible, except for: Monthly Saver; Matured Funds; Young Saver; Young Saver Passbook; and Junior Cash ISA.',
-                    ],
-                },
-                {
-                    type: 'entry_deposit', countAtMost: 25, amount: 2500,
-                    notes: [
-                        'One entry per single deposit of £2,500 (or multiple of) made before 23:59 on 2 Mar 2026.',
-                        'Funds must originate from outside TSB and must be deposited in pounds Sterling.',
-                        'A maximum of 25 deposit entries per customer (or, 24 deposit entries, if a postal entry is made).',
-                        'Money must not leave until on/after 3 Mar 2026.',
-                    ],
-                },
-                {
-                    type: 'entry_notice', channel: 'postal', countAtMost: 1,
-                    notes: [
-                        'You can enter the prize draw by writing to us by first or second class post in a sealed envelope to arrive with us during the Promotion Period to:',
-                        'TSB Bank plc Prize Draw, 1st Floor, Henry Duncan House, 120 George Street, Edinburgh, EH2 4LH,',
-                        'with your full name, address, and sort code and account number of your TSB Personal Current Account, requesting to be entered into the TSB Yes Days Prize Draw.',
-                        'Maximum one entry by this route per customer.',
+                    kind: 'group',
+                    op: 'AND',
+                    children: [
+                        {
+                            type: 'holdAccount', accountTypes: ['personal savings account'],
+                            notes: [
+                                'All TSB personal savings accounts are eligible, except for: Monthly Saver; Matured Funds; Young Saver; Young Saver Passbook; and Junior Cash ISA.',
+                            ],
+                        },
+                        {
+                            kind: 'group',
+                            op: 'OR',
+                            children: [
+                                {
+                                    type: 'entry_deposit', countAtMost: 25, amount: 2500,
+                                    notes: [
+                                        'One entry per single deposit of £2,500 (or multiple of) made before 23:59 on 2 Mar 2026.',
+                                        'Funds must originate from outside TSB and must be deposited in pounds Sterling.',
+                                        'A maximum of 25 deposit entries per customer (or, 24 deposit entries, if a postal entry is made).',
+                                        'Money must not leave until on/after 3 Mar 2026.',
+                                    ],
+                                },
+                                {
+                                    type: 'entry_notice', channel: 'postal', countAtMost: 1,
+                                    notes: [
+                                        'You can enter the prize draw by writing to us by first or second class post in a sealed envelope to arrive with us during the Promotion Period to:',
+                                        'TSB Bank plc Prize Draw, 1st Floor, Henry Duncan House, 120 George Street, Edinburgh, EH2 4LH,',
+                                        'with your full name, address, and sort code and account number of your TSB Personal Current Account, requesting to be entered into the TSB Yes Days Prize Draw.',
+                                        'Maximum one entry by this route per customer.',
+                                    ],
+                                },
+                            ],
+                        },
                     ],
                 },
             ],
@@ -958,28 +1050,104 @@ export const incentives: { data: Offer[] } = {
             title: '£100 Fairer Share',
             headline: { credit: 100 },
             value: 100,
-            availability: { start: '2026-01', end: '2026-03' },
+            availability: { start: '2026' },
             requirements: [
                 {
-                    type: 'holdAccount',
-                    accountTypes: [
-                        'FlexPlus',
-                        'FlexOne',
-                        'FlexStudent',
-                        'FlexGraduate',
-                        'FlexAccount',
-                        'FlexDirect',
-                        'FlexBasic',
-                    ],
-                    anchor: '2025-03-31',
-                    notes: [
-                        'Must have been open on 31 March 2025.',
-                    ],
-                },
-                {
-                    type: 'READ ME',
-                    notes: [
-                        'This page is still under construction.',
+                    kind: 'group',
+                    op: 'AND',
+                    children: [
+                        // A: qualifying account
+                        {
+                            kind: 'group', op: 'OR',
+                            label: 'Qualifying Account',
+                            children: [
+                                // FlexPlus
+                                {
+                                    kind: 'group', op: 'AND',
+                                    label: 'FlexPlus',
+                                    children: [
+                                        { type: 'holdAccount', accountTypes: ['FlexPlus'], anchor: '2025-03-31' },
+                                        {
+                                            type: 'payFee', anchor: '2025-03-31',
+                                            meta: 'monthly',
+                                        },
+                                    ],
+                                },
+                                // FlexOne / Student / Graduate
+                                {
+                                    kind: 'group', op: 'AND',
+                                    label: 'FlexOne, FlexStudent, or FlexGraduate',
+                                    children: [
+                                        { type: 'holdAccount', accountTypes: ['FlexOne', 'FlexStudent', 'FlexGraduate'], anchor: '2025-03-31' },
+                                        {
+                                            kind: 'group',
+                                            op: 'OR',
+                                            children: [
+                                                {
+                                                    type: 'payments', countAtLeast: 1,
+                                                    // month: '2025-03',
+                                                    notes: ['At least one payment in OR one payment out in March 2025 (excluding interest/charges/adjustments).'],
+                                                },
+                                                { type: 'switch', afterDate: '2025-01-01', byDate: '2025-03-31', notes: ['CASS switch into FlexOne/FlexStudent between 1 Jan and 31 Mar 2025.'] },
+                                            ],
+                                        },
+                                    ],
+                                },
+                                // FlexAccount / FlexDirect / FlexBasic
+                                {
+                                    kind: 'group', op: 'AND',
+                                    label: 'FlexAccount, FlexDirect, or FlexBasic',
+                                    children: [
+                                        { type: 'holdAccount', accountTypes: ['FlexAccount', 'FlexDirect', 'FlexBasic'], anchor: '2025-03-31' },
+                                        {
+                                            kind: 'group',
+                                            op: 'OR',
+                                            children: [
+                                                {
+                                                    kind: 'group',
+                                                    op: 'AND',
+                                                    children: [
+                                                        {
+                                                            type: 'meetsInTwoOfThreeMonths',
+                                                            // months: ['2025-01', '2025-02', '2025-03'],
+                                                        },
+                                                        { type: 'payIn', amount: 500, notes: ['Transfers from other Nationwide accounts do not count.'] },
+                                                        { type: 'paymentsOut', countAtLeast: 2 },
+                                                    ],
+                                                },
+                                                {
+                                                    kind: 'group',
+                                                    op: 'AND',
+                                                    children: [
+                                                        {
+                                                            type: 'meetsInTwoOfThreeMonths',
+                                                            // months: ['2025-01', '2025-02', '2025-03'],
+                                                        },
+                                                        { type: 'paymentsOut', countAtLeast: 10 },
+                                                    ],
+                                                },
+                                                { type: 'switch', afterDate: '2025-01-01', byDate: '2025-03-31', notes: ['CASS switch into the account between 1 Jan and 31 Mar 2025.'] },
+                                            ],
+                                        },
+                                    ],
+                                },
+                            ],
+                        },
+                        // B: qualifying savings / mortgage
+                        {
+                            kind: 'group', op: 'OR',
+                            children: [
+                                {
+                                    type: 'balance', amount: 100, accountTypes: ['savings'],
+                                    // inMonth: '2025-03',
+                                    notes: ['At least £100 total at end of any day in March 2025 (eligible personal savings/cash ISAs).'],
+                                },
+                                {
+                                    type: 'balance', amount: 100, accountTypes: ['mortgage'],
+                                    anchor: '2025-03-31', notes: ['Owed at least £100 on Nationwide residential mortgage on 31 March 2025.'],
+                                },
+                            ],
+                        },
                     ],
                 },
             ],

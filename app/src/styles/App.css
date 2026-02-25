@@ -109,6 +109,10 @@ button,
     -webkit-tap-highlight-color: transparent;
 }
 
+.unclickable {
+    cursor: not-allowed;
+}
+
 .small {
     font-size: 0.8rem;
 }

@@ -233,7 +233,6 @@
   width: 22px;
   height: 22px;
   object-fit: cover;
-  cursor: pointer;
 }
 
 .offerReqMeta,
@@ -246,6 +245,32 @@
   margin-top: 6px;
   line-height: 1.4;
   /* max-width: 90ch; */
+}
+
+.reqStack {
+  position: relative;
+  padding-left: 20px;
+  /* space for brace */
+}
+
+.reqStack::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 14px;
+
+  border-left: 2px solid #888;
+  border-top: 2px solid #888;
+  border-bottom: 2px solid #888;
+
+  border-radius: 12px;
+}
+
+.smallPrint {
+  font-size: 15px;
+  color: #666;
 }
 
 /* Links */
