@@ -325,6 +325,7 @@ function IncentivesPage({ users, }: IncentivesPageProps) {
                                 selectedTodos={selectedTodos}
                                 toggleTodo={toggleTodo}
                                 reqGroups={allReqGroups.find(g => g.offerId === selectedOffer.id)?.groups ?? []}
+                                setSelectedOfferID={setSelectedOfferID}
                             />
                         ) : (
                             renderMonolithTodos()
@@ -366,12 +367,14 @@ function OfferDetails({
     selectedTodos,
     toggleTodo,
     reqGroups,
+    setSelectedOfferID,
 }: {
     offer: any;
     users: User[];
     selectedTodos: SelectedTodos;
     toggleTodo: (offerId: string, reqId: string, userId: string) => void;
     reqGroups: ReqGroup[];
+    setSelectedOfferID: (selectedOfferID: string) => void;
 }) {
     const provider = getProvider(offer.bankID);
 
@@ -541,9 +544,20 @@ function OfferDetails({
                                     {i > 0 &&
                                         <span>•</span>
                                     }
-                                    <a key={i} href={l.url} target="_blank" rel="noreferrer">
-                                        {l.label ?? l.url}
-                                    </a>
+                                    {l.url &&
+                                        <a key={i} href={l.url} target="_blank" rel="noreferrer">
+                                            {l.label ?? l.url}
+                                        </a>
+                                    }
+                                    {l.setSelectedOfferID &&
+                                        <a key={i} href={`./${l.setSelectedOfferID}`} onClick={(e) => {
+                                            e.stopPropagation();
+                                            e.preventDefault();
+                                            setSelectedOfferID(l.setSelectedOfferID);
+                                        }}>
+                                            {l.label ?? l.url}
+                                        </a>
+                                    }
                                 </>
                             ))
                         }
@@ -868,7 +882,7 @@ function reqMeta(r: any, data?: any) {
         bits.push(dateBits.join(' '));
     }
 
-    if (r.meta) bits.push(r.meta); 
+    if (r.meta) bits.push(r.meta);
 
     if (r.mustRequestBy) bits.push(`request by ${formatDate(r.mustRequestBy) ?? r.mustRequestBy}`);
 

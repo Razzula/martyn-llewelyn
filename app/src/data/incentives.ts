@@ -83,7 +83,7 @@ export type Offer = {
     headline?: Headline;
     value: number;
     availability?: Availability;
-    links?: { label?: string; url: string }[];
+    links?: { label?: string; url?: string; setSelectedOfferID?: string; }[];
     eligibility?: string[];
     requirements?: Requirement[]; // optional, for offer-level criteria
     components?: Component[];
@@ -1047,10 +1047,36 @@ export const incentives: { data: Offer[] } = {
             id: 'nationwide_fairer_share_2026',
             bankID: 'ob-nationwide',
             scheme: 'PROMO',
-            title: '£100 Fairer Share',
+            title: '£100 Fairer Share 2026',
             headline: { credit: 100 },
             value: 100,
             availability: { start: '2026' },
+            requirements: [
+            ],
+            eligibility: [
+                'Eligiblity criteria is not yet known, but it is expected to be similar to previous "Fairer Share" offers. Information in this is based on 2025\'s offer.'
+            ],
+            payment: {
+                type: 'credit', amount: 100,
+                payout: {
+                    label: 'Paid into a Nationwide current account between 18 Jun 2025 and 4 Jul 2025.',
+                    deliveryMethod: 'credit',
+                    sender: 'Nationwide',
+                } as any,
+            },
+            links: [
+                { label: 'Fairer Share 2025', setSelectedOfferID: 'nationwide_fairer_share_2025' },
+                { label: 'Nationwide Fairer Share Page', url: 'https://www.nationwide.co.uk/about-us/fairer-share' },
+            ],
+        },
+        {
+            id: 'nationwide_fairer_share_2025',
+            bankID: 'ob-nationwide',
+            scheme: 'PROMO',
+            title: '£100 Fairer Share 2025',
+            headline: { credit: 100 },
+            value: 100,
+            availability: { start: '2025', end: '2025-03-31' },
             requirements: [
                 {
                     kind: 'group',
@@ -1107,25 +1133,11 @@ export const incentives: { data: Offer[] } = {
                                                     kind: 'group',
                                                     op: 'AND',
                                                     children: [
-                                                        {
-                                                            type: 'meetsInTwoOfThreeMonths',
-                                                            // months: ['2025-01', '2025-02', '2025-03'],
-                                                        },
                                                         { type: 'payIn', amount: 500, notes: ['Transfers from other Nationwide accounts do not count.'] },
                                                         { type: 'paymentsOut', countAtLeast: 2 },
                                                     ],
                                                 },
-                                                {
-                                                    kind: 'group',
-                                                    op: 'AND',
-                                                    children: [
-                                                        {
-                                                            type: 'meetsInTwoOfThreeMonths',
-                                                            // months: ['2025-01', '2025-02', '2025-03'],
-                                                        },
-                                                        { type: 'paymentsOut', countAtLeast: 10 },
-                                                    ],
-                                                },
+                                                { type: 'paymentsOut', countAtLeast: 10 },
                                                 { type: 'switch', afterDate: '2025-01-01', byDate: '2025-03-31', notes: ['CASS switch into the account between 1 Jan and 31 Mar 2025.'] },
                                             ],
                                         },
