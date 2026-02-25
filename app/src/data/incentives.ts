@@ -1175,5 +1175,75 @@ export const incentives: { data: Offer[] } = {
                 { label: 'Terms & Conditions (2025) (PDF)', url: './documents/nationwide/2025-FairerShare_T&Cs.pdf' },
             ],
         },
+        {
+            id: 'natwest_invest_isa_2026',
+            bankID: 'ob-natwest',
+            scheme: 'PROMO',
+            title: 'Up to £100,000 Invest Prize Draw',
+            headline: { prize: '1,051 prize draws • 1x £100,000 • 50x £1,000 • 1,000x £100' },
+            value: 100000, // sorting only, not expected value
+            availability: { start: '2026-01-12', end: '2026-04-30' },
+            requirements: [
+                {
+                    kind: 'group',
+                    op: 'AND',
+                    children: [
+                        {
+                            type: 'holdAccount', accountTypes: ['Stocks and Shares ISA'],
+                            notes: [
+                                'ISA must remain open until 23:59 on 30 April 2026.'
+                            ]
+                        },
+                        {
+                            kind: 'group',
+                            op: 'XOR',
+                            children: [
+                                {
+                                    type: 'entry_deposit', amount: 50,
+                                    notes: [
+                                        'One entry per £50 invested into a NatWest Invest Stocks & Shares ISA during the entry period.',
+                                        'Includes regular and lump sum contributions.',
+                                        'ISA transfers do not count.',
+                                        'Entries calculated on total contributions minus withdrawals.'
+                                    ]
+                                },
+                                {
+                                    type: 'entry_notice', channel: 'email', countAtMost: 1,
+                                    notes: [
+                                        'Free entry by emailing Investprizedraw@natwest.com.',
+                                        'Must include full name, DOB, telephone number, email, first line of address and postcode.',
+                                        'Must be received before 23:59 on 30 April 2026.',
+                                        'Not available if eligible for deposit-based entries.'
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                },
+            ],
+            eligibility: [
+                'Account must not be closed before 30 April 2026.',
+                'Must be 18+ and UK resident.',
+                'Not open to NatWest Group employees or associated persons.',
+            ],
+            payment: {
+                type: 'credit',
+                payout: {
+                    label: 'Draw by 31 May 2026. Prizes paid by 15 June 2026.',
+                    deliveryMethod: 'credit',
+                    sender: 'NatWest'
+                },
+                notes: [
+                    '1x £100,000 prize.',
+                    '50x £1,000 prizes.',
+                    '1,000x £100 prizes.',
+                    'One prize per customer.'
+                ]
+            },
+            links: [
+                { label: 'NatWest Prize Draw Page', url: 'https://www.natwest.com/investments/prize-draw.html' },
+                { label: 'Terms & Consitions', url: './documents/natwest/2026-InvestISA-PrizeDraw_T&Cs.pdf' },
+            ]
+        },
     ]
 } as const;

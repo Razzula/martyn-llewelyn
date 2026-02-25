@@ -146,7 +146,7 @@ function IncentivesPage({ users, }: IncentivesPageProps) {
 
                                     {grouped.groups.map((g) => (
                                         <div key={`${offerId}:${g.groupId}`} className="offerReqGroup">
-                                            <div className="offerReqGroupTitle">{g.title}</div>
+                                            <div className="offerGroupTitle">{g.title}</div>
 
                                             <ul className="offerList">
                                                 {g.reqs.map((r: any, i: number) => {
@@ -645,7 +645,7 @@ function RequirementRow({
                             </details>
                         ) : (
                             <>
-                                <span className="offerGroupTitle">{req.op === 'OR' ? 'One of' : 'All of'}</span>
+                                <span className="offerGroupTitle">{getReqOp(req.op)}</span>
 
                                 {(req?.children ?? []).map((child: any, i: number) => (
                                     <RequirementRow
@@ -719,6 +719,19 @@ function RequirementRow({
                 </div>
             </li>
         );
+    }
+}
+
+function getReqOp(op: string) {
+    switch (op) {
+        case 'AND':
+            return 'All of';
+        case 'OR':
+            return 'One of';
+        case 'XOR':
+            return 'One (and only one) of';
+        default:
+            return null
     }
 }
 
