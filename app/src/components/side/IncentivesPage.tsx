@@ -604,29 +604,18 @@ function RequirementRow({
             if (req.kind !== 'group') {
                 return selectedTodos[offer.id]?.[reqID]?.marks ?? [];
             }
-
             const childLists = (req.children ?? []).map((child, i) =>
                 selectedUsersForReq(child, `${reqID}:${reqIDFor(child, i)}`)
             );
 
-            return req.op === 'OR'
-                ? union(childLists)
-                : intersect(childLists); // AND
+            switch (req.op) {
+                case 'AND':
+                    return intersect(childLists);
+                case 'OR':
+                case 'XOR':
+                    return union(childLists);
+            }
         }
-
-        const childLists = (req.children ?? []).map((child, i) =>
-            selectedUsersForReq(child, `${reqID}:${reqIDFor(child, i)}`)
-        );
-
-        const satisfiedUserIDs: string[] =
-            req.op === 'OR'
-                ? Array.from(new Set(childLists.flat()))
-                : childLists.length === 0
-                    ? []
-                    : childLists.reduce<string[]>(
-                        (acc, curr) => acc.filter(id => curr.includes(id)),
-                        childLists[0]
-                    );
 
         return (
             <li className="offerListItem">
@@ -636,7 +625,7 @@ function RequirementRow({
                         .map(user =>
                             renderUserChip(
                                 user,
-                                satisfiedUserIDs.includes(user.id),
+                                selectedUsersForReq(req, reqID).includes(user.id),
                             )
                         )}
 

@@ -9,7 +9,7 @@ import { ResponsiveModal } from './components/common/ResponsiveModal.tsx';
 import { Tooltip, TooltipContent, TooltipTrigger } from './components/common/Tooltip.tsx';
 import { isTauri, openInBrowser } from './utils/tauri.ts';
 import AccountEditPanel from './components/AccountEditPanel.tsx';
-import { isMobile } from './utils/utils.ts';
+import { isInIframe, isMobile } from './utils/utils.ts';
 
 import './styles/App.css';
 import UserEditPanel from './components/UserEditPanel.tsx';
@@ -362,7 +362,7 @@ function App() {
 
             <div className='header'>
 
-                {!isTauri &&
+                {!isTauri && !isInIframe() &&
                     <div className='banner'>
                         <p>
                             You are running a browser version of the app. This only supports a limited demo mode, and does not support access to any real accounts.

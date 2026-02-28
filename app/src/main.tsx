@@ -4,7 +4,7 @@ import { HashRouter, Route, Routes } from 'react-router-dom';
 
 import AppGate from './AppGate.tsx';
 import IncentivesPage from './components/side/IncentivesPage.tsx';
-import { isMobile } from './utils/utils.ts';
+import { isInIframe, isMobile } from './utils/utils.ts';
 
 import './styles/index.css'
 import { users } from './data/TrueLayerMock.ts';
@@ -16,7 +16,7 @@ createRoot(document.getElementById('root')!).render(
                 <Routes>
                     <Route path='/*' element={
                         <>
-                            {isMobile() &&
+                            {isMobile() && !isInIframe() &&
                                 <div className='androidBanner' />
                             }
                             <AppGate />

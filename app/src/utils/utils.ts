@@ -2,6 +2,14 @@ export function isMobile() {
     return /Mobi|Android/i.test(navigator.userAgent);
 }
 
+export function isInIframe() {
+    try {
+        return window.self !== window.top;
+    } catch {
+        return true; // cross-origin iframe
+    }
+}
+
 export function getMonthName(month: string): string {
     const monthNumber = parseInt(month, 10);
     if (isNaN(monthNumber) || monthNumber < 1 || monthNumber > 12) {
