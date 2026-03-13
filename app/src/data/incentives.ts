@@ -94,6 +94,7 @@ export type Offer = {
 
 export const incentives: { data: Offer[] } = {
     data: [
+        // CASS
         {
             id: 'firstDirect_cass_sep2025_amazon',
             bankID: 'ob-first-direct',
@@ -979,6 +980,255 @@ export const incentives: { data: Offer[] } = {
                 { label: 'Terms & Conditions', url: './documents/co-op/Jan26-Switch_T&Cs.pdf' },
             ],
         },
+        {
+            id: 'lloyds_premier_cass_feb2026',
+            bankID: 'ob-lloyds',
+            scheme: 'CASS',
+            title: '£500 Switch',
+            headline: { credit: 500 },
+            value: 500,
+            availability: { start: '2026-02-24', end: '2026-04-30' },
+            components: [
+                {
+                    id: 'credit',
+                    title: '£500 Switch Incentive',
+                    requirements: [
+                        {
+                            kind: 'group',
+                            op: 'AND',
+                            children: [
+                                {
+                                    type: 'openAccount',
+                                    accountTypes: ['Lloyds Premier'],
+                                    notes: ['Open the account between 24 Feb and 30 Apr.']
+                                },
+                                {
+                                    type: 'switch',
+                                    scheme: 'CASS',
+                                    mustBeFull: true,
+                                    byDate: '2026-04-30',
+                                    notes: [
+                                        'Must include at least three Direct Debits.'
+                                    ]
+                                },
+                                {
+                                    type: 'directDebits',
+                                    countAtLeast: 3
+                                },
+                                {
+                                    type: 'debitCardTx',
+                                    amount: 200,
+                                    windowDaysFrom: 'accountOpenedAt',
+                                    windowDays: 35,
+                                    notes: ['Spend £200 or more on the debit card within 35 days.']
+                                },
+                                {
+                                    type: 'payIn',
+                                    amount: 5000,
+                                    windowMonthsFrom: 'accountOpenedAt',
+                                    windowMonths: 1,
+                                    notes: [
+                                        '£5,000 must be paid in during the first full calendar month.'
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    payment: {
+                        type: 'credit',
+                        amount: 500,
+                        payout: {
+                            windowDaysFrom: 'criteriaMetAt',
+                            windowDays: 90,
+                            deliveryMethod: 'credit',
+                            sender: 'Lloyds'
+                        },
+                        notes: [
+                            'Typically paid 45–90 days after criteria completion.'
+                        ]
+                    }
+                }
+            ],
+            eligibility: [
+                'Must earn £75,000+ or pay in £5,000/month (or hold £100,000 savings/investments with Lloyds).',
+                'Cannot have received switch cash from Lloyds, Halifax, or Bank of Scotland since 1 January 2023.'
+            ]
+        },
+        {
+            id: 'clubLloyds_cass_feb2026',
+            bankID: 'ob-lloyds',
+            scheme: 'CASS',
+            title: '£200 Switch',
+            headline: { credit: 200 },
+            value: 200,
+            availability: { end: '2026-04-30' },
+            components: [
+                {
+                    id: 'credit',
+                    title: '£200 Switch Incentive',
+                    requirements: [
+                        {
+                            kind: 'group',
+                            op: 'AND',
+                            children: [
+                                {
+                                    type: 'openAccount',
+                                    accountTypes: ['Club Lloyds', 'Club Lloyds Silver']
+                                },
+                                {
+                                    type: 'switch',
+                                    scheme: 'CASS',
+                                    mustBeFull: true,
+                                    byDate: '2026-04-30'
+                                },
+                                {
+                                    type: 'directDebits',
+                                    countAtLeast: 3
+                                },
+                                {
+                                    type: 'debitCardTx',
+                                    amount: 100,
+                                    windowDaysFrom: 'accountOpenedAt',
+                                    windowDays: 35,
+                                    notes: ['Spend £100+ on debit card within 35 days.']
+                                }
+                            ]
+                        }
+                    ],
+                    payment: {
+                        type: 'credit',
+                        amount: 200,
+                        payout: {
+                            windowDaysFrom: 'accountOpenedAt',
+                            windowDays: 45,
+                            deliveryMethod: 'credit',
+                            sender: 'Lloyds'
+                        }
+                    }
+                }
+            ],
+            eligibility: [
+                'Cannot have received switch cash from Lloyds, Halifax, or Bank of Scotland since 1 January 2023.'
+            ]
+        },
+        {
+            id: 'barclays_premier_cass_feb2026',
+            bankID: 'ob-barclays',
+            scheme: 'CASS',
+            title: '£400 Switch',
+            headline: { credit: 400 },
+            value: 400,
+            availability: { end: '2026-04-30' },
+            components: [
+                {
+                    id: 'credit',
+                    title: '£400 Switch Incentive',
+                    requirements: [
+                        {
+                            kind: 'group',
+                            op: 'AND',
+                            children: [
+                                {
+                                    type: 'openAccount',
+                                    accountTypes: ['Barclays Premier'],
+                                    channel: 'app'
+                                },
+                                {
+                                    type: 'payIn',
+                                    amount: 4000,
+                                    windowDaysFrom: 'accountOpenedAt',
+                                    windowDays: 30
+                                },
+                                {
+                                    type: 'switch',
+                                    scheme: 'CASS',
+                                    mustBeFull: true,
+                                    windowDaysFrom: 'switchRequest',
+                                    windowDays: 30,
+                                    notes: ['Must include at least two Direct Debits.']
+                                },
+                                {
+                                    type: 'directDebits',
+                                    countAtLeast: 2
+                                }
+                            ]
+                        }
+                    ],
+                    payment: {
+                        type: 'credit',
+                        amount: 400,
+                        payout: {
+                            windowDays: 28,
+                            deliveryMethod: 'credit',
+                            sender: 'Barclays'
+                        }
+                    }
+                }
+            ],
+            eligibility: [
+                'Must earn £75,000+ or hold £100,000 savings/investments with Barclays.',
+                'Cannot already hold a Barclays current account opened on or before 17 Feb.',
+                'Must never have received a Barclays switch incentive previously.'
+            ]
+        },
+        {
+            id: 'barclays_basic_cass_mar2026',
+            bankID: 'ob-barclays',
+            scheme: 'CASS',
+            title: '£200 Switch',
+            headline: { credit: 200 },
+            value: 200,
+            availability: {},
+            components: [
+                {
+                    id: 'credit',
+                    title: '£200 Switch Incentive',
+                    requirements: [
+                        {
+                            kind: 'group',
+                            op: 'AND',
+                            children: [
+                                {
+                                    type: 'openAccount',
+                                    accountTypes: ['Barclays Bank Account'],
+                                    channel: 'app'
+                                },
+                                {
+                                    type: 'payIn',
+                                    amount: 2000,
+                                    windowDaysFrom: 'accountOpenedAt',
+                                    windowDays: 30
+                                },
+                                {
+                                    type: 'switch',
+                                    scheme: 'CASS',
+                                    mustBeFull: true,
+                                    byDate: '2026-05-28'
+                                },
+                                {
+                                    type: 'directDebits',
+                                    countAtLeast: 2
+                                }
+                            ]
+                        }
+                    ],
+                    payment: {
+                        type: 'credit',
+                        amount: 200,
+                        payout: {
+                            windowDays: 45,
+                            deliveryMethod: 'credit',
+                            sender: 'Barclays'
+                        }
+                    }
+                }
+            ],
+            eligibility: [
+                'Cannot have had an open Barclays current account on or after 10 March.',
+                'Must never have received a Barclays switch incentive previously.'
+            ]
+        },
+        // PROMOTIONS
         {
             id: 'tsb_yes_days_prizedraw_mar2026',
             bankID: 'ob-tsb',

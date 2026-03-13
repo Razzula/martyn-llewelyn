@@ -11,7 +11,8 @@ export const trueLayercachedProviders: TrueLayerProvider[] = [
             'recommended_status': 'healthy',
             'updated_at': '2026-02-21T21:21:44.6647704Z'
         }
-    },{
+    },
+    {
         'provider_id': 'ob-nationwide',
         'display_name': 'Nationwide',
         'country': 'uk',
@@ -64,6 +65,28 @@ export const trueLayercachedProviders: TrueLayerProvider[] = [
         'availability': {
             'recommended_status': 'healthy',
             'updated_at': '2026-02-21T21:21:44.6647704Z'
+        }
+    },
+    {
+        'provider_id': 'ob-lloyds',
+        'display_name': 'Lloyds',
+        'country': 'uk',
+        'logo_url': 'https://providers-assets.truelayer.com/ob-lloyds/logo.svg',
+        'scopes': [],
+        'availability': {
+            'recommended_status': 'healthy',
+            'updated_at': '2026-03-13T14:14:34.7292378Z',
+        }
+    },
+    {
+        'provider_id': 'ob-barclays',
+        'display_name': 'Barclays',
+        'country': 'uk',
+        'logo_url': 'https://providers-assets.truelayer.com/ob-barclays/logo.svg',
+        'scopes': [],
+        'availability': {
+            'recommended_status': 'healthy',
+            'updated_at': '2026-03-13T14:14:34.7292378Z',
         }
     },
 ];
