@@ -9,8 +9,8 @@ export const trueLayercachedProviders: TrueLayerProvider[] = [
         'scopes': [],
         'availability': {
             'recommended_status': 'healthy',
-            'updated_at': '2026-02-21T21:21:44.6647704Z'
-        }
+            'updated_at': '2026-02-21T21:21:44.6647704Z',
+        },
     },
     {
         'provider_id': 'ob-nationwide',
@@ -20,8 +20,8 @@ export const trueLayercachedProviders: TrueLayerProvider[] = [
         'scopes': [],
         'availability': {
             'recommended_status': 'healthy',
-            'updated_at': '2026-02-21T21:21:44.6647704Z'
-        }
+            'updated_at': '2026-02-21T21:21:44.6647704Z',
+        },
     },
     {
         'provider_id': 'ob-natwest',
@@ -31,8 +31,8 @@ export const trueLayercachedProviders: TrueLayerProvider[] = [
         'scopes': [],
         'availability': {
             'recommended_status': 'healthy',
-            'updated_at': '2026-02-21T21:21:44.6647704Z'
-        }
+            'updated_at': '2026-02-21T21:21:44.6647704Z',
+        },
     },
     {
         'provider_id': 'ob-rbs',
@@ -42,8 +42,8 @@ export const trueLayercachedProviders: TrueLayerProvider[] = [
         'scopes': [],
         'availability': {
             'recommended_status': 'healthy',
-            'updated_at': '2026-02-21T21:21:44.6647704Z'
-        }
+            'updated_at': '2026-02-21T21:21:44.6647704Z',
+        },
     },
     {
         'provider_id': 'ob-santander',
@@ -53,8 +53,8 @@ export const trueLayercachedProviders: TrueLayerProvider[] = [
         'scopes': [],
         'availability': {
             'recommended_status': 'healthy',
-            'updated_at': '2026-02-21T21:21:44.6647704Z'
-        }
+            'updated_at': '2026-02-21T21:21:44.6647704Z',
+        },
     },
     {
         'provider_id': 'ob-tsb',
@@ -64,8 +64,8 @@ export const trueLayercachedProviders: TrueLayerProvider[] = [
         'scopes': [],
         'availability': {
             'recommended_status': 'healthy',
-            'updated_at': '2026-02-21T21:21:44.6647704Z'
-        }
+            'updated_at': '2026-02-21T21:21:44.6647704Z',
+        },
     },
     {
         'provider_id': 'ob-lloyds',
@@ -76,7 +76,7 @@ export const trueLayercachedProviders: TrueLayerProvider[] = [
         'availability': {
             'recommended_status': 'healthy',
             'updated_at': '2026-03-13T14:14:34.7292378Z',
-        }
+        },
     },
     {
         'provider_id': 'ob-barclays',
@@ -87,7 +87,29 @@ export const trueLayercachedProviders: TrueLayerProvider[] = [
         'availability': {
             'recommended_status': 'healthy',
             'updated_at': '2026-03-13T14:14:34.7292378Z',
-        }
+        },
+    },
+    {
+        "provider_id": "ob-danske",
+        "display_name": "Danske Bank",
+        "country": "uk",
+        "logo_url": "https://providers-assets.truelayer.com/ob-danske/logo.svg",
+        "scopes": [],
+        "availability": {
+            "recommended_status": "healthy",
+            "updated_at": "2026-02-21T21:21:44.6647704Z",
+        },
+    },
+    {
+        "provider_id": "ob-hsbc",
+        "display_name": "HSBC",
+        "country": "uk",
+        "logo_url": "https://providers-assets.truelayer.com/ob-hsbc/logo.svg",
+        "scopes": [],
+        "availability": {
+            "recommended_status": "healthy",
+            "updated_at": "2026-02-21T21:21:44.6647704Z",
+        },
     },
 ];
 

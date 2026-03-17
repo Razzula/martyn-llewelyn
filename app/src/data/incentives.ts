@@ -52,7 +52,7 @@ export type RequirementGroup = {
 export type Requirement = RequirementLeaf | RequirementGroup;
 
 export type Payment = {
-    type: 'credit' | 'amazon' | 'prize';
+    type: 'credit' | 'amazon' | 'prize' | 'cashback';
     amount?: number;
     payout?: {
         windowDays?: number,
@@ -114,7 +114,7 @@ export const incentives: { data: Offer[] } = {
                             notes: [
                                 'Offer provided by Mony Group Financial Limited.',
                                 'Requires email information.',
-                                'Requires opening of a new first direct 1st Account after completion.'
+                                'Requires opening of a new first direct 1st Account after completion.',
                             ],
                         },
                     ],
@@ -378,7 +378,7 @@ export const incentives: { data: Offer[] } = {
                                     ],
                                 },
                             ],
-                        }
+                        },
                     ],
                     payment: {
                         type: 'credit', amount: 200,
@@ -544,7 +544,7 @@ export const incentives: { data: Offer[] } = {
                             windowDaysFrom: 'switchCompletedAt', windowDays: 60,
                             notes: [
                                 'This can be made of multiple payments into your account.',
-                                'Funds transferred during the switch process count towards the deposit requirement.'
+                                'Funds transferred during the switch process count towards the deposit requirement.',
                             ],
                         },
                         {
@@ -619,7 +619,7 @@ export const incentives: { data: Offer[] } = {
                             windowDaysFrom: 'switchCompletedAt', windowDays: 60,
                             notes: [
                                 'This can be made of multiple payments into your account.',
-                                'Funds transferred during the switch process count towards the deposit requirement.'
+                                'Funds transferred during the switch process count towards the deposit requirement.',
                             ],
                         },
                         {
@@ -1000,7 +1000,7 @@ export const incentives: { data: Offer[] } = {
                                 {
                                     type: 'openAccount',
                                     accountTypes: ['Lloyds Premier'],
-                                    notes: ['Open the account between 24 Feb and 30 Apr.']
+                                    notes: ['Open the account between 24 Feb and 30 Apr.'],
                                 },
                                 {
                                     type: 'switch',
@@ -1008,8 +1008,8 @@ export const incentives: { data: Offer[] } = {
                                     mustBeFull: true,
                                     byDate: '2026-04-30',
                                     notes: [
-                                        'Must include at least three Direct Debits.'
-                                    ]
+                                        'Must include at least three Direct Debits.',
+                                    ],
                                 },
                                 {
                                     type: 'directDebits',
@@ -1020,7 +1020,7 @@ export const incentives: { data: Offer[] } = {
                                     amount: 200,
                                     windowDaysFrom: 'accountOpenedAt',
                                     windowDays: 35,
-                                    notes: ['Spend £200 or more on the debit card within 35 days.']
+                                    notes: ['Spend £200 or more on the debit card within 35 days.'],
                                 },
                                 {
                                     type: 'payIn',
@@ -1028,11 +1028,11 @@ export const incentives: { data: Offer[] } = {
                                     windowMonthsFrom: 'accountOpenedAt',
                                     windowMonths: 1,
                                     notes: [
-                                        '£5,000 must be paid in during the first full calendar month.'
-                                    ]
-                                }
-                            ]
-                        }
+                                        '£5,000 must be paid in during the first full calendar month.',
+                                    ],
+                                },
+                            ],
+                        },
                     ],
                     payment: {
                         type: 'credit',
@@ -1041,18 +1041,18 @@ export const incentives: { data: Offer[] } = {
                             windowDaysFrom: 'criteriaMetAt',
                             windowDays: 90,
                             deliveryMethod: 'credit',
-                            sender: 'Lloyds'
+                            sender: 'Lloyds',
                         },
                         notes: [
-                            'Typically paid 45–90 days after criteria completion.'
-                        ]
-                    }
-                }
+                            'Typically paid 45–90 days after criteria completion.',
+                        ],
+                    },
+                },
             ],
             eligibility: [
                 'Must earn £75,000+ or pay in £5,000/month (or hold £100,000 savings/investments with Lloyds).',
-                'Cannot have received switch cash from Lloyds, Halifax, or Bank of Scotland since 1 January 2023.'
-            ]
+                'Cannot have received switch cash from Lloyds, Halifax, or Bank of Scotland since 1 January 2023.',
+            ],
         },
         {
             id: 'clubLloyds_cass_feb2026',
@@ -1073,13 +1073,13 @@ export const incentives: { data: Offer[] } = {
                             children: [
                                 {
                                     type: 'openAccount',
-                                    accountTypes: ['Club Lloyds', 'Club Lloyds Silver']
+                                    accountTypes: ['Club Lloyds', 'Club Lloyds Silver'],
                                 },
                                 {
                                     type: 'switch',
                                     scheme: 'CASS',
                                     mustBeFull: true,
-                                    byDate: '2026-04-30'
+                                    byDate: '2026-04-30',
                                 },
                                 {
                                     type: 'directDebits',
@@ -1090,10 +1090,10 @@ export const incentives: { data: Offer[] } = {
                                     amount: 100,
                                     windowDaysFrom: 'accountOpenedAt',
                                     windowDays: 35,
-                                    notes: ['Spend £100+ on debit card within 35 days.']
-                                }
-                            ]
-                        }
+                                    notes: ['Spend £100+ on debit card within 35 days.'],
+                                },
+                            ],
+                        },
                     ],
                     payment: {
                         type: 'credit',
@@ -1102,14 +1102,14 @@ export const incentives: { data: Offer[] } = {
                             windowDaysFrom: 'accountOpenedAt',
                             windowDays: 45,
                             deliveryMethod: 'credit',
-                            sender: 'Lloyds'
-                        }
-                    }
-                }
+                            sender: 'Lloyds',
+                        },
+                    },
+                },
             ],
             eligibility: [
-                'Cannot have received switch cash from Lloyds, Halifax, or Bank of Scotland since 1 January 2023.'
-            ]
+                'Cannot have received switch cash from Lloyds, Halifax, or Bank of Scotland since 1 January 2023.',
+            ],
         },
         {
             id: 'barclays_premier_cass_feb2026',
@@ -1131,7 +1131,7 @@ export const incentives: { data: Offer[] } = {
                                 {
                                     type: 'openAccount',
                                     accountTypes: ['Barclays Premier'],
-                                    channel: 'app'
+                                    channel: 'app',
                                 },
                                 {
                                     type: 'payIn',
@@ -1145,14 +1145,14 @@ export const incentives: { data: Offer[] } = {
                                     mustBeFull: true,
                                     windowDaysFrom: 'switchRequest',
                                     windowDays: 30,
-                                    notes: ['Must include at least two Direct Debits.']
+                                    notes: ['Must include at least two Direct Debits.'],
                                 },
                                 {
                                     type: 'directDebits',
                                     countAtLeast: 2
-                                }
-                            ]
-                        }
+                                },
+                            ],
+                        },
                     ],
                     payment: {
                         type: 'credit',
@@ -1160,16 +1160,16 @@ export const incentives: { data: Offer[] } = {
                         payout: {
                             windowDays: 28,
                             deliveryMethod: 'credit',
-                            sender: 'Barclays'
-                        }
-                    }
-                }
+                            sender: 'Barclays',
+                        },
+                    },
+                },
             ],
             eligibility: [
                 'Must earn £75,000+ or hold £100,000 savings/investments with Barclays.',
                 'Cannot already hold a Barclays current account opened on or before 17 Feb.',
-                'Must never have received a Barclays switch incentive previously.'
-            ]
+                'Must never have received a Barclays switch incentive previously.',
+            ],
         },
         {
             id: 'barclays_basic_cass_mar2026',
@@ -1191,7 +1191,7 @@ export const incentives: { data: Offer[] } = {
                                 {
                                     type: 'openAccount',
                                     accountTypes: ['Barclays Bank Account'],
-                                    channel: 'app'
+                                    channel: 'app',
                                 },
                                 {
                                     type: 'payIn',
@@ -1203,14 +1203,14 @@ export const incentives: { data: Offer[] } = {
                                     type: 'switch',
                                     scheme: 'CASS',
                                     mustBeFull: true,
-                                    byDate: '2026-05-28'
+                                    byDate: '2026-05-28',
                                 },
                                 {
                                     type: 'directDebits',
                                     countAtLeast: 2
-                                }
-                            ]
-                        }
+                                },
+                            ],
+                        },
                     ],
                     payment: {
                         type: 'credit',
@@ -1218,15 +1218,189 @@ export const incentives: { data: Offer[] } = {
                         payout: {
                             windowDays: 45,
                             deliveryMethod: 'credit',
-                            sender: 'Barclays'
-                        }
-                    }
-                }
+                            sender: 'Barclays',
+                        },
+                    },
+                },
             ],
             eligibility: [
                 'Cannot have had an open Barclays current account on or after 10 March.',
-                'Must never have received a Barclays switch incentive previously.'
-            ]
+                'Must never have received a Barclays switch incentive previously.',
+            ],
+        },
+        {
+            id: 'danske_bank_cass_jan2026',
+            bankID: 'ob-danske',
+            scheme: 'CASS',
+            title: '£200 Switch',
+            headline: { credit: 200 },
+            value: 200,
+            availability: {
+                start: '2026-01-26', end: '2026-03-22',
+            },
+            requirements: [
+                {
+                    kind: 'group',
+                    op: 'AND',
+                    children: [
+                        {
+                            type: 'openAccount',
+                            accountTypes: ['Danske Reward', 'Danske Choice', 'Danske Freedom'],
+                            notes: [
+                                'Must be a new Danske Bank personal current account customer.',
+                                'Excludes Danske Discovery and Danske Standard accounts.',
+                            ],
+                        },
+                        {
+                            type: 'switch',
+                            scheme: 'CASS',
+                            mustBeFull: true,
+                            windowDaysFrom: 'accountOpenedAt',
+                            windowDays: 60,
+                            notes: ['Must include moving payment instructions and closing the old account.'],
+                        },
+                        {
+                            type: 'payIn',
+                            amount: 1000,
+                            windowDaysFrom: 'accountOpenedAt',
+                            windowDays: 60,
+                            notes: ['Can be made in multiple payments.'],
+                        },
+                        {
+                            type: 'directDebits',
+                            count: 2,
+                            mustBeActive: true,
+                            windowDaysFrom: 'accountOpenedAt',
+                            windowDays: 60,
+                            notes: ['Transfer 2 active DDs from old account OR set up 2 new DDs on the new account.'],
+                        },
+                        {
+                            type: 'login',
+                            channel: 'eBanking',
+                            windowDaysFrom: 'accountOpenedAt',
+                            windowDays: 60,
+                            notes: ['Register for and log on to eBanking.'],
+                        },
+                    ],
+                },
+            ],
+            eligibility: [
+                'Must be a resident of Northern Ireland.',
+                'Not eligible if you held a Danske personal current account on 26 January 2026.',
+                'Not eligible if you have an application in progress prior to 26 January 2026.',
+                'Not eligible if you have ever received an account opening offer from Danske Bank before.',
+                'Must be aged 18 or over.',
+            ],
+            payment: {
+                type: 'credit',
+                amount: 200,
+                payout: {
+                    label: 'Paid within 10 business days of meeting all criteria.',
+                    windowDays: 10,
+                    windowDaysFrom: 'criteriaMetAt',
+                    deliveryMethod: 'credit',
+                    sender: 'Danske Bank',
+                },
+                notes: [
+                    'Account must remain open at the time of payment.',
+                    'For joint accounts, only one £200 payment is made.',
+                ],
+            },
+            links: [
+                { label: 'Danske Bank Switch Page', url: 'https://danskebank.co.uk/personal/products/current-accounts/switch-200' },
+                { label: 'Terms and Conditions', url: 'https://danskebank.co.uk/personal/products/current-accounts/switch-200' },
+            ],
+        },
+        {
+            id: 'hsbc_premier_bring_more_jan2026',
+            bankID: 'ob-hsbc',
+            scheme: 'CASS',
+            title: '£750 Premier "Bring More, Get More"',
+            headline: {
+                credit: 250,
+                credit2: 500,
+            },
+            value: 750,
+            availability: {
+                start: '2026-01-05',
+                end: '2026-02-23',
+            },
+            eligibility: [
+                'Must be 18+ and UK resident.',
+                'Must meet Premier criteria: £100k+ individual annual income OR £100k+ in savings/investments with HSBC UK.',
+                'Excludes existing HSBC UK or First Direct current account holders.',
+                'Excludes those who received an HSBC UK joining incentive since 1st January 2025.',
+            ],
+            components: [
+                {
+                    id: 'hsbc_premier_switch_250',
+                    title: '£250 Cashback Switching Reward',
+                    headline: { credit: 250 },
+                    requirements: [
+                        {
+                            kind: 'group',
+                            op: 'AND',
+                            children: [
+                                {
+                                    type: 'switch',
+                                    scheme: 'CASS',
+                                    mustBeFull: true,
+                                    notes: ['Old account must be closed as part of the CASS process.'],
+                                },
+                                {
+                                    type: 'payIn',
+                                    notes: ['Individual annual salary of at least £100,000 paid directly by employer.'],
+                                    meta: 'salary_only',
+                                },
+                            ],
+                        },
+                    ],
+                    payment: {
+                        type: 'cashback',
+                        amount: 250,
+                        payout: {
+                            windowDays: 70,
+                            windowDaysFrom: 'criteriaMetAt',
+                            label: 'Paid within 70 days of meeting requirements.',
+                        },
+                    },
+                },
+                {
+                    id: 'hsbc_premier_investment_500',
+                    title: '£500 Cashback Savings & Investment Reward',
+                    headline: { credit: 500 },
+                    requirements: [
+                        {
+                            kind: 'group',
+                            op: 'AND',
+                            children: [
+                                {
+                                    type: 'transfer',
+                                    amount: 100000,
+                                    notes: ['Transfer £100,000+ in eligible savings or investments into the new account.'],
+                                    byDate: '2026-04-30',
+                                },
+                                {
+                                    type: 'holdBalance',
+                                    windowMonths: 3,
+                                    notes: ['Must maintain the £100k balance for at least three months.'],
+                                },
+                            ],
+                        },
+                    ],
+                    payment: {
+                        type: 'cashback',
+                        amount: 500,
+                        payout: {
+                            windowDays: 70,
+                            windowDaysFrom: 'criteriaMetAt',
+                        },
+                    },
+                },
+            ],
+            links: [
+                { label: 'HSBC Premier Offer', url: 'https://www.hsbc.co.uk/current-accounts/products/premier/' },
+            ],
         },
         // PROMOTIONS
         {
@@ -1304,7 +1478,7 @@ export const incentives: { data: Offer[] } = {
             requirements: [
             ],
             eligibility: [
-                'Eligiblity criteria is not yet known, but it is expected to be similar to previous "Fairer Share" offers. Information in this is based on 2025\'s offer.'
+                'Eligiblity criteria is not yet known, but it is expected to be similar to previous "Fairer Share" offers. Information in this is based on 2025\'s offer.',
             ],
             payment: {
                 type: 'credit', amount: 100,
@@ -1414,7 +1588,7 @@ export const incentives: { data: Offer[] } = {
                 },
             ],
             eligibility: [
-                'Eligiblity criteria is not yet known, but it is expected to be similar to previous "Fairer Share" offers. Information in this is based on 2025\'s offer.'
+                'Eligiblity criteria is not yet known, but it is expected to be similar to previous "Fairer Share" offers. Information in this is based on 2025\'s offer.',
             ],
             payment: {
                 type: 'credit', amount: 100,
@@ -1453,8 +1627,8 @@ export const incentives: { data: Offer[] } = {
                         {
                             type: 'holdAccount', accountTypes: ['Stocks and Shares ISA'],
                             notes: [
-                                'ISA must remain open until 23:59 on 30 April 2026.'
-                            ]
+                                'ISA must remain open until 23:59 on 30 April 2026.',
+                            ],
                         },
                         {
                             kind: 'group',
@@ -1466,8 +1640,8 @@ export const incentives: { data: Offer[] } = {
                                         'One entry per £50 invested into a NatWest Invest Stocks & Shares ISA during the entry period.',
                                         'Includes regular and lump sum contributions.',
                                         'ISA transfers do not count.',
-                                        'Entries calculated on total contributions minus withdrawals.'
-                                    ]
+                                        'Entries calculated on total contributions minus withdrawals.',
+                                    ],
                                 },
                                 {
                                     type: 'entry_notice', channel: 'email', countAtMost: 1,
@@ -1475,11 +1649,11 @@ export const incentives: { data: Offer[] } = {
                                         'Free entry by emailing Investprizedraw@natwest.com.',
                                         'Must include full name, DOB, telephone number, email, first line of address and postcode.',
                                         'Must be received before 23:59 on 30 April 2026.',
-                                        'Not available if eligible for deposit-based entries.'
-                                    ]
-                                }
-                            ]
-                        }
+                                        'Not available if eligible for deposit-based entries.',
+                                    ],
+                                },
+                            ],
+                        },
                     ],
                 },
             ],
@@ -1493,19 +1667,94 @@ export const incentives: { data: Offer[] } = {
                 payout: {
                     label: 'Draw by 31 May 2026. Prizes paid by 15 June 2026.',
                     deliveryMethod: 'credit',
-                    sender: 'NatWest'
+                    sender: 'NatWest',
                 },
                 notes: [
                     '1x £100,000 prize.',
                     '50x £1,000 prizes.',
                     '1,000x £100 prizes.',
-                    'One prize per customer.'
-                ]
+                    'One prize per customer.',
+                ],
             },
             links: [
                 { label: 'NatWest Prize Draw Page', url: 'https://www.natwest.com/investments/prize-draw.html' },
                 { label: 'Terms & Consitions', url: './documents/natwest/2026-InvestISA-PrizeDraw_T&Cs.pdf' },
-            ]
+            ],
         },
-    ]
+        {
+            id: 'danske_monthly_prizedraw_2026',
+            bankID: 'ob-danske',
+            scheme: 'PROMO',
+            title: '£1,000 Monthly Prize Draw',
+            headline: { prize: '10 x £1,000 to be won each month' },
+            value: 1000, // Monthly prize value
+            availability: {
+                start: '2026-02-01',
+                end: '2026-07-31'
+            },
+            requirements: [
+                {
+                    kind: 'group',
+                    op: 'AND',
+                    children: [
+                        {
+                            type: 'registration',
+                            channel: 'online',
+                            notes: [
+                                'Must register via online form, in-branch, or by phone.',
+                                'If previously registered for 2025 draws, re-registration is not required.'
+                            ],
+                        },
+                        {
+                            type: 'holdAccount',
+                            accountTypes: [
+                                'Danske Choice',
+                                'Danske Reward',
+                                'Danske Freedom',
+                                'Danske Standard',
+                                'Danske Choice Plus',
+                                'Danske Prestige'
+                            ],
+                            notes: ['Joint accounts are eligible if all holders are eligible.'],
+                        },
+                        {
+                            type: 'transactions',
+                            countAtLeast: 11,
+                            meta: 'debit_card_only',
+                            notes: [
+                                'Minimum 11 Debit Mastercard purchases per calendar month.',
+                                'First 11 transactions = 1 entry.',
+                                'Every transaction after the 11th = 1 additional entry.',
+                                'Maximum 15 entries per month.',
+                                'Excludes ATM withdrawals, bank transfers, and account credits.',
+                                'Transactions must "post" (not just be pending) by the last day of the month.'
+                            ],
+                        },
+                    ],
+                },
+            ],
+            eligibility: [
+                'Must be 18+ and a UK resident.',
+                'Must hold an eligible Danske Bank current account.',
+                'Excludes Danske Bank employees and those professionally connected to the draw.',
+                'Not available for joint accounts where one holder is ineligible.',
+            ],
+            payment: {
+                type: 'prize',
+                amount: 1000,
+                payout: {
+                    label: '10 winners drawn by the 20th of the following month. Paid within 30 days of claim.',
+                    deliveryMethod: 'credit',
+                    sender: 'Danske Bank',
+                },
+                notes: [
+                    'Winners notified by secure eBanking mail, phone, or letter by the last working day of the month.',
+                    'Account must remain open to receive the prize.',
+                ],
+            },
+            links: [
+                { label: 'Danske Prize Draw Page', url: 'https://danskebank.co.uk/prizedraw' }
+            ],
+        },
+    ],
 } as const;
