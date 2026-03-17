@@ -66,7 +66,7 @@ export function WiggleWrapper({
 
         // reset session
         if (sessionStart.current !== null) {
-            // console.log(`Wiggled for ${sessionMs.current.toFixed(0)}ms`);
+            // console.debug(`Wiggled for ${sessionMs.current.toFixed(0)}ms`);
             sessionStart.current = null;
             sessionMs.current = 0;
         }

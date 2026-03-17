@@ -27,11 +27,11 @@ interface TrueLayerAPI {
     fetchAccountsData(walletToken: string): Promise<[TrueLayerAccount[], string]>;
     fetchCardsData(walletToken: string): Promise<[TrueLayerCard[], string]>;
 
-    fetchAccountBalance(walletToken: string, accountId: string): Promise<TrueLayerAccountBalance[]>;
-    fetchCardBalance(walletToken: string, cardId: string): Promise<TrueLayerCardBalance[]>;
+    fetchAccountBalance(walletToken: string, accountID: string): Promise<TrueLayerAccountBalance[]>;
+    fetchCardBalance(walletToken: string, cardID: string): Promise<TrueLayerCardBalance[]>;
 
-    fetchAccountTransactions(walletToken: string, accountId: string, from?: string, to?: string): Promise<any[]>;
-    fetchCardTransactions(walletToken: string, cardId: string, from?: string, to?: string): Promise<any[]>;
+    fetchAccountTransactions(walletToken: string, accountID: string, from?: string, to?: string): Promise<any[]>;
+    fetchCardTransactions(walletToken: string, cardID: string, from?: string, to?: string): Promise<any[]>;
 }
 
 class RealTrueLayerAPI implements TrueLayerAPI {
@@ -76,12 +76,12 @@ class RealTrueLayerAPI implements TrueLayerAPI {
     }
 
     async handleExtendConnection(walletToken: string, user: TrueLayerUser, userHasReconfirmedConsent: boolean) {
-        const res: Record<string, string> = await invoke('extendConnection', { 
+        const res: Record<string, string> = await invoke('extendConnection', {
             walletToken,
             user,
             userHasReconfirmedConsent,
         });
-        const actionNeeded= res?.['action_needed'];
+        const actionNeeded = res?.['action_needed'];
         if (actionNeeded) {
             console.log(res?.['user_input_link']);
         }
@@ -109,30 +109,30 @@ class RealTrueLayerAPI implements TrueLayerAPI {
         return [res.results || [], res.userID];
     }
 
-    async fetchAccountBalance(walletToken: string, accountId: string): Promise<TrueLayerAccountBalance[]> {
+    async fetchAccountBalance(walletToken: string, accountID: string): Promise<TrueLayerAccountBalance[]> {
         const res = JSON.parse(
-            await invoke('fetchAccountBalance', { walletToken, accountId })
-        );
-        return res.results || [];
-    }
-    
-    async fetchCardBalance(walletToken: string, cardId: string): Promise<TrueLayerCardBalance[]> {
-        const res = JSON.parse(
-            await invoke('fetchCardBalance', { walletToken, cardId })
+            await invoke('fetchAccountBalance', { walletToken, accountId: accountID, })
         );
         return res.results || [];
     }
 
-    async fetchAccountTransactions(walletToken: string, accountId: string, from: string, to: string): Promise<any[]> {
+    async fetchCardBalance(walletToken: string, cardID: string): Promise<TrueLayerCardBalance[]> {
         const res = JSON.parse(
-            await invoke('fetchAccountTransactions', { walletToken, accountId, from, to })
+            await invoke('fetchCardBalance', { walletToken, cardId: cardID, })
         );
         return res.results || [];
     }
 
-    async fetchCardTransactions(walletToken: string, cardId: string, from: string, to: string): Promise<any[]> {
+    async fetchAccountTransactions(walletToken: string, accountID: string, from: string, to: string): Promise<any[]> {
         const res = JSON.parse(
-            await invoke('fetchCardTransactions', { walletToken, cardId, from, to })
+            await invoke('fetchAccountTransactions', { walletToken, accountId: accountID, from, to, })
+        );
+        return res.results || [];
+    }
+
+    async fetchCardTransactions(walletToken: string, cardID: string, from: string, to: string): Promise<any[]> {
+        const res = JSON.parse(
+            await invoke('fetchCardTransactions', { walletToken, cardId: cardID, from, to, })
         );
         return res.results || [];
     }
@@ -179,20 +179,20 @@ class MockTrueLayerAPI implements TrueLayerAPI {
         ];
     }
 
-    async fetchAccountBalance(_walletToken: string, accountId: string): Promise<TrueLayerAccountBalance[]> {
-        return mockAccountBalances()[accountId] || [];
+    async fetchAccountBalance(_walletToken: string, accountID: string): Promise<TrueLayerAccountBalance[]> {
+        return mockAccountBalances()[accountID] || [];
     }
 
-    async fetchCardBalance(_walletToken: string, cardId: string): Promise<TrueLayerCardBalance[]> {
-        return mockCardBalances()[cardId] || [];
+    async fetchCardBalance(_walletToken: string, cardID: string): Promise<TrueLayerCardBalance[]> {
+        return mockCardBalances()[cardID] || [];
     }
 
-    async fetchAccountTransactions(_walletToken: string, _accountId: string): Promise<any[]> {
+    async fetchAccountTransactions(_walletToken: string, _accountID: string): Promise<any[]> {
         return [];
     }
 
-    async fetchCardTransactions(_walletToken: string, cardId: string): Promise<any[]> {
-        return mockCardTransactions()[cardId] || [];
+    async fetchCardTransactions(_walletToken: string, cardID: string): Promise<any[]> {
+        return mockCardTransactions()[cardID] || [];
     }
 
 }
@@ -229,6 +229,7 @@ export class TrueLayerClient {
                 balance: undefined, // ensure balance is defined
             };
         });
+        console.debug(`Fetched ${res.length} accounts`);
         return data;
     }
 
@@ -244,23 +245,32 @@ export class TrueLayerClient {
                 balance: undefined, // ensure balance is defined
             };
         });
+        console.debug(`Fetched ${res.length} cards`);
         return data;
     }
 
-    static async fetchAccountBalance(walletToken: string, accountId: string): Promise<TrueLayerAccountBalance[]> {
-        return TrueLayerClient.api.fetchAccountBalance(walletToken, accountId);
+    static async fetchAccountBalance(walletToken: string, accountID: string): Promise<TrueLayerAccountBalance[]> {
+        const res = await TrueLayerClient.api.fetchAccountBalance(walletToken, accountID);
+        console.debug(`Fetched ${res.length} account balances`);
+        return res;
     }
 
-    static async fetchCardBalance(walletToken: string, cardId: string): Promise<TrueLayerCardBalance[]> {
-        return TrueLayerClient.api.fetchCardBalance(walletToken, cardId);
+    static async fetchCardBalance(walletToken: string, cardID: string): Promise<TrueLayerCardBalance[]> {
+        const res = await TrueLayerClient.api.fetchCardBalance(walletToken, cardID);
+        console.debug(`Fetched ${res.length} card balances`);
+        return res;
     }
 
-    static async fetchAccountTransactions(walletToken: string, accountId: string, from?: string, to?: string): Promise<any[]> {
-        return TrueLayerClient.api.fetchAccountTransactions(walletToken, accountId, from, to);
+    static async fetchAccountTransactions(walletToken: string, accountID: string, from?: string, to?: string): Promise<any[]> {
+        const res = await TrueLayerClient.api.fetchAccountTransactions(walletToken, accountID, from, to);
+        console.debug(`Fetched ${res.length} card transactions`);
+        return res;
     }
 
-    static async fetchCardTransactions(walletToken: string, cardId: string, from?: string, to?: string): Promise<any[]> {
-        return TrueLayerClient.api.fetchCardTransactions(walletToken, cardId, from, to);
+    static async fetchCardTransactions(walletToken: string, cardID: string, from?: string, to?: string): Promise<any[]> {
+        const res = await TrueLayerClient.api.fetchCardTransactions(walletToken, cardID, from, to);
+        console.debug(`Fetched ${res.length} card transactions`);
+        return res;
     }
 
 }

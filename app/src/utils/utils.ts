@@ -67,6 +67,10 @@ export function hasValue(value: string | number | null | undefined): boolean {
     return true;
 }
 
+export function isOlderThanMinutes(date: Date, minutes: number) {
+    return (Date.now() - date.getTime()) > minutes * 60 * 1000;
+}
+
 export function isFutureDate(date?: string | null): boolean {
     return !date || isNaN(Date.parse(date)) || new Date(date) > new Date();
 }

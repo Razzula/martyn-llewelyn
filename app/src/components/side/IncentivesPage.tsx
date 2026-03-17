@@ -84,7 +84,7 @@ function IncentivesPage({ users, }: IncentivesPageProps) {
     }
 
     function toggleTodo(offerID: string, reqID: string, userID: string) {
-        console.log(offerID, reqID, userID);
+        console.debug(offerID, reqID, userID);
         setSelectedTodos(prev => {
             const next: SelectedTodos = { ...prev };
             const offerMap = { ...(next[offerID] ?? {}) };

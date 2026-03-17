@@ -116,7 +116,7 @@ function App() {
             if (code && state) {
                 TrueLayerClient.handleTokenExchange(code, state)
                     .then((walletEntry: WalletEntry) => {
-                        console.log('Loaded WalletEntry', walletEntry.walletToken);
+                        console.debug('Loaded WalletEntry', walletEntry.walletToken);
                         Engine.get().loadWalletEntries();
                     })
                     .catch(err => {

@@ -28,12 +28,26 @@ import {
     users as mockUsers,
     walletEntries as mockWalletEntries,
 } from './data/TrueLayerMock.ts';
-import { getMostRecentSunday, toYYYYMMDDFromDate } from './utils/utils.ts';
+import { getMostRecentSunday, isOlderThanMinutes, toYYYYMMDDFromDate } from './utils/utils.ts';
 import { ResponseState } from './App.tsx';
 import { AccountManager } from './utils/AccountManager.ts';
 import requestGate from './utils/RequestGate.ts';
 import { fromTrueLayerAccountBalance, fromTrueLayerAccountTransaction, fromTrueLayerCardBalance, fromTrueLayerCardTransaction } from './types/TrueLayerAdapters.ts';
 import { emptyBankAccount } from './data/stubs.ts';
+
+type AccountNetworkStatus = {
+    balance: { lastFetched: Date | null; fetching: boolean };
+    transactions: { lastFetched: Date | null; fetching: boolean };
+};
+
+interface NetworkStatusEntry {
+    // entry is status of a WalletToken (batches all subsurvient accounts and cards)
+    accounts: Record<string, AccountNetworkStatus>;
+    lastFetched: Date | null;
+    fetching: boolean;
+}
+
+type NetworkStatus = Record<string, NetworkStatusEntry>;
 
 export const walletEntriesStore = createSignal<WalletEntry[]>([]);
 export const usersStore = createSignal<User[]>([]);
@@ -88,6 +102,8 @@ export class Engine extends Boulangerie {
     private categoryStats = categoryStatsStore;
     private channelStats = channelStatsStore;
 
+    private networkStatus: NetworkStatus = {};
+
     constructor() {
         super();
         this.init();
@@ -100,6 +116,7 @@ export class Engine extends Boulangerie {
         this.updateAccountsTransactions = this.updateAccountsTransactions.bind(this);
     }
 
+    // INITIALISATION
     private async init() {
         this.loadWalletEntries();
         this.loadDatabase();
@@ -177,6 +194,59 @@ export class Engine extends Boulangerie {
         }
     }
 
+    // TODO
+    private preRequestNetworkStatus(walletToken: string, accountID?: string, field?: keyof AccountNetworkStatus): boolean {
+        if (!this.networkStatus[walletToken]) {
+            // object has not been fetched
+            this.networkStatus[walletToken] = {
+                accounts: {},
+                lastFetched: null,
+                fetching: false,
+            };
+        }
+        if (accountID && !this.networkStatus[walletToken].accounts[accountID]) {
+            // object fields have not been fetched
+            this.networkStatus[walletToken].accounts[accountID] = {
+                balance: { lastFetched: null, fetching: false },
+                transactions: { lastFetched: null, fetching: false },
+            };
+        }
+
+        const target = ((accountID && field)
+            ? this.networkStatus[walletToken].accounts[accountID][field]
+            : this.networkStatus[walletToken]
+        );
+        if (target.fetching) {
+            // already being handled
+            // console.warn('Network call guarded');
+            return false;
+        }
+        if (target.lastFetched && !isOlderThanMinutes(target.lastFetched, 15)) {
+            // cached value is still fresh enough
+            return false;
+        }
+        target.fetching = true; // flag as being handled: caller MUST implement this
+        return true;
+    }
+
+    private completeNetworkStatus(walletToken: string, accountID?: string, field?: keyof AccountNetworkStatus) {
+        const walletEntry = this.networkStatus[walletToken];
+        if (!walletEntry) {
+            return;
+        }
+        const target = ((accountID && field)
+            ? this.networkStatus[walletToken].accounts[accountID][field]
+            : this.networkStatus[walletToken]
+        );
+        if (!target) {
+            return;
+        }
+
+        target.fetching = false;
+        target.lastFetched = new Date();
+    }
+
+    // API
     private async fetchProviders() {
         try {
             const providers = await TrueLayerClient.fetchProviders();
@@ -229,41 +299,55 @@ export class Engine extends Boulangerie {
     }
 
     private async fetchLiveAccounts() {
-        if (this.walletEntries.get().length > 0) {
+        const walletEntries = this.walletEntries.get();
+        if (walletEntries.length === 0) {
             this.accountsDataLive.set({});
-            this.accountsLoadState.set(ResponseState.LOADING); // reset accounts while fetching
-
-            const accountManager = new AccountManager();
-
-            this.walletEntries.get().forEach(walletEntry => {
-                Promise.all([
-                    // fetch accounts and cards data
-                    TrueLayerClient.fetchAccountsData(walletEntry.walletToken),
-                    TrueLayerClient.fetchCardsData(walletEntry.walletToken)
-                ])
-                    .then(([accounts, cards]) => {
-                        [...accounts, ...cards].forEach(account => {
-                            // merge into the manager's instance
-                            accountManager.merge(account);
-                        });
-                        // apply partial update, to not block UI
-                        this.accountsDataLive.set(prev => accountManager.applyTo(prev));
-
-                        if (this.accountsLoadState.get() !== ResponseState.ERROR) {
-                            this.accountsLoadState.set(ResponseState.SUCCESS);
-                        }
-                    })
-                    .catch(err => {
-                        console.error(`Failed to fetch for token ${walletEntry}:`, err);
-                        this.accountsLoadState.set(ResponseState.ERROR);
-                    });
-            });
+            return;
         }
-        else {
-            this.accountsDataLive.set({});
+        // this.accountsDataLive.set({});
+        // this.accountsLoadState.set(ResponseState.LOADING); // reset accounts while fetching
+
+        const accountManager = new AccountManager();
+
+        const tasks = walletEntries
+            .filter(walletEntry =>
+                // only fetch unhandled accounts/cards
+                this.preRequestNetworkStatus(walletEntry.walletToken),
+            )
+            .map(async walletEntry => {
+                try {
+                    const [accounts, cards] = await Promise.all([
+                        // fetch accounts and cards data
+                        TrueLayerClient.fetchAccountsData(walletEntry.walletToken),
+                        TrueLayerClient.fetchCardsData(walletEntry.walletToken),
+                    ]);
+                    for (const account of [...accounts, ...cards]) {
+                        // merge into the manager's instance
+                        accountManager.merge(account);
+                    }
+
+                    // apply partial update, to not block UI
+                    this.accountsDataLive.set(prev => accountManager.applyTo(prev));
+                }
+                catch (err) {
+                    console.error(`Failed to fetch for token ${walletEntry.walletToken}:`, err);
+                    throw err;
+                }
+                finally {
+                    this.completeNetworkStatus(walletEntry.walletToken);
+                }
+            });
+
+        try {
+            await Promise.all(tasks);
+            this.accountsLoadState.set(ResponseState.SUCCESS);
+        }
+        catch {
+            this.accountsLoadState.set(ResponseState.ERROR);
         }
     }
 
+    // FILE MANAGEMENT
     private async loadOfflineAccounts() {
         if (isTauri) {
             const offlineAccounts = await loadOfflineAccountsFromTauri();
@@ -309,7 +393,7 @@ export class Engine extends Boulangerie {
                     archived: account.archived,
                     interest: account.interest,
                     url: account.url,
-                    
+
                     balance: account.balance,
                     last: account.last,
                     cached: account.cached,
@@ -324,6 +408,7 @@ export class Engine extends Boulangerie {
         }
     }
 
+    // ACCOUNT UTILS
     private unifyAccounts() {
         this.accounts.set(_prev => {
             // start with offline and live data
@@ -350,22 +435,29 @@ export class Engine extends Boulangerie {
     }
 
     private async fetchAccountsBalancesAndTransactions() {
-        if (this.walletEntries.get().length === 0 || !this.accounts.get()) {
+        const walletEntries = this.walletEntries.get();
+        const accounts = this.accounts.get();
+        if (walletEntries.length === 0 || !accounts) {
             return;
         }
-        if (Object.keys(this.accounts.get()).length > 0) {
+        if (Object.keys(accounts).length > 0) {
 
-            Object.entries(this.accounts.get()).forEach(([accountID, account]: [string, BankAccount]) => {
+            Object.entries(accounts).forEach(([accountID, account]: [string, BankAccount]) => {
                 if (account.source !== 'TrueLayer') {
                     // only fetch balances for TrueLayer accounts
                     return;
                 }
 
                 const isCard = account.cardNetwork !== undefined;
-                const walletToken = account.users?.[0]?.walletToken || this.walletEntries.get()[0]?.walletToken; // XXX: use the first token if not specified
-
+                const walletToken = account.users?.[0]?.walletToken || walletEntries[0]?.walletToken; // XXX: use the first token if not specified
+                
                 // FETCH ACCOUNT BALANCE
                 if (account.balance === undefined) {
+                    const shouldFetch = this.preRequestNetworkStatus(walletToken, accountID, 'balance');
+                    if (!shouldFetch) {
+                        return;
+                    }
+
                     const request = isCard
                         ? () => TrueLayerClient.fetchCardBalance(walletToken, accountID)
                         : () => TrueLayerClient.fetchAccountBalance(walletToken, accountID);
@@ -389,11 +481,18 @@ export class Engine extends Boulangerie {
                         .catch(err => {
                             console.error(`Failed to fetch balance for ${isCard ? 'card' : 'account'} ${accountID}:`, err);
                             this.accountsLoadState.set(ResponseState.ERROR);
+                        })
+                        .finally(() => {
+                            this.completeNetworkStatus(walletToken, accountID, 'balance');
                         });
                 }
 
                 // FETCH ACCOUNT TRANSACTIONS
                 if (account.transactions === undefined) {
+                    const shouldFetch = this.preRequestNetworkStatus(walletToken, accountID, 'transactions');
+                    if (!shouldFetch) {
+                        return;
+                    }
                     const from = toYYYYMMDDFromDate(this.transactionsLoadedRange.get());
                     const to = toYYYYMMDDFromDate(new Date());
                     this.updateAccountTransactions(walletToken, accountID, isCard, from, to);
@@ -404,8 +503,9 @@ export class Engine extends Boulangerie {
     }
 
     private updateAccountBalance(accountID: string, balance: BankAccountBalance) {
-        if (this.accounts.get() && this.accounts.get()[accountID]) {
-            const account = this.accounts.get()[accountID];
+        const accounts = this.accounts.get();
+        if (accounts && accounts[accountID]) {
+            const account = accounts[accountID];
             this.accountsDataLive.set(prev => ({
                 ...prev,
                 [accountID]: {
@@ -451,6 +551,9 @@ export class Engine extends Boulangerie {
             console.error(`Failed to fetch transactions for ${isCard ? 'card' : 'account'} ${accountID}:`, err);
             // setAccountsState(ResponseState.ERROR);
             return null;
+        }
+        finally {
+            this.completeNetworkStatus(walletToken, accountID, 'transactions');
         }
     }
 
@@ -506,7 +609,6 @@ export class Engine extends Boulangerie {
     }
 
     // USER MANAGEMENT
-
     public updateOrAddUser(user: User) {
         if (this.users.get() !== null) {
             this.users.set(prev => {

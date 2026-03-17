@@ -34,7 +34,7 @@ function WalletEntryCard({
             { id: user.id, name: user.name, email: user.email },
             true,
         ).then(res => {
-            console.log('Jack', res);
+            console.debug('Jack', res);
         });
     }
 
